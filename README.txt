@@ -18,42 +18,55 @@ npm run lint      # oxlint 정적 분석
 
 ## 팀원에게 프로토타입 공유하기
 
-스토어 심사 없이 팀 내부에서 바로 써볼 수 있는 방법 두 가지입니다.
+스토어 심사 없이 팀 내부에서 바로 써볼 수 있는 방법입니다. 현재 바로 쓸 수 있는 건 방법 A(웹 링크)뿐입니다.
 
 ### 방법 A. 웹 링크로 공유 (가장 빠름)
 
-계정 로그인이 필요한 단계라 본인이 직접 실행해야 합니다.
+**현재 배포된 URL: https://ai-diet-fitness-app-three.vercel.app** (Vercel 팀 `ba-662c`)
+
+이 URL을 그대로 팀원에게 공유하면 휴대폰 브라우저로 바로 열립니다(카메라도 동작). 홈 화면에 "추가"하면 앱처럼 아이콘이 생깁니다.
+
+코드를 수정한 뒤 이 URL에 반영(재배포)하려면 본인이 직접 실행해야 합니다(Vercel 로그인 필요).
 
 ```bash
-npm run build          # dist/ 폴더 생성
-npx vercel --prod       # 최초 실행 시 브라우저에서 GitHub/이메일로 로그인 요청 → 완료 후 배포 URL 출력
-# 또는
-npx netlify deploy --prod --dir=dist
+vercel login            # 최초 1회. 브라우저 인증
+npx vercel --prod       # 프로젝트 폴더에서 실행 → 빌드 후 프로덕션 URL 갱신
 ```
 
-명령이 끝나면 `https://...vercel.app`(또는 netlify.app) 형태의 URL이 출력됩니다. 이 URL을 그대로 팀원에게 공유하면
-휴대폰 브라우저로 바로 열립니다(카메라도 동작). 홈 화면에 "추가"하면 앱처럼 아이콘이 생깁니다.
+주의 사항:
+- 반드시 Claude Code의 `!` 명령이 아니라 **별도로 연 터미널 창**에서 실행하세요. 로그인 같은 대화형 과정이 자동화된 채널에서는 동작하지 않습니다.
+- Windows PowerShell에서 "스크립트를 실행할 수 없습니다" 오류가 나면 `npx` 대신 `npx.cmd`를 쓰거나 명령 프롬프트(cmd)에서 실행하세요.
 
-### 방법 B. Android APK를 GitHub Actions로 클라우드 빌드
+### 방법 B. Android APK를 GitHub Actions로 클라우드 빌드 (현재 미완성)
 
-Android Studio 없이도 실제 설치용 APK를 만들 수 있습니다. `.github/workflows/android-build.yml`이 이미 준비되어 있습니다.
+Android Studio 없이 실제 설치용 APK를 클라우드에서 만들려는 워크플로우(`.github/workflows/android-build.yml`)가 있지만, **현재는 "Sync Capacitor Android project" 단계에서 실패하는 상태**입니다. 원인은 아직 확인하지 못했습니다(GitHub Actions 로그는 저장소 소유자만 볼 수 있어, 실제 에러 메시지를 확인해야 합니다).
 
-1. GitHub에 새 저장소를 만들고(비공개 가능) 이 프로젝트를 push 합니다.
-   ```bash
-   git remote add origin <본인의 GitHub 저장소 URL>
-   git push -u origin main
-   ```
-2. GitHub 저장소의 **Actions** 탭 → "Build Android APK" 워크플로우가 자동으로 실행됩니다(수동 실행은 "Run workflow" 버튼).
-3. 실행이 끝나면 해당 실행 페이지 하단 **Artifacts**에서 `app-debug-apk`를 내려받습니다.
-4. 이 `.apk` 파일을 Slack/Drive 등으로 팀원에게 전달하면 됩니다. Android 팀원은 설치 시 "출처를 알 수 없는 앱 설치 허용"만 한 번 켜면 됩니다.
-
-이 APK는 디버그 서명이라 Play 스토어 업로드는 안 되지만, 팀 내부 테스트 공유 목적에는 충분합니다. (Play 스토어에 올리려면 앞서 설정한 `android/keystore.properties`로 릴리즈 서명이 필요합니다.)
-
-> `git init` 후 로컬 커밋까지는 이 세션에서 완료해뒀습니다(`git log`로 확인 가능). GitHub 원격 저장소 생성 및 push, 배포 서비스 로그인은 계정 인증이 필요해 직접 진행해주셔야 합니다.
+- push 시 자동 실행은 꺼두었고, 저장소의 **Actions** 탭 → "Build Android APK" → **Run workflow**로 수동 실행만 가능합니다.
+- 다시 시도하려면 실패한 실행의 "Sync Capacitor Android project" 단계 로그를 확인해 원인을 먼저 해결해야 합니다.
+- 성공하면 실행 페이지 하단 **Artifacts**에서 `app-debug-apk`를 내려받아 팀원에게 전달합니다(Android 팀원은 "출처를 알 수 없는 앱 설치 허용" 필요). 디버그 서명이라 Play 스토어 업로드는 안 되고, 릴리즈 서명은 `android/keystore.properties`로 별도 설정해야 합니다.
+- 그 전까지 Android 앱이 필요하면 Android Studio가 있는 PC에서 `npm run cap:sync` → `npm run cap:open:android`로 직접 빌드하세요.
 
 ### 방법 C. iOS
 
 Mac + Xcode가 있어야 하며, 팀원 실기기 설치는 사실상 유료 Apple Developer 계정($99/년) + TestFlight가 표준입니다(무료 계정은 기기당 7일마다 재설치 필요). Mac이 준비되면 `npm run cap:open:ios`로 Xcode를 열고, "Automatically manage signing"으로 서명한 뒤 TestFlight에 업로드하면 됩니다.
+
+## 팀원이 코드를 수정하려면
+
+배포된 URL은 빌드 결과물일 뿐이라 URL만으로는 수정할 수 없습니다. 소스 코드는 GitHub 저장소(`https://github.com/Kang-byeongjun/BA`)에 있습니다.
+
+```bash
+git clone https://github.com/Kang-byeongjun/BA.git
+cd BA
+npm install
+npm run dev                      # 로컬 확인 (http://localhost:5173)
+git checkout -b feature/이름       # 브랜치에서 작업
+git add . && git commit -m "..."
+git push -u origin feature/이름
+```
+
+- 저장소가 비공개라면 소유자가 GitHub Settings → Collaborators에서 팀원을 초대해야 합니다.
+- 수정한 내용을 공유 URL에 반영하려면 소유자가 `main`에 합친 뒤 위의 `npx vercel --prod`로 재배포합니다. Vercel에 GitHub 로그인 연결을 추가하고 Git 저장소를 연결하면(프로젝트 Settings → Git) push할 때 자동 배포되도록 바꿀 수 있습니다.
+- Vercel Hobby(무료) 플랜은 팀원 초대와 다른 사람의 커밋 자동 배포에 제한이 있을 수 있습니다. 그 경우 팀원이 각자 자기 Vercel 계정에 배포하거나 Pro 플랜을 사용하세요.
 
 ## Android / iOS 앱으로 실행하기 (Capacitor)
 
