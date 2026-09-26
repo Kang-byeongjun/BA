@@ -16,6 +16,45 @@ npm run lint      # oxlint 정적 분석
 
 처음 실행하면 온보딩(목적 선택 → InBody 입력 → 목표 확인)이 나타나며, 첫 화면의 "데모 데이터로 바로 체험하기" 버튼을 누르면 아침·점심을 이미 먹은 상태의 데모 계정으로 바로 전체 기능을 체험할 수 있습니다.
 
+## 팀원에게 프로토타입 공유하기
+
+스토어 심사 없이 팀 내부에서 바로 써볼 수 있는 방법 두 가지입니다.
+
+### 방법 A. 웹 링크로 공유 (가장 빠름)
+
+계정 로그인이 필요한 단계라 본인이 직접 실행해야 합니다.
+
+```bash
+npm run build          # dist/ 폴더 생성
+npx vercel --prod       # 최초 실행 시 브라우저에서 GitHub/이메일로 로그인 요청 → 완료 후 배포 URL 출력
+# 또는
+npx netlify deploy --prod --dir=dist
+```
+
+명령이 끝나면 `https://...vercel.app`(또는 netlify.app) 형태의 URL이 출력됩니다. 이 URL을 그대로 팀원에게 공유하면
+휴대폰 브라우저로 바로 열립니다(카메라도 동작). 홈 화면에 "추가"하면 앱처럼 아이콘이 생깁니다.
+
+### 방법 B. Android APK를 GitHub Actions로 클라우드 빌드
+
+Android Studio 없이도 실제 설치용 APK를 만들 수 있습니다. `.github/workflows/android-build.yml`이 이미 준비되어 있습니다.
+
+1. GitHub에 새 저장소를 만들고(비공개 가능) 이 프로젝트를 push 합니다.
+   ```bash
+   git remote add origin <본인의 GitHub 저장소 URL>
+   git push -u origin main
+   ```
+2. GitHub 저장소의 **Actions** 탭 → "Build Android APK" 워크플로우가 자동으로 실행됩니다(수동 실행은 "Run workflow" 버튼).
+3. 실행이 끝나면 해당 실행 페이지 하단 **Artifacts**에서 `app-debug-apk`를 내려받습니다.
+4. 이 `.apk` 파일을 Slack/Drive 등으로 팀원에게 전달하면 됩니다. Android 팀원은 설치 시 "출처를 알 수 없는 앱 설치 허용"만 한 번 켜면 됩니다.
+
+이 APK는 디버그 서명이라 Play 스토어 업로드는 안 되지만, 팀 내부 테스트 공유 목적에는 충분합니다. (Play 스토어에 올리려면 앞서 설정한 `android/keystore.properties`로 릴리즈 서명이 필요합니다.)
+
+> `git init` 후 로컬 커밋까지는 이 세션에서 완료해뒀습니다(`git log`로 확인 가능). GitHub 원격 저장소 생성 및 push, 배포 서비스 로그인은 계정 인증이 필요해 직접 진행해주셔야 합니다.
+
+### 방법 C. iOS
+
+Mac + Xcode가 있어야 하며, 팀원 실기기 설치는 사실상 유료 Apple Developer 계정($99/년) + TestFlight가 표준입니다(무료 계정은 기기당 7일마다 재설치 필요). Mac이 준비되면 `npm run cap:open:ios`로 Xcode를 열고, "Automatically manage signing"으로 서명한 뒤 TestFlight에 업로드하면 됩니다.
+
 ## Android / iOS 앱으로 실행하기 (Capacitor)
 
 이 프로젝트는 [Capacitor](https://capacitorjs.com/)로 감싸져 있어 웹 코드를 그대로 실제 Android/iOS 네이티브 앱으로 빌드할 수 있습니다. `android/`, `ios/` 폴더가 이미 생성되어 있고, 카메라 촬영 UI(`src/components/common/PhotoCaptureView.tsx`)는 네이티브 앱에서 실행될 때 `@capacitor/camera` 플러그인으로 기기 카메라/사진첩을 직접 호출하도록 이미 연동되어 있습니다(웹/PWA에서는 기존 `<input type="file">` 방식 그대로 동작).
