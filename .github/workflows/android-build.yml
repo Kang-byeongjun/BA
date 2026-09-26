@@ -1,0 +1,49 @@
+name: Build Android APK
+
+# GitHub 저장소에 push 하거나 Actions 탭에서 "Run workflow"를 누르면
+# Android Studio 없이도 클라우드에서 디버그 APK를 빌드합니다.
+# 완료 후 이 워크플로우 실행 결과 페이지 하단 "Artifacts"에서 apk를 내려받아
+# 팀원에게 그대로 공유하면 됩니다(Play 스토어 업로드용 서명은 아닙니다).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
