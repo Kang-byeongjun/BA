@@ -5,9 +5,8 @@ name: Build Android APK
 # 완료 후 이 워크플로우 실행 결과 페이지 하단 "Artifacts"에서 apk를 내려받아
 # 팀원에게 그대로 공유하면 됩니다(Play 스토어 업로드용 서명은 아닙니다).
 
+# 현재 빌드가 실패하는 상태라 push 시 자동 실행은 꺼두고, Actions 탭에서 수동 실행(Run workflow)만 허용합니다.
 on:
-  push:
-    branches: [main]
   workflow_dispatch: {}
 
 jobs:
