@@ -1,4 +1,5 @@
 import { getNutritionStatus, getPercentage } from '../../lib/nutrition'
+import AnimatedBar from './AnimatedBar'
 import { NUTRITION_STATUS_LABELS, type NutritionStatus } from '../../types'
 
 interface Props {
@@ -37,12 +38,7 @@ export default function NutritionBar({ label, consumed, target, unit, colorClass
           </span>
         </div>
       </div>
-      <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
-        <div
-          className={`h-full rounded-full transition-all duration-700 ease-out ${colorClass}`}
-          style={{ width: `${barWidth}%` }}
-        />
-      </div>
+      <AnimatedBar id={label} width={barWidth} trackClass="bg-slate-100" fillClass={colorClass} heightClass="h-2.5" />
       <div className="mt-1 flex justify-between text-[11px] text-slate-400">
         <span>{percent}%</span>
         {overAmount > 0 && <span className="font-medium text-rose-500">목표보다 +{overAmount}{unit} 초과</span>}

@@ -23,6 +23,15 @@ export interface UserProfile {
   basalMetabolicRate: number // kcal
 }
 
+// InBody 결과지에서 읽어온(또는 사용자가 확인·수정한) 체성분 측정값. null이면 값이 없는 항목.
+export interface InBodyMeasurements {
+  weight: number | null
+  skeletalMuscleMass: number | null
+  bodyFatMass: number | null
+  bodyFatPercentage: number | null
+  basalMetabolicRate: number | null
+}
+
 // ---------- 영양 목표 & 섭취 ----------
 
 export interface NutritionTarget {
@@ -79,18 +88,8 @@ export interface Meal {
   timestamp: number // epoch ms
   slot: MealSlot
   title: string
-  image: string | null // data URL (mock) — 실제 서비스에서는 업로드된 이미지 URL
-  foods: AnalyzedFoodItem[]
-  calories: number
-  protein: number
-  carbohydrates: number
-  fat: number
-  fiber: number
-}
-
-// AI 음식 분석 mock 결과 (실제 Vision API 응답을 흉내)
-export interface FoodAnalysisResult {
-  title: string
+  // 목록 표시용 작은 썸네일(data URL). 원본 사진은 저장하지 않는다.
+  image: string | null
   foods: AnalyzedFoodItem[]
   calories: number
   protein: number

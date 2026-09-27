@@ -1,19 +1,12 @@
-import type {
-  FoodAnalysisResult,
-  Gender,
-  Meal,
-  NutritionTarget,
-  RecommendedFood,
-  UserProfile,
-} from '../types'
+import type { FoodExtraction, InBodyExtraction } from '../../shared/analysis'
+import type { Meal, NutritionTarget, RecommendedFood, UserProfile } from '../types'
 
 /**
  * Mock 데이터 모음.
  *
- * 실제 서비스 연결 지점:
- * - FOOD_ANALYSIS_MOCKS  → AI Vision 음식 분석 API 응답으로 교체
- * - DEMO_PROFILE         → InBody 연동 API 응답으로 교체
- * - RECOMMENDATION_FOODS → 추천 엔진(서버) 응답으로 교체
+ * - DEMO_*, buildDemoMeals  : 데모 모드 시작 프리셋 (온보딩 없이 바로 체험)
+ * - FOOD_ANALYSIS_MOCKS 등 : 데모 모드 전용 AI 분석 결과. 실제 AI 모드에서는 사용하지 않는다.
+ * - RECOMMENDATION_FOODS   : 규칙 기반 추천 음식 풀
  */
 
 // ---------------------------------------------------------------------------
@@ -86,104 +79,88 @@ export function buildDemoMeals(): Meal[] {
 }
 
 // ---------------------------------------------------------------------------
-// AI 음식 분석 Mock 결과 — 촬영/업로드 시 이 중 하나를 무작위로 반환
+// 데모 모드 전용 AI 분석 Mock — 실제 AI 모드에서는 절대 사용되지 않는다.
+// 실제 API와 같은 응답 형태(shared/analysis.ts)로 만들어 두었고, 영양소 숫자는 포함하지 않는다
+// (영양 계산은 nutritionService가 담당).
 // ---------------------------------------------------------------------------
 
-export const FOOD_ANALYSIS_MOCKS: FoodAnalysisResult[] = [
+export const FOOD_ANALYSIS_MOCKS: FoodExtraction[] = [
   {
-    title: '닭가슴살 현미밥 브로콜리',
+    isFood: true,
+    mealName: '닭가슴살 현미밥 브로콜리',
     foods: [
-      { name: '닭가슴살', amount: '120g', calories: 200, protein: 37, carbohydrates: 0, fat: 4, fiber: 0 },
-      { name: '현미밥', amount: '180g', calories: 280, protein: 6, carbohydrates: 58, fat: 3, fiber: 4 },
-      { name: '브로콜리', amount: '80g', calories: 40, protein: 2, carbohydrates: 4, fat: 3, fiber: 3 },
+      { name: '닭가슴살', estimatedGrams: 120, cookingMethod: 'grilled', confidence: 0.91 },
+      { name: '현미밥', estimatedGrams: 180, cookingMethod: null, confidence: 0.84 },
+      { name: '브로콜리', estimatedGrams: 80, cookingMethod: 'steamed', confidence: 0.8 },
     ],
-    calories: 520,
-    protein: 45,
-    carbohydrates: 62,
-    fat: 10,
-    fiber: 7,
+    overallConfidence: 0.85,
+    warnings: [],
   },
   {
-    title: '연어 포케',
+    isFood: true,
+    mealName: '연어 포케',
     foods: [
-      { name: '연어', amount: '130g', calories: 260, protein: 28, carbohydrates: 0, fat: 16, fiber: 0 },
-      { name: '현미밥', amount: '150g', calories: 230, protein: 5, carbohydrates: 48, fat: 2, fiber: 3 },
-      { name: '아보카도 & 채소', amount: '100g', calories: 150, protein: 3, carbohydrates: 12, fat: 12, fiber: 6 },
+      { name: '연어', estimatedGrams: 130, cookingMethod: 'raw', confidence: 0.88 },
+      { name: '현미밥', estimatedGrams: 150, cookingMethod: null, confidence: 0.8 },
+      { name: '아보카도', estimatedGrams: 100, cookingMethod: 'raw', confidence: 0.76 },
     ],
-    calories: 640,
-    protein: 36,
-    carbohydrates: 60,
-    fat: 30,
-    fiber: 9,
+    overallConfidence: 0.82,
+    warnings: [],
   },
   {
-    title: '제육볶음 + 밥',
+    isFood: true,
+    mealName: '제육볶음 + 밥',
     foods: [
-      { name: '제육볶음', amount: '200g', calories: 420, protein: 26, carbohydrates: 18, fat: 26, fiber: 2 },
-      { name: '흰쌀밥', amount: '210g', calories: 310, protein: 6, carbohydrates: 68, fat: 1, fiber: 1 },
+      { name: '제육볶음', estimatedGrams: 200, cookingMethod: 'stir-fried', confidence: 0.86 },
+      { name: '흰쌀밥', estimatedGrams: 210, cookingMethod: null, confidence: 0.9 },
     ],
-    calories: 730,
-    protein: 32,
-    carbohydrates: 86,
-    fat: 27,
-    fiber: 3,
+    overallConfidence: 0.87,
+    warnings: [],
   },
 ]
 
-export function getRandomFoodAnalysis(): FoodAnalysisResult {
+export function getMockFoodExtraction(): FoodExtraction {
   const index = Math.floor(Math.random() * FOOD_ANALYSIS_MOCKS.length)
   return FOOD_ANALYSIS_MOCKS[index]
 }
 
-// ---------------------------------------------------------------------------
-// InBody 결과지 사진 AI 분석 Mock 결과 — 온보딩에서 사진으로 자동 입력할 때 사용
-// ---------------------------------------------------------------------------
-
-export interface InBodyAnalysisResult {
-  gender: Gender
-  age: number
-  height: number
-  weight: number
-  skeletalMuscleMass: number
-  bodyFatMass: number
-  bodyFatPercentage: number
-  basalMetabolicRate: number
-}
-
-export const INBODY_ANALYSIS_MOCKS: InBodyAnalysisResult[] = [
+export const INBODY_ANALYSIS_MOCKS: InBodyExtraction[] = [
   {
-    gender: 'male',
-    age: 28,
-    height: 175,
-    weight: 72,
-    skeletalMuscleMass: 33.2,
-    bodyFatMass: 14.5,
+    isInBodyReport: true,
+    weightKg: 72,
+    skeletalMuscleMassKg: 33.2,
+    bodyFatMassKg: 14.5,
     bodyFatPercentage: 17.8,
-    basalMetabolicRate: 1620,
+    bmi: 23.5,
+    basalMetabolicRateKcal: 1620,
+    confidence: 0.95,
+    warnings: [],
   },
   {
-    gender: 'female',
-    age: 31,
-    height: 162,
-    weight: 56,
-    skeletalMuscleMass: 22.4,
-    bodyFatMass: 14.1,
+    isInBodyReport: true,
+    weightKg: 56,
+    skeletalMuscleMassKg: 22.4,
+    bodyFatMassKg: 14.1,
     bodyFatPercentage: 24.6,
-    basalMetabolicRate: 1310,
+    bmi: 21.3,
+    basalMetabolicRateKcal: 1310,
+    confidence: 0.95,
+    warnings: [],
   },
   {
-    gender: 'male',
-    age: 35,
-    height: 180,
-    weight: 85,
-    skeletalMuscleMass: 38.9,
-    bodyFatMass: 20.2,
+    isInBodyReport: true,
+    weightKg: 85,
+    skeletalMuscleMassKg: 38.9,
+    bodyFatMassKg: 20.2,
     bodyFatPercentage: 22.1,
-    basalMetabolicRate: 1780,
+    bmi: 26.2,
+    basalMetabolicRateKcal: 1780,
+    confidence: 0.95,
+    warnings: [],
   },
 ]
 
-export function getRandomInBodyAnalysis(): InBodyAnalysisResult {
+export function getMockInBodyExtraction(): InBodyExtraction {
   const index = Math.floor(Math.random() * INBODY_ANALYSIS_MOCKS.length)
   return INBODY_ANALYSIS_MOCKS[index]
 }

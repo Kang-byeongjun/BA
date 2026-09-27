@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
 import { buildDemoMeals, DEMO_NUTRITION_TARGET, DEMO_PROFILE } from '../data/mockData'
 import { generateId } from '../lib/id'
+import type { AiMode } from '../lib/aiMode'
 import { loadFromStorage, removeFromStorage, saveToStorage, STORAGE_KEYS } from '../lib/storage'
 import type {
   ActiveWorkoutSession,
@@ -13,6 +14,10 @@ import type {
 
 interface AppState {
   onboarded: boolean
+  // 데모 데이터로 시작한 상태인지. 데모 모드에서만 mock AI 분석을 쓸 수 있다.
+  isDemo: boolean
+  // 데모 모드에서 사용할 AI 분석 방식. 데모가 아니면 항상 실제 AI를 사용한다.
+  aiMode: AiMode
   profile: UserProfile | null
   nutritionTarget: NutritionTarget | null
   meals: Meal[]
@@ -24,6 +29,7 @@ interface AppState {
 type Action =
   | { type: 'COMPLETE_ONBOARDING'; profile: UserProfile; nutritionTarget: NutritionTarget }
   | { type: 'LOAD_DEMO' }
+  | { type: 'SET_AI_MODE'; aiMode: AiMode }
   | { type: 'UPDATE_NUTRITION_TARGET'; target: NutritionTarget }
   | { type: 'UPDATE_PROFILE'; profile: UserProfile }
   | { type: 'ADD_MEAL'; meal: Meal }
@@ -40,6 +46,8 @@ type Action =
 function initState(): AppState {
   return {
     onboarded: loadFromStorage(STORAGE_KEYS.onboarded, false),
+    isDemo: loadFromStorage(STORAGE_KEYS.isDemo, false),
+    aiMode: loadFromStorage<AiMode>(STORAGE_KEYS.aiMode, 'real'),
     profile: loadFromStorage<UserProfile | null>(STORAGE_KEYS.profile, null),
     nutritionTarget: loadFromStorage<NutritionTarget | null>(STORAGE_KEYS.nutritionTarget, null),
     meals: loadFromStorage<Meal[]>(STORAGE_KEYS.meals, []),
@@ -55,6 +63,8 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         onboarded: true,
+        isDemo: false,
+        aiMode: 'real',
         profile: action.profile,
         nutritionTarget: action.nutritionTarget,
       }
@@ -63,10 +73,15 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         onboarded: true,
+        isDemo: true,
+        aiMode: 'mock',
         profile: DEMO_PROFILE,
         nutritionTarget: DEMO_NUTRITION_TARGET,
         meals: buildDemoMeals(),
       }
+
+    case 'SET_AI_MODE':
+      return { ...state, aiMode: action.aiMode }
 
     case 'UPDATE_NUTRITION_TARGET':
       return { ...state, nutritionTarget: action.target }
@@ -145,6 +160,8 @@ function reducer(state: AppState, action: Action): AppState {
     case 'RESET_APP':
       return {
         onboarded: false,
+        isDemo: false,
+        aiMode: 'real',
         profile: null,
         nutritionTarget: null,
         meals: [],
@@ -170,6 +187,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.onboarded, state.onboarded)
   }, [state.onboarded])
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.isDemo, state.isDemo)
+  }, [state.isDemo])
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.aiMode, state.aiMode)
+  }, [state.aiMode])
 
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.profile, state.profile)

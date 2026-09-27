@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import BottomNav, { type Tab } from './components/layout/BottomNav'
 import MobileShell from './components/layout/MobileShell'
 import Dashboard from './components/dashboard/Dashboard'
@@ -8,10 +8,13 @@ import OnboardingFlow from './components/onboarding/OnboardingFlow'
 import Profile from './components/profile/Profile'
 import WorkoutScreen from './components/workout/WorkoutScreen'
 import { AppProvider, useApp } from './context/AppContext'
+import type { Meal } from './types'
 
 function MainApp() {
   const [tab, setTab] = useState<Tab>('home')
   const [cameraOpen, setCameraOpen] = useState(false)
+  const [recentMeal, setRecentMeal] = useState<Meal | null>(null)
+  const dismissRecentMeal = useCallback(() => setRecentMeal(null), [])
 
   if (cameraOpen) {
     return (
@@ -20,7 +23,10 @@ function MainApp() {
           onDone={(saved) => {
             setCameraOpen(false)
             // 기록을 저장했다면 홈으로 이동해 갱신된 Progress Bar/피드백/다음 식사 추천을 바로 보여준다.
-            if (saved) setTab('home')
+            if (saved) {
+              setRecentMeal(saved)
+              setTab('home')
+            }
           }}
         />
       </MobileShell>
@@ -31,7 +37,7 @@ function MainApp() {
     <MobileShell
       footer={<BottomNav active={tab} onChange={setTab} onCamera={() => setCameraOpen(true)} />}
     >
-      {tab === 'home' && <Dashboard onOpenCamera={() => setCameraOpen(true)} />}
+      {tab === 'home' && <Dashboard onOpenCamera={() => setCameraOpen(true)} recentMeal={recentMeal} onDismissRecentMeal={dismissRecentMeal} />}
       {tab === 'meals' && <MealHistory />}
       {tab === 'workout' && <WorkoutScreen />}
       {tab === 'profile' && <Profile />}

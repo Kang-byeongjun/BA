@@ -7,13 +7,25 @@ interface Props {
   title: string
   description: ReactNode
   primaryLabel?: string
+  // 사진이 어디에 쓰이는지 알려주는 안내 문구 (개인정보 안내)
+  notice?: string
+  // 데모 모드(예시 결과)일 때 표시
+  demo?: boolean
   onCapture: (imageDataUrl: string) => void
   onClose: () => void
 }
 
 const isNative = Capacitor.isNativePlatform()
 
-export default function PhotoCaptureView({ title, description, primaryLabel = '사진 촬영하기', onCapture, onClose }: Props) {
+export default function PhotoCaptureView({
+  title,
+  description,
+  primaryLabel = '사진 촬영하기',
+  notice,
+  demo = false,
+  onCapture,
+  onClose,
+}: Props) {
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
@@ -73,6 +85,12 @@ export default function PhotoCaptureView({ title, description, primaryLabel = '�
           <Camera size={40} className="text-white/50" />
         </div>
         <p className="text-sm text-white/60">{description}</p>
+        {demo && (
+          <p className="rounded-full bg-amber-400/15 px-3 py-1 text-xs text-amber-300">
+            데모 모드 · 실제 AI가 아닌 예시 결과가 표시돼요
+          </p>
+        )}
+        {notice && <p className="text-xs text-white/40">{notice}</p>}
       </div>
 
       <div className="flex flex-col gap-3 p-6 pb-10">

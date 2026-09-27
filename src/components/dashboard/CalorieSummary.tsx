@@ -1,4 +1,5 @@
 import { getPercentage } from '../../lib/nutrition'
+import AnimatedBar from './AnimatedBar'
 
 interface Props {
   consumed: number
@@ -18,11 +19,8 @@ export default function CalorieSummary({ consumed, target }: Props) {
         <span className="text-4xl font-bold tabular-nums">{Math.round(consumed).toLocaleString()}</span>
         <span className="pb-1 text-lg text-emerald-100">/ {Math.round(target).toLocaleString()} kcal</span>
       </div>
-      <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-white/25">
-        <div
-          className="h-full rounded-full bg-white transition-all duration-700 ease-out"
-          style={{ width: `${barWidth}%` }}
-        />
+      <div className="mt-4">
+        <AnimatedBar id="calories" width={barWidth} trackClass="bg-white/25" fillClass="bg-white" heightClass="h-3" />
       </div>
       <p className="mt-2 text-xs text-emerald-50">
         {isOver

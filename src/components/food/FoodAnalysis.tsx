@@ -1,97 +1,49 @@
-import { Plus, Trash2, X } from 'lucide-react'
+import { AlertTriangle, Minus, Plus, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { searchFoodDatabase, type FoodDbEntry } from '../../data/foodDatabase'
-import { generateId } from '../../lib/id'
+import type { FoodExtraction } from '../../../shared/analysis'
+import type { FoodDbEntry } from '../../data/foodDatabase'
 import { inferMealSlot } from '../../lib/time'
-import type { AnalyzedFoodItem, FoodAnalysisResult, MealSlot } from '../../types'
+import {
+  createEmptyRow,
+  createRowsFromExtraction,
+  isActiveRow,
+  rowNutrients,
+  summarizeRows,
+  type FoodRow,
+} from '../../services/mealService'
+import { localNutritionProvider, roundNutrients } from '../../services/nutritionService'
+import type { AnalysisMode } from '../../services/foodVisionService'
+import type { MealSlot } from '../../types'
 
 interface Props {
-  image: string | null
-  result: FoodAnalysisResult
-  onConfirm: (data: {
-    title: string
-    slot: MealSlot
-    foods: AnalyzedFoodItem[]
-    calories: number
-    protein: number
-    carbohydrates: number
-    fat: number
-    fiber: number
-  }) => void
+  preview: string | null
+  extraction: FoodExtraction
+  mode: AnalysisMode
+  onReanalyze: () => void
+  onConfirm: (input: { title: string; slot: MealSlot; rows: FoodRow[] }) => void
   onCancel: () => void
 }
 
 const SLOTS: MealSlot[] = ['아침', '점심', '저녁', '간식']
+const GRAM_STEP = 10
+const LOW_CONFIDENCE = 0.6
 
-interface NutrientDensity {
-  calories: number
-  protein: number
-  carbohydrates: number
-  fat: number
-  fiber: number
+const COOKING_LABELS: Record<string, string> = {
+  grilled: '구이',
+  steamed: '찜',
+  boiled: '삶음',
+  fried: '튀김',
+  'stir-fried': '볶음',
+  baked: '오븐',
+  braised: '조림',
+  raw: '생것',
+  soup: '국물',
 }
 
-interface FoodRow {
-  key: string
-  name: string
-  grams: number
-  dbId?: string
-  // 1g당 영양소 밀도. grams와 곱해서 실제 섭취량을 계산한다.
-  perGram: NutrientDensity
-}
-
-function parseGrams(amount: string): number {
-  const match = amount.match(/[\d.]+/)
-  const n = match ? Number(match[0]) : 0
-  return n > 0 ? n : 100
-}
-
-function densityFromMock(food: AnalyzedFoodItem, grams: number): NutrientDensity {
-  return {
-    calories: food.calories / grams,
-    protein: food.protein / grams,
-    carbohydrates: food.carbohydrates / grams,
-    fat: food.fat / grams,
-    fiber: food.fiber / grams,
-  }
-}
-
-function densityFromDb(entry: FoodDbEntry): NutrientDensity {
-  return {
-    calories: entry.caloriesPer100g / 100,
-    protein: entry.proteinPer100g / 100,
-    carbohydrates: entry.carbsPer100g / 100,
-    fat: entry.fatPer100g / 100,
-    fiber: entry.fiberPer100g / 100,
-  }
-}
-
-function computeNutrients(row: FoodRow) {
-  return {
-    calories: Math.round(row.perGram.calories * row.grams),
-    protein: Math.round(row.perGram.protein * row.grams),
-    carbohydrates: Math.round(row.perGram.carbohydrates * row.grams),
-    fat: Math.round(row.perGram.fat * row.grams),
-    fiber: Math.round(row.perGram.fiber * row.grams),
-  }
-}
-
-function initRows(foods: AnalyzedFoodItem[]): FoodRow[] {
-  return foods.map((food) => {
-    const grams = parseGrams(food.amount)
-    return {
-      key: generateId('row'),
-      name: food.name,
-      grams,
-      perGram: densityFromMock(food, grams),
-    }
-  })
-}
-
-export default function FoodAnalysis({ image, result, onConfirm, onCancel }: Props) {
-  const [title, setTitle] = useState(result.title)
-  const [slot, setSlot] = useState<MealSlot>(inferMealSlot(Date.now()))
-  const [foods, setFoods] = useState<FoodRow[]>(() => initRows(result.foods))
+export default function FoodAnalysis({ preview, extraction, mode, onReanalyze, onConfirm, onCancel }: Props) {
+  const [title, setTitle] = useState(extraction.mealName)
+  const [slot, setSlot] = useState<MealSlot>(() => inferMealSlot(Date.now()))
+  const [rows, setRows] = useState<FoodRow[]>(() => createRowsFromExtraction(extraction))
   const [openSuggestKey, setOpenSuggestKey] = useState<string | null>(null)
   const nameInputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
   const pendingFocusKey = useRef<string | null>(null)
@@ -100,98 +52,103 @@ export default function FoodAnalysis({ image, result, onConfirm, onCancel }: Pro
     if (!pendingFocusKey.current) return
     nameInputRefs.current.get(pendingFocusKey.current)?.focus()
     pendingFocusKey.current = null
-  }, [foods])
+  }, [rows])
+
+  const summary = useMemo(() => summarizeRows(rows), [rows])
+  const hasBadGrams = rows.some((r) => isActiveRow(r) && !(r.grams > 0))
+  const canSave = summary.activeCount > 0 && summary.unresolvedCount === 0 && !hasBadGrams
 
   const suggestions = useMemo(() => {
-    const row = foods.find((f) => f.key === openSuggestKey)
-    if (!row) return []
-    return searchFoodDatabase(row.name)
-  }, [foods, openSuggestKey])
+    const row = rows.find((r) => r.key === openSuggestKey)
+    return row ? localNutritionProvider.search(row.name) : []
+  }, [rows, openSuggestKey])
 
-  const computedFoods = useMemo(() => foods.map((row) => ({ row, nutrients: computeNutrients(row) })), [foods])
-
-  const totals = useMemo(
-    () =>
-      computedFoods.reduce(
-        (acc, { nutrients }) => ({
-          calories: acc.calories + nutrients.calories,
-          protein: acc.protein + nutrients.protein,
-          carbohydrates: acc.carbohydrates + nutrients.carbohydrates,
-          fat: acc.fat + nutrients.fat,
-          fiber: acc.fiber + nutrients.fiber,
-        }),
-        { calories: 0, protein: 0, carbohydrates: 0, fat: 0, fiber: 0 },
-      ),
-    [computedFoods],
-  )
+  const updateRow = (key: string, patch: Partial<FoodRow>) => {
+    setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)))
+  }
 
   const handleNameChange = (key: string, value: string) => {
-    setFoods((prev) => prev.map((f) => (f.key === key ? { ...f, name: value, dbId: undefined } : f)))
+    // 이름을 고치면 영양 DB 연결을 다시 확인한다. 정확히 일치할 때만 자동으로 연결한다.
+    const match = localNutritionProvider.match(value)
+    const exact = match.matchType === 'exact' ? match.entry : null
+    updateRow(key, { name: value, entry: exact, matchType: exact ? 'exact' : 'none' })
     setOpenSuggestKey(value.trim() ? key : null)
   }
 
   const handleSelectSuggestion = (key: string, entry: FoodDbEntry) => {
-    setFoods((prev) =>
-      prev.map((f) => (f.key === key ? { ...f, name: entry.name, dbId: entry.id, perGram: densityFromDb(entry) } : f)),
-    )
+    updateRow(key, { name: entry.name, entry, matchType: 'exact' })
     setOpenSuggestKey(null)
   }
 
-  const handleGramsChange = (key: string, value: string) => {
-    const grams = Number(value)
-    setFoods((prev) => prev.map((f) => (f.key === key ? { ...f, grams: Number.isFinite(grams) && grams >= 0 ? grams : 0 } : f)))
+  const setGrams = (key: string, grams: number) => {
+    updateRow(key, { grams: Number.isFinite(grams) ? Math.min(5000, Math.max(0, grams)) : 0 })
   }
 
-  const removeFood = (key: string) => {
-    setFoods((prev) => prev.filter((f) => f.key !== key))
+  const removeRow = (key: string) => {
+    setRows((prev) => prev.filter((r) => r.key !== key))
     if (openSuggestKey === key) setOpenSuggestKey(null)
   }
 
-  const addFood = () => {
-    const key = generateId('row')
-    setFoods((prev) => [
-      ...prev,
-      { key, name: '', grams: 100, perGram: { calories: 0, protein: 0, carbohydrates: 0, fat: 0, fiber: 0 } },
-    ])
-    pendingFocusKey.current = key
+  const addRow = () => {
+    const row = createEmptyRow()
+    setRows((prev) => [...prev, row])
+    pendingFocusKey.current = row.key
   }
 
-  const handleConfirm = () => {
-    const finalFoods: AnalyzedFoodItem[] = computedFoods
-      .filter(({ row }) => row.name.trim() !== '')
-      .map(({ row, nutrients }) => ({
-        name: row.name,
-        amount: `${row.grams}g`,
-        ...nutrients,
-      }))
-    onConfirm({
-      title: title.trim() || '식사 기록',
-      slot,
-      foods: finalFoods,
-      ...totals,
-    })
-  }
+  const lowOverall = extraction.overallConfidence < LOW_CONFIDENCE
+  const blockedReason = !canSave
+    ? summary.activeCount === 0
+      ? '기록할 음식을 추가해주세요.'
+      : summary.unresolvedCount > 0
+        ? '영양 정보를 찾지 못한 음식이 있어요. 이름을 검색해 선택하거나 삭제해주세요.'
+        : '중량이 0g인 음식이 있어요.'
+    : null
 
   return (
     <div className="flex h-full flex-col bg-slate-50">
       <div className="flex items-center justify-between border-b border-slate-100 bg-white p-4">
-        <button onClick={onCancel} className="rounded-full p-1 text-slate-400">
+        <button onClick={onCancel} className="rounded-full p-1 text-slate-400" aria-label="닫기">
           <X size={22} />
         </button>
-        <p className="font-semibold text-slate-800">분석 결과</p>
-        <div className="w-6" />
+        <p className="font-semibold text-slate-800">AI 음식 분석</p>
+        <button onClick={onReanalyze} className="text-sm font-medium text-slate-400">
+          다시 분석
+        </button>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
-        {image && (
-          <div className="h-44 w-full overflow-hidden rounded-2xl">
-            <img src={image} alt="촬영한 음식" className="h-full w-full object-cover" />
+        {mode === 'mock' && (
+          <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">데모 모드: 실제 AI가 아닌 예시 결과예요.</p>
+        )}
+
+        {preview && (
+          <div className="h-40 w-full overflow-hidden rounded-2xl">
+            <img src={preview} alt="촬영한 음식" className="h-full w-full object-cover" />
+          </div>
+        )}
+
+        {(lowOverall || extraction.warnings.length > 0) && (
+          <div className="space-y-1.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            {lowOverall && (
+              <div className="flex gap-2">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                <p>음식을 정확히 구분하기 어려웠어요. 이름과 양을 꼭 확인해주세요.</p>
+              </div>
+            )}
+            {extraction.warnings.map((w) => (
+              <p key={w} className="text-xs">
+                · {w}
+              </p>
+            ))}
           </div>
         )}
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-slate-500">식사 이름</label>
+          <label htmlFor="meal-title" className="mb-1.5 block text-xs font-medium text-slate-500">
+            식사 이름
+          </label>
           <input
+            id="meal-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-900 outline-none focus:border-emerald-400"
@@ -199,7 +156,7 @@ export default function FoodAnalysis({ image, result, onConfirm, onCancel }: Pro
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-slate-500">식사 시간대</label>
+          <p className="mb-1.5 text-xs font-medium text-slate-500">식사 시간대</p>
           <div className="grid grid-cols-4 gap-2">
             {SLOTS.map((s) => (
               <button
@@ -216,77 +173,129 @@ export default function FoodAnalysis({ image, result, onConfirm, onCancel }: Pro
         </div>
 
         <div className="rounded-2xl border border-slate-100 bg-white p-4">
-          <p className="mb-1 text-xs font-medium text-slate-500">AI가 인식한 음식</p>
+          <p className="mb-1 text-xs font-medium text-slate-500">인식된 음식</p>
           <p className="mb-3 text-[11px] text-slate-400">
-            음식명을 잘못 인식했다면 이름을 다시 입력해 목록에서 정확한 음식을 선택하세요. 칼로리가 자동으로
-            반영돼요.
+            사진 분석을 기반으로 한 예상량입니다. 실제 섭취량에 맞게 수정해주세요.
           </p>
+
           <div className="space-y-3">
-            {computedFoods.map(({ row, nutrients }) => (
-              <div key={row.key} className="relative">
-                <div className="flex items-center gap-2">
-                  <input
-                    ref={(el) => {
-                      if (el) nameInputRefs.current.set(row.key, el)
-                      else nameInputRefs.current.delete(row.key)
-                    }}
-                    value={row.name}
-                    onChange={(e) => handleNameChange(row.key, e.target.value)}
-                    onFocus={() => row.name.trim() && setOpenSuggestKey(row.key)}
-                    onBlur={() => setTimeout(() => setOpenSuggestKey((k) => (k === row.key ? null : k)), 150)}
-                    placeholder="음식 이름 검색"
-                    className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-emerald-400"
-                  />
-                  <div className="flex w-24 shrink-0 items-center rounded-lg border border-slate-200 px-2">
+            {rows.map((row) => {
+              const nutrients = rowNutrients(row)
+              const rounded = nutrients ? roundNutrients(nutrients) : null
+              const active = isActiveRow(row)
+              const unresolved = active && !row.entry
+              const cooking = row.cookingMethod ? COOKING_LABELS[row.cookingMethod] : undefined
+              const lowConfidence = row.confidence !== null && row.confidence < LOW_CONFIDENCE
+
+              return (
+                <div
+                  key={row.key}
+                  className={`relative rounded-xl border p-3 ${unresolved ? 'border-amber-300 bg-amber-50/50' : 'border-slate-100 bg-slate-50/60'}`}
+                >
+                  <div className="flex items-center gap-2">
                     <input
-                      type="number"
-                      value={row.grams}
-                      onChange={(e) => handleGramsChange(row.key, e.target.value)}
-                      className="w-full py-2 text-right text-sm outline-none"
+                      ref={(el) => {
+                        if (el) nameInputRefs.current.set(row.key, el)
+                        else nameInputRefs.current.delete(row.key)
+                      }}
+                      value={row.name}
+                      onChange={(e) => handleNameChange(row.key, e.target.value)}
+                      onFocus={() => row.name.trim() && setOpenSuggestKey(row.key)}
+                      onBlur={() => setTimeout(() => setOpenSuggestKey((k) => (k === row.key ? null : k)), 150)}
+                      placeholder="음식 이름 검색"
+                      aria-label="음식 이름"
+                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-emerald-400"
                     />
-                    <span className="pl-1 text-xs text-slate-400">g</span>
+                    <button
+                      onClick={() => removeRow(row.key)}
+                      aria-label="음식 삭제"
+                      className="shrink-0 rounded-lg p-2 text-slate-300 hover:text-rose-500"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => removeFood(row.key)}
-                    className="shrink-0 rounded-lg p-2 text-slate-300 hover:text-rose-500"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
 
-                <p className="mt-1 pl-0.5 text-[11px] text-slate-400">
-                  🔥 {nutrients.calories}kcal · 단백질 {nutrients.protein}g · 탄수 {nutrients.carbohydrates}g · 지방{' '}
-                  {nutrients.fat}g · 식이섬유 {nutrients.fiber}g
-                  {row.dbId && <span className="ml-1 text-emerald-500">(DB 매칭됨)</span>}
-                </p>
-
-                {openSuggestKey === row.key && suggestions.length > 0 && (
-                  <div className="absolute left-0 right-24 top-full z-10 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-                    {suggestions.map((entry) => (
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center rounded-lg border border-slate-200 bg-white">
                       <button
-                        key={entry.id}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleSelectSuggestion(row.key, entry)}
-                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-emerald-50"
+                        onClick={() => setGrams(row.key, Math.max(GRAM_STEP, row.grams - GRAM_STEP))}
+                        aria-label={`${GRAM_STEP}g 줄이기`}
+                        className="px-3 py-2 text-slate-500"
                       >
-                        <span className="flex items-center gap-1.5">
-                          <span className="font-medium text-slate-700">{entry.name}</span>
-                          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                            {entry.category}
-                          </span>
-                        </span>
-                        <span className="text-xs text-slate-400">100g당 {entry.caloriesPer100g}kcal</span>
+                        <Minus size={14} />
                       </button>
-                    ))}
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        value={row.grams}
+                        onChange={(e) => setGrams(row.key, Number(e.target.value))}
+                        aria-label="중량(g)"
+                        className="w-14 py-2 text-center text-sm font-semibold outline-none"
+                      />
+                      <span className="pr-1 text-xs text-slate-400">g</span>
+                      <button
+                        onClick={() => setGrams(row.key, row.grams + GRAM_STEP)}
+                        aria-label={`${GRAM_STEP}g 늘리기`}
+                        className="px-3 py-2 text-slate-500"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-1">
+                      {cooking && (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">{cooking}</span>
+                      )}
+                      {lowConfidence && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                          인식 확신 낮음
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
-            {foods.length === 0 && <p className="text-sm text-slate-400">등록된 음식이 없어요.</p>}
+
+                  {rounded && (
+                    <p className="mt-2 text-[11px] text-slate-500">
+                      🔥 {rounded.calories}kcal · 단백질 {rounded.protein}g · 탄수 {rounded.carbohydrates}g · 지방 {rounded.fat}g ·
+                      식이섬유 {rounded.fiber}g
+                      {row.entry && row.matchType === 'partial' && (
+                        <span className="ml-1 text-amber-600">({row.entry.name} 기준으로 계산했어요)</span>
+                      )}
+                    </p>
+                  )}
+                  {unresolved && (
+                    <p className="mt-2 text-[11px] font-medium text-amber-700">
+                      영양 정보를 찾지 못했어요. 이름을 검색해 목록에서 선택하거나 삭제해주세요.
+                    </p>
+                  )}
+
+                  {openSuggestKey === row.key && suggestions.length > 0 && (
+                    <div className="absolute left-3 right-12 top-[3.25rem] z-10 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                      {suggestions.map((entry) => (
+                        <button
+                          key={entry.id}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => handleSelectSuggestion(row.key, entry)}
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-emerald-50"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <span className="font-medium text-slate-700">{entry.name}</span>
+                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                              {entry.category}
+                            </span>
+                          </span>
+                          <span className="text-xs text-slate-400">100g당 {entry.caloriesPer100g}kcal</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            {rows.length === 0 && <p className="text-sm text-slate-400">등록된 음식이 없어요.</p>}
           </div>
 
           <button
-            onClick={addFood}
+            onClick={addRow}
             className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-emerald-200 py-2.5 text-sm font-semibold text-emerald-600"
           >
             <Plus size={16} />
@@ -295,34 +304,40 @@ export default function FoodAnalysis({ image, result, onConfirm, onCancel }: Pro
         </div>
 
         <div className="rounded-2xl border border-slate-100 bg-white p-4">
-          <p className="mb-1 text-xs font-medium text-slate-500">예상 영양소 (자동 계산됨)</p>
-          <p className="mb-3 text-[11px] text-slate-400">위 음식 구성을 수정하면 아래 값이 자동으로 반영돼요.</p>
-          <div className="grid grid-cols-2 gap-2">
+          <p className="text-xs font-medium text-slate-500">예상 영양소</p>
+          <p className="mt-1 text-3xl font-bold tabular-nums text-slate-900">
+            총 {summary.totals.calories.toLocaleString()} <span className="text-lg font-semibold text-slate-400">kcal</span>
+          </p>
+          <div className="mt-3 grid grid-cols-3 gap-2">
             {[
-              { label: '칼로리', value: totals.calories, unit: 'kcal' },
-              { label: '단백질', value: totals.protein, unit: 'g' },
-              { label: '탄수화물', value: totals.carbohydrates, unit: 'g' },
-              { label: '지방', value: totals.fat, unit: 'g' },
-              { label: '식이섬유', value: totals.fiber, unit: 'g' },
+              { label: '단백질', value: summary.totals.protein },
+              { label: '탄수화물', value: summary.totals.carbohydrates },
+              { label: '지방', value: summary.totals.fat },
             ].map((item) => (
-              <div key={item.label} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                <span className="text-xs text-slate-500">{item.label}</span>
-                <span className="text-sm font-semibold text-slate-800">
-                  {item.value}
-                  {item.unit}
-                </span>
+              <div key={item.label} className="rounded-lg bg-slate-50 px-3 py-2">
+                <p className="text-[11px] text-slate-400">{item.label}</p>
+                <p className="text-sm font-semibold text-slate-800">{item.value}g</p>
               </div>
             ))}
+            <div className="col-span-3 rounded-lg bg-slate-50 px-3 py-2">
+              <p className="text-[11px] text-slate-400">식이섬유</p>
+              <p className="text-sm font-semibold text-slate-800">{summary.totals.fiber}g</p>
+            </div>
           </div>
+          <p className="mt-3 text-[11px] text-slate-400">
+            음식 종류와 양은 AI가 사진에서 추정했고, 영양소는 앱에 내장된 영양 데이터(추정값)로 계산했어요.
+          </p>
         </div>
       </div>
 
       <div className="border-t border-slate-100 bg-white p-4">
+        {blockedReason && <p className="mb-2 text-center text-xs text-amber-700">{blockedReason}</p>}
         <button
-          onClick={handleConfirm}
-          className="w-full rounded-full bg-emerald-500 py-4 font-semibold text-white shadow-lg shadow-emerald-200"
+          onClick={() => onConfirm({ title, slot, rows })}
+          disabled={!canSave}
+          className="w-full rounded-full bg-emerald-500 py-4 font-semibold text-white shadow-lg shadow-emerald-200 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
         >
-          이대로 기록하기
+          식사 기록하기
         </button>
       </div>
     </div>

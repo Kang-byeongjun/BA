@@ -1,7 +1,17 @@
+import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import { generateNutritionTarget } from '../../lib/nutrition'
-import { GOAL_LABELS, NUTRIENT_LABELS, NUTRIENT_UNITS, type NutritionTarget } from '../../types'
+import { resolveAnalysisMode } from '../../lib/aiMode'
+import { generateNutritionTarget, mergeInBodyMeasurements } from '../../services/nutritionTargetService'
+import {
+  GOAL_LABELS,
+  NUTRIENT_LABELS,
+  NUTRIENT_UNITS,
+  type Goal,
+  type InBodyMeasurements,
+  type NutritionTarget,
+} from '../../types'
+import InBodyScanFlow from '../onboarding/InBodyScanFlow'
 
 const INBODY_ROWS: { key: 'age' | 'height' | 'weight' | 'skeletalMuscleMass' | 'bodyFatMass' | 'bodyFatPercentage' | 'basalMetabolicRate'; label: string; unit: string }[] = [
   { key: 'age', label: '나이', unit: '세' },
@@ -13,15 +23,48 @@ const INBODY_ROWS: { key: 'age' | 'height' | 'weight' | 'skeletalMuscleMass' | '
   { key: 'basalMetabolicRate', label: '기초대사량', unit: 'kcal' },
 ]
 
+const GOALS = Object.keys(GOAL_LABELS) as Goal[]
+
 const TARGET_KEYS: (keyof NutritionTarget)[] = ['calories', 'protein', 'carbohydrates', 'fat', 'fiber']
 
 export default function Profile() {
-  const { profile, nutritionTarget, dispatch } = useApp()
+  const { profile, nutritionTarget, isDemo, aiMode, dispatch } = useApp()
   const [draftTarget, setDraftTarget] = useState<NutritionTarget | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [scanOpen, setScanOpen] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
 
   if (!profile || !nutritionTarget) return null
+
+  if (scanOpen) {
+    return (
+      <InBodyScanFlow
+        mode={resolveAnalysisMode(isDemo, aiMode)}
+        onApply={(measurements: InBodyMeasurements) => {
+          // InBody 데이터가 바뀌면 개인 영양 목표를 다시 계산한다. (계산된 목표는 아래에서 직접 수정 가능)
+          const nextProfile = mergeInBodyMeasurements(profile, measurements)
+          const nextTarget = generateNutritionTarget(nextProfile)
+          dispatch({ type: 'UPDATE_PROFILE', profile: nextProfile })
+          dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: nextTarget })
+          setDraftTarget(nextTarget)
+          setNotice('InBody 정보가 바뀌어 영양 목표를 다시 계산했어요. 필요하면 아래에서 직접 수정할 수 있어요.')
+          setScanOpen(false)
+        }}
+        onClose={() => setScanOpen(false)}
+      />
+    )
+  }
+
+  const handleGoalChange = (goal: Goal) => {
+    if (goal === profile.goal) return
+    const nextProfile = { ...profile, goal }
+    const nextTarget = generateNutritionTarget(nextProfile)
+    dispatch({ type: 'UPDATE_PROFILE', profile: nextProfile })
+    dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: nextTarget })
+    setDraftTarget(nextTarget)
+    setNotice('관리 목적이 바뀌어 영양 목표를 다시 계산했어요. 필요하면 아래에서 직접 수정할 수 있어요.')
+  }
 
   const target = draftTarget ?? nutritionTarget
 
@@ -47,13 +90,57 @@ export default function Profile() {
     <div className="space-y-5 px-4 pb-8 pt-6">
       <h1 className="text-xl font-bold text-slate-900">마이</h1>
 
+      {notice && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{notice}</p>}
+
       <div className="rounded-2xl bg-slate-900 p-5 text-white">
         <p className="text-xs text-slate-300">관리 목적</p>
         <p className="mt-1 text-lg font-bold">{GOAL_LABELS[profile.goal]}</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {GOALS.map((goal) => (
+            <button
+              key={goal}
+              onClick={() => handleGoalChange(goal)}
+              className={`rounded-xl py-2 text-xs font-semibold ${
+                goal === profile.goal ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'
+              }`}
+            >
+              {GOAL_LABELS[goal]}
+            </button>
+          ))}
+        </div>
       </div>
 
+      {isDemo && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-semibold text-amber-800">데모 모드 AI 분석 방식</p>
+          <p className="mt-1 text-xs text-amber-700">
+            데모에서는 기본으로 예시 결과를 보여줘요. 실제 AI로 사진을 분석해보려면 아래에서 바꿔주세요.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {(['mock', 'real'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => dispatch({ type: 'SET_AI_MODE', aiMode: m })}
+                className={`rounded-xl py-2 text-xs font-semibold ${
+                  aiMode === m ? 'bg-amber-500 text-white' : 'bg-white text-amber-700'
+                }`}
+              >
+                {m === 'mock' ? '예시 결과 (데모)' : '실제 AI 분석'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
-        <p className="mb-3 text-sm font-semibold text-slate-800">InBody 정보</p>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-800">InBody 정보</p>
+          <button onClick={() => setScanOpen(true)} className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+            <Sparkles size={14} />
+            결과지 사진으로 업데이트
+          </button>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
             <span className="text-xs text-slate-500">성별</span>

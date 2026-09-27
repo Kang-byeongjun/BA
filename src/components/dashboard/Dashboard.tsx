@@ -1,5 +1,5 @@
-import { Camera } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Camera, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import MealDetailModal from '../meals/MealDetailModal'
 import { generateFeedback, getRecommendedFoods, sumMeals } from '../../lib/nutrition'
@@ -13,11 +13,20 @@ import TodayMealsSection from './TodayMealsSection'
 
 interface Props {
   onOpenCamera: () => void
+  // 방금 기록한 식사 (기록 직후 얼마나 더해졌는지 보여준다)
+  recentMeal: Meal | null
+  onDismissRecentMeal: () => void
 }
 
-export default function Dashboard({ onOpenCamera }: Props) {
+export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMeal }: Props) {
   const { meals, nutritionTarget, profile, dispatch } = useApp()
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null)
+
+  useEffect(() => {
+    if (!recentMeal) return
+    const timer = setTimeout(onDismissRecentMeal, 12000)
+    return () => clearTimeout(timer)
+  }, [recentMeal, onDismissRecentMeal])
 
   const todayMeals = useMemo(() => meals.filter((m) => isSameDay(m.timestamp, Date.now())), [meals])
   const consumed = useMemo(() => sumMeals(todayMeals), [todayMeals])
@@ -34,6 +43,21 @@ export default function Dashboard({ onOpenCamera }: Props) {
           안녕하세요{profile ? ',' : ''} 오늘도 목표를 향해 달려볼까요?
         </p>
       </div>
+
+      {recentMeal && (
+        <div className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+          <div className="text-sm">
+            <p className="font-semibold text-emerald-800">방금 기록했어요 · {recentMeal.title}</p>
+            <p className="mt-0.5 text-xs text-emerald-700">
+              +{recentMeal.calories}kcal · 단백질 +{recentMeal.protein}g · 탄수화물 +{recentMeal.carbohydrates}g · 지방 +
+              {recentMeal.fat}g · 식이섬유 +{recentMeal.fiber}g
+            </p>
+          </div>
+          <button onClick={onDismissRecentMeal} aria-label="닫기" className="shrink-0 text-emerald-600">
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} />
 

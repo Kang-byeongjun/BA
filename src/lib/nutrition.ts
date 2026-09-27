@@ -5,53 +5,7 @@ import type {
   NutritionStatus,
   NutritionTarget,
   RecommendedFood,
-  UserProfile,
 } from '../types'
-
-/**
- * InBody + 목표(goal) 데이터를 기반으로 개인 영양 목표를 산출하는 mock 로직.
- * 실제 서비스에서는 이 함수를 서버/영양 알고리즘 API 호출로 대체한다.
- */
-export function generateNutritionTarget(profile: UserProfile): NutritionTarget {
-  const { basalMetabolicRate, weight, goal } = profile
-
-  const activityFactor = 1.4 // 프로토타입용 고정 활동계수
-  let calories = basalMetabolicRate * activityFactor
-  let proteinPerKg = 1.4
-
-  switch (goal) {
-    case 'fat_loss':
-      calories -= 300
-      proteinPerKg = 1.6
-      break
-    case 'muscle_gain':
-      calories += 250
-      proteinPerKg = 1.8
-      break
-    case 'weight_maintain':
-      proteinPerKg = 1.4
-      break
-    case 'health_care':
-      calories -= 100
-      proteinPerKg = 1.2
-      break
-  }
-
-  const protein = Math.round(weight * proteinPerKg)
-  const fat = Math.round((calories * 0.25) / 9)
-  const proteinKcal = protein * 4
-  const fatKcal = fat * 9
-  const carbohydrates = Math.max(0, Math.round((calories - proteinKcal - fatKcal) / 4))
-  const fiber = Math.round((calories / 1000) * 14)
-
-  return {
-    calories: Math.round(calories / 10) * 10,
-    protein,
-    carbohydrates,
-    fat,
-    fiber,
-  }
-}
 
 export function sumMeals(meals: Meal[]) {
   return meals.reduce(

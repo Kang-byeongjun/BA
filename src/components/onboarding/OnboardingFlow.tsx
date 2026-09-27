@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import { generateNutritionTarget } from '../../lib/nutrition'
+import { generateNutritionTarget } from '../../services/nutritionTargetService'
 import type { Goal, NutritionTarget, UserProfile } from '../../types'
 import GoalSelect from './GoalSelect'
 import InBodyInput, { type InBodyFormValues } from './InBodyInput'

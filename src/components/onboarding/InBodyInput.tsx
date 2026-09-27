@@ -43,8 +43,18 @@ export default function InBodyInput({ initial, onBack, onNext }: Props) {
   if (scanOpen) {
     return (
       <InBodyScanFlow
+        // 온보딩 중에는 항상 실제 AI 분석을 사용한다 (mock은 데모 모드에서만)
+        mode="real"
         onApply={(scanned) => {
-          setValues((prev) => ({ ...prev, ...scanned }))
+          // 읽지 못한 항목(null)은 기존 입력값을 그대로 두고, 읽은 값만 폼에 채운다.
+          setValues((prev) => ({
+            ...prev,
+            ...(scanned.weight !== null && { weight: String(scanned.weight) }),
+            ...(scanned.skeletalMuscleMass !== null && { skeletalMuscleMass: String(scanned.skeletalMuscleMass) }),
+            ...(scanned.bodyFatMass !== null && { bodyFatMass: String(scanned.bodyFatMass) }),
+            ...(scanned.bodyFatPercentage !== null && { bodyFatPercentage: String(scanned.bodyFatPercentage) }),
+            ...(scanned.basalMetabolicRate !== null && { basalMetabolicRate: String(scanned.basalMetabolicRate) }),
+          }))
           setScanOpen(false)
         }}
         onClose={() => setScanOpen(false)}
@@ -69,7 +79,7 @@ export default function InBodyInput({ initial, onBack, onNext }: Props) {
         </div>
         <div>
           <p className="text-sm font-semibold text-emerald-700">InBody 결과지 사진으로 자동 입력</p>
-          <p className="text-xs text-emerald-600/80">사진 한 장이면 아래 항목이 자동으로 채워져요</p>
+          <p className="text-xs text-emerald-600/80">AI가 결과지의 체중·골격근량·체지방·기초대사량을 읽어 채워줘요</p>
         </div>
       </button>
 

@@ -1,20 +1,23 @@
 # AI 식단 & 운동 관리 앱 (프로토타입)
 
-InBody 데이터와 개인 목적을 기반으로 하루 영양 목표를 산출하고, 음식 사진을 촬영하면 AI가 분석했다고 가정하여 섭취 영양소를 기록·시각화하는 모바일 우선 웹 앱 프로토타입입니다. 실제 InBody API와 AI Vision API는 아직 연결되어 있지 않으며, Mock 데이터로 전체 서비스 흐름을 체험할 수 있습니다.
+InBody 데이터와 개인 목적을 기반으로 하루 영양 목표를 산출하고, 음식 사진을 촬영하면 AI(Claude Vision)가 음식과 양을 분석해 섭취 영양소를 기록·시각화하는 모바일 우선 웹 앱 프로토타입입니다. InBody 결과지 사진 분석과 음식 사진 분석은 서버(Vercel Function)를 거쳐 실제 이미지를 Claude Vision으로 분석하며, 데모 모드에서만 예시(mock) 결과를 사용합니다.
 
 ## 실행 방법
 
 ```bash
 npm install
-npm run dev       # 개발 서버 실행 (http://localhost:5173)
+cp .env.example .env.local   # 그리고 ANTHROPIC_API_KEY 를 채우세요 (실제 AI 분석에 필요, git에 커밋되지 않음)
+npm run dev       # 개발 서버 실행 (http://localhost:5173) — /api/* 도 함께 제공
 npm run build     # 타입 체크 + 프로덕션 빌드 (dist/)
-npm run preview   # 빌드 결과 미리보기
+npm test          # 서버·서비스·화면 흐름 테스트
 npm run lint      # oxlint 정적 분석
 ```
 
+`npm run preview`는 /api 함수를 제공하지 않으므로 AI 분석을 확인하려면 `npm run dev` 또는 배포 환경을 사용하세요.
+
 모바일 화면 비율로 디자인되어 있으므로, 브라우저 개발자 도구의 기기 툴바(모바일 뷰)로 열어보는 것을 권장합니다. 데스크톱 너비에서는 실제 스마트폰처럼 중앙에 프레임 형태로 렌더링됩니다.
 
-처음 실행하면 온보딩(목적 선택 → InBody 입력 → 목표 확인)이 나타나며, 첫 화면의 "데모 데이터로 바로 체험하기" 버튼을 누르면 아침·점심을 이미 먹은 상태의 데모 계정으로 바로 전체 기능을 체험할 수 있습니다.
+처음 실행하면 온보딩(목적 선택 → InBody 입력 → 목표 확인)이 나타납니다. 첫 화면의 "데모 데이터로 바로 체험하기" 버튼을 누르면 아침·점심을 이미 먹은 상태의 데모 계정으로 시작하며, 이 경우 AI 분석은 API Key 없이도 볼 수 있는 예시(mock) 결과입니다(마이 탭에서 실제 AI로 전환 가능).
 
 ## 팀원에게 프로토타입 공유하기
 
@@ -112,71 +115,113 @@ npm run assets:generate   # assets/*-source.svg → PNG 변환 후 전 플랫폼
 ## 프로젝트 구조
 
 ```
+api/                      # Vercel Serverless Function (서버 전용 — API Key는 여기서만 사용)
+├── analyze-inbody.ts     #   POST /api/analyze-inbody  InBody 결과지 이미지 → 수치 추출
+└── analyze-food.ts       #   POST /api/analyze-food    음식 이미지 → 음식 종류·예상 중량
+server/                   # 서버 로직 (api/ 와 로컬 개발 서버가 함께 사용)
+├── handlers.ts           #   요청 검증 → 이미지 검증 → Claude Vision → 결과 검증 → 응답
+├── vision.ts             #   Anthropic SDK 호출(구조화 출력) + SDK 에러 → 사용자용 에러 코드 변환
+├── prompts.ts            #   InBody / 음식 Vision 프롬프트
+├── normalize.ts          #   모델 출력 검증(비현실적인 값 제거, 이미지 종류 확인)
+├── image.ts              #   base64/용량/형식(매직 넘버) 검증
+├── config.ts             #   모델 ID(ANTHROPIC_MODEL), 한도, 타임아웃
+└── __tests__/            #   서버 테스트 (가짜 Anthropic 클라이언트 사용)
+shared/                   # 서버·클라이언트 공용 (타입, 에러 코드와 한국어 메시지)
 src/
-├── types/               # 전역 타입 정의 (UserProfile, NutritionTarget, Meal, Workout ...)
+├── types/                # 전역 타입 (UserProfile, NutritionTarget, Meal, Workout ...)
 ├── data/
-│   └── mockData.ts       # 데모 프로필, AI 음식 분석 mock 결과, 추천 음식 풀
-├── lib/                  # 순수 로직 (컴포넌트와 분리되어 재사용/교체 용이)
-│   ├── nutrition.ts      # 목표 산출, 섭취율/상태 계산, 규칙 기반 피드백·추천 로직
-│   ├── time.ts           # 타이머 포맷, 날짜 포맷 유틸
-│   ├── storage.ts        # localStorage 래퍼
-│   └── id.ts
-├── context/
-│   └── AppContext.tsx    # useReducer 기반 전역 상태 + localStorage 동기화
-├── components/
-│   ├── layout/           # MobileShell(폰 프레임), BottomNav
-│   ├── onboarding/       # GoalSelect, InBodyInput, InBodyScanCapture/Flow, NutritionTargetReview, OnboardingFlow
-│   ├── common/           # PhotoCaptureView, AnalyzingLoader (음식 촬영·InBody 스캔이 공유하는 카메라/로딩 UI)
-│   ├── dashboard/        # Dashboard, CalorieSummary, NutritionBar, FeedbackPanel, RecommendationCard
-│   ├── food/             # FoodCamera, AnalyzingLoader, FoodAnalysis, FoodCaptureFlow(오케스트레이터)
-│   ├── meals/            # MealHistory, MealDetailModal
-│   ├── workout/          # WorkoutTypeSelect, WorkoutTimerView, WorkoutComplete, WorkoutHistory, WorkoutScreen
-│   └── profile/          # Profile
-├── App.tsx               # 온보딩 여부 분기 + 탭 네비게이션 + 카메라 오버레이 라우팅
-└── main.tsx
+│   ├── mockData.ts       # 데모 프로필, 데모 모드 전용 mock 분석 결과, 추천 음식 풀
+│   └── foodDatabase.ts   # 임시 영양 데이터셋 (약 200개, 100g 기준 추정치)
+├── services/             # 비즈니스 로직 계층
+│   ├── analysisApi.ts        # 서버 API 호출 (타임아웃/취소/에러 코드 처리)
+│   ├── foodVisionService.ts  # 음식 사진 → 음식 종류 + 예상 중량 (real | mock)
+│   ├── inBodyVisionService.ts# InBody 사진 → 체성분 수치 (real | mock)
+│   ├── nutritionService.ts   # 음식 이름 → 영양 DB 연결, 중량 기반 영양소 계산 (NutritionProvider 인터페이스)
+│   ├── mealService.ts        # 분석 결과 → 편집 가능한 행 → 식사 기록(Meal)
+│   ├── nutritionTargetService.ts # InBody + 목표 → 하루 영양 목표
+│   └── __tests__/
+├── lib/                  # 순수 유틸 (imagePrep: 브라우저 이미지 리사이즈, nutrition: 피드백/추천, aiMode 등)
+├── context/AppContext.tsx# useReducer 전역 상태 + localStorage 동기화
+├── components/           # layout, onboarding, dashboard, food, meals, workout, profile, common
+└── App.tsx / main.tsx
 ```
 
 ### 상태 관리 & 영속성
 
 - 별도 라이브러리 없이 `React Context + useReducer`로 구성했습니다 (`src/context/AppContext.tsx`).
-- `profile`, `nutritionTarget`, `meals`, `workouts`, `activeWorkout`(진행 중인 운동), `pendingWorkout`(저장 대기 중인 완료 기록), `onboarded` 값을 각각 `localStorage`에 동기화하여 새로고침해도 유지됩니다.
-- 운동 타이머는 `setInterval`로 숫자를 단순 누적하지 않고, **세션 시작 시각(`segmentStart`) + 누적 시간(`accumulatedMs`)** 을 저장한 뒤 화면을 그릴 때마다 `Date.now()`와의 차이로 경과 시간을 계산합니다. 이 방식 덕분에 화면 전환/새로고침 이후에도 정확한 시간이 복구됩니다.
+- `profile`, `nutritionTarget`, `meals`, `workouts`, `activeWorkout`, `pendingWorkout`, `onboarded`, `isDemo`, `aiMode` 를 각각 `localStorage`에 동기화하여 새로고침해도 유지됩니다.
+- 운동 타이머는 세션 시작 시각 + 누적 시간을 저장하고 `Date.now()` 차이로 경과 시간을 계산하므로 화면 전환/새로고침 후에도 정확합니다.
+
+## 실제 AI 분석 구조 (Claude Vision)
+
+```
+[InBody]  사진 → 브라우저에서 리사이즈(긴 변 1568px JPEG) → POST /api/analyze-inbody → Claude Vision
+          → 구조화 JSON → 서버 검증(범위·이미지 종류) → "AI가 분석한 InBody 정보" 확인/수정 → 프로필 저장 → 영양 목표 재계산
+[음식]    사진 → 브라우저에서 리사이즈 → POST /api/analyze-food → Claude Vision → 음식 종류 + 예상 중량(g)
+          → 확인/수정(이름·중량·추가·삭제) → nutritionService가 영양 DB로 영양소 계산 → 식사 저장 → 대시보드 진행 바·피드백·추천
+```
+
+- **AI는 "무엇이, 얼마나 있는지"만 식별**하고, 칼로리·영양소 숫자는 `nutritionService`가 영양 데이터셋으로 계산합니다. 사용자가 이름/중량을 고치면 즉시 재계산됩니다.
+- **API Key는 서버(`api/`, `server/`)에서만** 사용합니다. 브라우저 코드는 Anthropic을 직접 호출하지 않으며 빌드 결과물에도 키가 포함되지 않습니다.
+- 사진을 서버에 저장하지 않습니다(분석 후 폐기). 앱에는 식사 목록 표시용 작은 썸네일만 기기에 저장되고, InBody 사진은 어디에도 저장하지 않습니다.
+- **실패해도 mock으로 몰래 대체하지 않습니다.** API Key 없음, 용량 초과, 지원하지 않는 형식, 음식/InBody가 아닌 사진, 이미지 품질 불량, JSON 파싱 실패, 타임아웃, 네트워크 오류, 일부 값만 읽은 경우 등을 구분해 한국어 안내와 다음 행동(다시 시도/다시 촬영)을 보여줍니다.
+- 모델은 기본 `claude-opus-5`이며 `ANTHROPIC_MODEL` 환경변수로 코드 수정 없이 교체할 수 있습니다.
+- **Mock은 데모 모드에서만** 쓰입니다. 첫 화면의 "데모 데이터로 바로 체험하기"로 시작하면 예시 결과가 나오고(화면에 "데모 모드" 표시), 마이 탭에서 "실제 AI 분석"으로 바꿔 실제 AI를 써볼 수 있습니다. 일반 시작(온보딩)은 항상 실제 AI입니다.
+
+### 환경변수
+
+| 이름 | 필수 | 설명 |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | 필수 | Anthropic API Key (서버 전용, `VITE_` 접두사를 붙이지 마세요) |
+| `ANTHROPIC_MODEL` | 선택 | 사용할 모델 ID. 기본값 `claude-opus-5` (이미지 입력 지원 모델이어야 함) |
+| `ANTHROPIC_EFFORT` | 선택 | `low`/`medium`/`high`/`xhigh`/`max`/`none`. 기본값 `medium` (미지원 모델에는 자동으로 보내지 않음) |
+
+- **로컬**: `.env.example`을 `.env.local`로 복사해 값을 채우고 `npm run dev` (개발 서버가 같은 `/api/*` 를 제공합니다). `.env*` 파일은 git에 커밋되지 않습니다.
+- **Vercel**: 프로젝트 Settings → Environment Variables 에 위 이름으로 등록(Production 포함, 미리보기 배포에 쓰려면 Preview도 체크) → **재배포**해야 반영됩니다.
+
+### 테스트
+
+```bash
+npm test    # 서버(요청 검증·에러 매핑·결과 검증) + 서비스(영양 계산·API 클라이언트) + 화면 흐름(업로드→분석→수정→저장, 오류 화면)
+```
+
+실제 Anthropic API는 호출하지 않고(가짜 클라이언트/응답 사용) 동작을 검증합니다. 실제 사진으로 확인하는 방법은 아래 "실제 AI 동작 확인 방법"을 참고하세요.
+
+### 실제 AI 동작 확인 방법
+
+1. `.env.local`에 `ANTHROPIC_API_KEY=...` 를 넣고 `npm run dev` (또는 Vercel에 환경변수 설정 후 재배포).
+2. **InBody**: 처음 실행 → 목적 선택 → "InBody 결과지 사진으로 자동 입력" → 실제 결과지 사진 → "AI가 분석한 InBody 정보"에서 값 확인·수정 → 적용 → 영양 목표 확인. (마이 탭의 "결과지 사진으로 업데이트"로도 가능)
+3. **음식**: 하단 촬영 버튼 → 실제 음식 사진 → 인식된 음식/중량 확인·수정 → "식사 기록하기" → 홈의 진행 바·"방금 기록했어요" 확인.
+4. **오류 확인**: 음식이 아닌 사진 / InBody가 아닌 사진 / 키를 지운 상태에서 각각 안내 문구가 나오고 가짜 결과가 표시되지 않는지 확인.
+5. 배포 후 함수 연결 확인: `curl -X POST https://<배포 URL>/api/analyze-food -H "Content-Type: application/json" -d "{}"` → JSON(`{"ok":false,...}`)이 오면 함수가 정상 배포된 것입니다 (HTML/404면 함수가 배포되지 않은 것).
+
+### 보안 참고
+
+- `/api/analyze-*` 는 인증이 없어 **URL을 아는 누구나 호출**할 수 있고, 호출마다 Anthropic 사용량이 발생합니다. 팀 공유용이라면 Vercel의 Deployment Protection(비밀번호/Vercel 인증)을 켜고, Anthropic 콘솔에서 월 사용 한도를 설정하세요. 정식 서비스 전에는 로그인과 호출 횟수 제한이 필요합니다.
+- 서버 로그에는 이미지·API Key를 남기지 않고 에러 코드와 원인 요약만 남깁니다.
 
 ## Mock 데이터 위치
 
 | 목적 | 위치 |
 | --- | --- |
 | 데모 사용자 프로필 / 목표 / 초기 식사 기록 | `src/data/mockData.ts` → `DEMO_PROFILE`, `DEMO_NUTRITION_TARGET`, `buildDemoMeals()` |
-| AI 음식 분석 결과 (3종, 랜덤 반환) | `src/data/mockData.ts` → `FOOD_ANALYSIS_MOCKS`, `getRandomFoodAnalysis()` |
-| InBody 결과지 사진 AI 분석 결과 (3종, 랜덤 반환) | `src/data/mockData.ts` → `INBODY_ANALYSIS_MOCKS`, `getRandomInBodyAnalysis()` |
-| 음식 이름 검색용 영양 DB (자동완성, 약 200개) | `src/data/foodDatabase.ts` → `FOOD_DATABASE`, `searchFoodDatabase()` (한식/중식/일식/양식/분식/디저트/음료/과일/채소/재료 카테고리) |
+| **데모 모드 전용** 분석 결과 (음식·InBody 각 3종) | `src/data/mockData.ts` → `FOOD_ANALYSIS_MOCKS`, `INBODY_ANALYSIS_MOCKS` (실제 응답과 같은 형태, 영양소 숫자 없음) |
+| 임시 영양 데이터셋 (약 200개, 100g 기준 추정치) | `src/data/foodDatabase.ts` → 향후 식약처 식품영양성분DB 등으로 교체 (`nutritionService`의 `NutritionProvider` 인터페이스) |
 | 부족 영양소 기반 추천 음식 풀 | `src/data/mockData.ts` → `RECOMMENDATION_FOODS` |
-| InBody 기반 목표 산출 공식(모의 알고리즘) | `src/lib/nutrition.ts` → `generateNutritionTarget()` |
-| 섭취량 대비 상태(부족/적정/목표 근접/초과) 판정 | `src/lib/nutrition.ts` → `getNutritionStatus()` |
-| 규칙 기반 AI 피드백 문구 | `src/lib/nutrition.ts` → `generateFeedback()` |
+| InBody 기반 목표 산출 공식 | `src/services/nutritionTargetService.ts` → `generateNutritionTarget()` |
+| 섭취량 대비 상태 판정 / 규칙 기반 피드백·추천 | `src/lib/nutrition.ts` |
 
-## 향후 실제 API 연결 지점
+## 향후 연결 지점
 
-### 1. AI Vision 음식 분석 API
-- 위치: `src/components/food/FoodCaptureFlow.tsx` 의 `handleCapture()`
-- 현재: 이미지를 촬영/업로드하면 `setTimeout` + `getRandomFoodAnalysis()`로 1.8초 후 mock 결과 3종 중 하나를 반환합니다.
-- 연결 방법: 캡처된 이미지(`imageDataUrl`)를 실제 Vision API(예: 자체 서버의 이미지 분석 엔드포인트)로 업로드하고, 응답을 `FoodAnalysisResult` 타입(`src/types/index.ts`)에 맞춰 매핑하면 됩니다. 로딩 UI(`AnalyzingLoader`)와 결과 수정 UI(`FoodAnalysis`)는 그대로 재사용 가능합니다.
-- 음식명 자동완성: `FoodAnalysis.tsx`에서 음식명을 다시 입력하면 `src/data/foodDatabase.ts`의 `searchFoodDatabase()`로 후보를 검색해 보여주고, 선택하면 100g당 영양 밀도로 칼로리가 자동 재계산됩니다. 실제 서비스에서는 `searchFoodDatabase()`를 식품 영양 DB API 조회로 교체하면 됩니다.
-
-### 2. InBody 연동 API
-- 위치: `src/components/onboarding/InBodyInput.tsx`, `src/components/onboarding/InBodyScanFlow.tsx`, `src/lib/nutrition.ts` 의 `generateNutritionTarget()`
-- 현재: 사용자가 InBody 수치를 직접 입력하거나(수동), "InBody 결과지 사진으로 자동 입력" 버튼으로 결과지 사진을 촬영/업로드하면 `InBodyScanFlow`가 `setTimeout` + `getRandomInBodyAnalysis()`로 mock 수치를 생성해 폼에 채워줍니다. 이후 간단한 공식(활동계수·목적별 단백질 비율 등)으로 목표를 계산합니다.
-- 연결 방법:
-  - **결과지 사진 OCR/분석**: `InBodyScanFlow.tsx`의 `handleCapture()` 안 `setTimeout` + `getRandomInBodyAnalysis()`를, 촬영된 이미지를 서버로 전송해 수치를 추출하는 실제 OCR/비전 API 호출로 교체합니다. 응답을 `InBodyAnalysisResult` 타입(`src/data/mockData.ts`)에 맞추면 로딩 UI·결과 확인 화면은 그대로 재사용됩니다.
-  - **기기/서비스 직접 연동**: InBody 기기·서비스 API에서 바로 값을 받아올 수 있다면 `InBodyInput`의 수동 입력 폼 대신 해당 API 호출로 `UserProfile`을 자동으로 채우면 됩니다.
-  - `generateNutritionTarget()`을 서버의 영양 목표 산출 API 호출로 교체하면, 사용자가 결과를 직접 수정하는 `NutritionTargetReview` 단계는 그대로 유지할 수 있습니다.
-
-### 3. Health / Fitness API (웨어러블 연동)
-- 위치: `src/types/index.ts` 의 `Workout` / `ActiveWorkoutSession` 타입, `src/context/AppContext.tsx` 의 운동 관련 액션
-- 현재: 앱 내 타이머로만 운동 시간을 측정하며, 칼로리 소모량은 계산하지 않습니다.
-- 연결 방법: `Workout` 타입에 `caloriesBurned`, `heartRateAvg`, `source`(manual/healthkit/googlefit 등) 같은 필드를 추가하고, Apple HealthKit / Google Fit / 웨어러블 SDK에서 받아온 세션을 동일한 `Workout` 구조로 변환해 `dispatch({ type: 'SAVE_PENDING_WORKOUT' })` 대신 별도의 `IMPORT_WORKOUT` 액션으로 추가하면 기존 `WorkoutHistory` UI를 그대로 재사용할 수 있습니다.
+- **영양 DB**: `src/services/nutritionService.ts` 의 `NutritionProvider`(`match`, `search`)를 구현한 새 Provider로 `localNutritionProvider`를 교체합니다. (예: 식약처 식품영양성분 DB API — AI 이름 매칭은 서버에서 처리하는 것을 권장)
+- **InBody 기기/서비스 직접 연동**: `InBodyInput`의 수동 입력/사진 스캔 대신 API로 `UserProfile`을 채웁니다. 목표 계산은 `nutritionTargetService`를 서버 API로 교체할 수 있습니다.
+- **Health / Fitness API (웨어러블)**: `src/types/index.ts`의 `Workout` 타입에 `caloriesBurned`, `heartRateAvg`, `source` 등을 추가하고, HealthKit/Google Fit 세션을 `Workout` 구조로 변환하는 `IMPORT_WORKOUT` 액션을 추가하면 `WorkoutHistory` UI를 그대로 재사용할 수 있습니다.
 
 ## 알려진 제한 사항
 
-- 이 세션 환경에서는 Chrome 브라우저 자동화 도구가 연결되어 있지 않아, 실제 브라우저 클릭 테스트 대신 `npm run build`(TypeScript 컴파일 + Vite 빌드)와 `npm run lint`로 정적 검증만 수행했습니다. 실행 후 실제 기기/브라우저에서 카메라 권한, 반응형 레이아웃 등을 확인해보시기 바랍니다.
-- 사진 촬영은 웹에서는 `<input type="file" capture="environment">`를 사용합니다(모바일 브라우저에서는 네이티브 카메라 앱, 데스크톱에서는 파일 선택 창). 네이티브 앱(Capacitor)에서는 `@capacitor/camera`를 사용하도록 코드는 연동해뒀지만, 이 환경에는 Android Studio/Xcode가 없어 실제 기기·에뮬레이터에서의 동작은 검증하지 못했습니다. Android Studio(또는 Mac + Xcode)에서 직접 빌드해 확인해보시기 바랍니다.
+- **실제 사진으로 Claude가 분석한 결과는 아직 검증하지 못했습니다.** 개발 환경에 API Key를 사용할 수 없어, 서버 로직·에러 처리·화면 흐름은 가짜 응답으로 검증했고 인증 오류(가짜 키)까지의 실제 요청 경로만 확인했습니다. 실제 사진의 인식 정확도(특히 InBody 소수점, 음식 중량 추정)는 직접 테스트해 프롬프트를 조정해야 합니다.
+- 음식 중량은 사진만으로 정확히 알 수 없어 **추정값**이며, 영양소는 임시 영양 데이터셋(추정치) 기준입니다. 영양 DB에 없는 음식은 사용자가 이름을 검색해 선택해야 기록할 수 있습니다.
+- Chrome 브라우저 자동화 도구가 연결되어 있지 않아 실제 브라우저/기기에서의 클릭 테스트는 하지 못했고, jsdom 기반 화면 테스트로 대체했습니다. 카메라 권한, 반응형 레이아웃, 이미지 리사이즈(Canvas)는 실제 기기에서 확인이 필요합니다.
+- Android/iOS 네이티브 앱(Capacitor)에서는 `/api/*` 가 상대 경로라 서버에 연결되지 않습니다. 네이티브 앱에서 AI 분석을 쓰려면 API 절대 주소와 CORS 설정이 추가로 필요합니다(미구현). 웹(배포 URL)에서는 동작합니다.
+- 사진 촬영은 웹에서는 `<input type="file" capture>`(모바일 브라우저는 카메라 앱, 데스크톱은 파일 선택), 네이티브 앱에서는 `@capacitor/camera`를 사용합니다. 네이티브 실기기 동작은 검증하지 못했습니다.
+- Vercel Function의 요청 본문 한도는 4.5MB라, 서버 전송 전 이미지를 브라우저에서 압축합니다(HEIC 등 브라우저가 열 수 없는 형식은 지원하지 않는다고 안내).

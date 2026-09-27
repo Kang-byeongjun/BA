@@ -34,4 +34,6 @@ export const STORAGE_KEYS = {
   activeWorkout: 'activeWorkout',
   pendingWorkout: 'pendingWorkout',
   onboarded: 'onboarded',
+  isDemo: 'isDemo',
+  aiMode: 'aiMode',
 } as const

@@ -41,4 +41,9 @@ android/*.keystore
 ios/App/*.mobileprovision
 ios/App/*.p12
 
+# 환경변수 파일 (API Key 등 비밀 정보 — 절대 커밋 금지, 예시 파일만 허용)
+.env
+.env.*
+!.env.example
+
 .vercel
