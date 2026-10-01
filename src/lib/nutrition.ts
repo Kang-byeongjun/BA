@@ -2,6 +2,7 @@ import { getFoodById } from '../data/foodDatabase'
 import { MEAL_COMBOS, type MealComboDef } from '../data/mealCombos'
 import { resolveMealCombo } from '../services/nutritionService'
 import type {
+  Gender,
   Goal,
   Meal,
   NutrientKey,
@@ -116,6 +117,25 @@ function rankCombos(pool: MealComboDef[], goal: Goal, seed: number, eatenTodayNa
   return [...goalMatched, ...others]
 }
 
+// 체지방률이 성별 기준 "높은 편"이고 목적이 체지방감량이면, 같은 달성률이라도 단백질을 더 급하게,
+// 지방을 덜 급하게 취급해 추천 우선순위를 저탄고단 쪽으로 살짝 기울인다(참고용 보정 — 실제 달성률
+// 숫자 자체는 바꾸지 않고, 추천 순서에만 영향을 준다. generateFeedback에서 보여주는 수치는 그대로다).
+const BODY_FAT_HIGH_THRESHOLD: Record<Gender, number> = { male: 25, female: 32 }
+const PRIORITY_BIAS = 15
+
+interface RecommendationProfile {
+  goal: Goal
+  gender: Gender
+  bodyFatPercentage: number | null
+}
+
+function priorityBias(profile: RecommendationProfile): Partial<Record<Exclude<NutrientKey, 'calories'>, number>> {
+  const { goal, gender, bodyFatPercentage } = profile
+  if (goal !== 'fat_loss' || bodyFatPercentage === null) return {}
+  if (bodyFatPercentage < BODY_FAT_HIGH_THRESHOLD[gender]) return {}
+  return { protein: -PRIORITY_BIAS, fat: PRIORITY_BIAS }
+}
+
 function buildRecommendedMeal(combo: MealComboDef, deficiencyPercent: number): RecommendedMeal {
   const resolved = resolveMealCombo(combo)
   return {
@@ -137,13 +157,14 @@ function buildRecommendedMeal(combo: MealComboDef, deficiencyPercent: number): R
 export function getRecommendedMeals(
   consumed: Record<NutrientKey, number>,
   target: NutritionTarget,
-  goal: Goal,
+  profile: RecommendationProfile,
   eatenTodayFoodNames: string[],
 ): RecommendedMeal[] {
   const macros: Exclude<NutrientKey, 'calories'>[] = ['protein', 'carbohydrates', 'fat', 'fiber']
+  const bias = priorityBias(profile)
 
   const deficiency = macros
-    .map((nutrient) => ({ nutrient, percent: getPercentage(consumed[nutrient], target[nutrient]) }))
+    .map((nutrient) => ({ nutrient, percent: getPercentage(consumed[nutrient], target[nutrient]) + (bias[nutrient] ?? 0) }))
     .filter((m) => m.percent < 100)
     .sort((a, b) => a.percent - b.percent)
 
@@ -154,7 +175,7 @@ export function getRecommendedMeals(
   const result: RecommendedMeal[] = []
   for (const nutrient of priorityNutrients) {
     const pool = MEAL_COMBOS.filter((c) => c.primaryNutrient === nutrient)
-    const ranked = rankCombos(pool, goal, daySeed + macros.indexOf(nutrient), eatenTodayNames)
+    const ranked = rankCombos(pool, profile.goal, daySeed + macros.indexOf(nutrient), eatenTodayNames)
     const percent = getPercentage(consumed[nutrient], target[nutrient])
     for (const combo of ranked) {
       if (result.length >= MAX_RECOMMENDATIONS) break

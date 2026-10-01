@@ -143,6 +143,36 @@ describe('nutritionTargetService', () => {
     expect(heavier.calories).toBeGreaterThan(base.calories)
     expect(muscle.calories).toBeGreaterThan(base.calories)
   })
+
+  it('체지방량이 있으면 체중이 아니라 제지방량(체중-체지방량) 기준으로 단백질을 계산한다', () => {
+    // DEMO_PROFILE: weight 75, bodyFatMass 13.5, goal fat_loss → 제지방량 61.5 × 2.0 = 123
+    const target = generateNutritionTarget(DEMO_PROFILE)
+    expect(target.protein).toBe(123)
+  })
+
+  it('체지방량이 없으면(간편 온보딩) 체중 기준으로 되돌아간다', () => {
+    // weight 75, goal fat_loss → 75 × 1.6 = 120 (체지방량 있을 때의 123보다 작다)
+    const target = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatMass: null })
+    expect(target.protein).toBe(120)
+  })
+
+  it('체지방률이 성별 기준 높은 편이고 목적이 체지방감량이면 칼로리를 추가로 낮춘다', () => {
+    const base = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 20 }) // 중간값, 보정 없음
+    const highBodyFat = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 28 }) // male 25 이상
+    expect(highBodyFat.calories).toBe(base.calories - 50)
+  })
+
+  it('체지방률이 성별 기준 낮은 편이면 근손실 방지를 위해 칼로리를 덜 줄인다', () => {
+    const base = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 20 })
+    const lowBodyFat = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 10 }) // male 12 미만
+    expect(lowBodyFat.calories).toBe(base.calories + 50)
+  })
+
+  it('체지방감량 목적이 아니면 체지방률 보정을 적용하지 않는다', () => {
+    const maintained = generateNutritionTarget({ ...DEMO_PROFILE, goal: 'weight_maintain', bodyFatPercentage: 28 })
+    const maintainedNoData = generateNutritionTarget({ ...DEMO_PROFILE, goal: 'weight_maintain', bodyFatPercentage: null })
+    expect(maintained.calories).toBe(maintainedNoData.calories)
+  })
 })
 
 describe('AI 분석 방식 결정', () => {

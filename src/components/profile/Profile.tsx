@@ -2,6 +2,7 @@ import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
+import { BMI_CATEGORY_LABELS, calculateBmi, classifyBmi } from '../../lib/bmi'
 import { generateNutritionTarget } from '../../services/nutritionTargetService'
 import {
   GOAL_LABELS,
@@ -53,6 +54,8 @@ export default function Profile() {
   const [notice, setNotice] = useState<string | null>(null)
 
   if (!profile || !nutritionTarget) return null
+
+  const bmi = calculateBmi(profile.height, profile.weight)
 
   if (scanOpen) {
     return (
@@ -182,6 +185,13 @@ export default function Profile() {
               </span>
             </div>
           ))}
+          <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+            <span className="text-xs text-slate-500">BMI</span>
+            <span className="text-sm font-semibold text-slate-800">
+              {bmi}
+              <span className="ml-1 text-[11px] font-normal text-slate-400">({BMI_CATEGORY_LABELS[classifyBmi(bmi)]})</span>
+            </span>
+          </div>
           {OPTIONAL_INBODY_ROWS.map((row) => {
             const value = profile[row.key]
             const isEstimated = row.key === 'basalMetabolicRate' && profile.basalMetabolicRateEstimated

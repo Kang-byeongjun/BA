@@ -34,9 +34,13 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
 
   if (!nutritionTarget) return null
 
-  const goal = profile?.goal ?? 'health_care'
+  // 체지방률 기반 추천 우선순위 보정에 쓰는 최소 정보. profile이 없을 상황은 실질적으로 없지만
+  // (데모/온보딩 완료 후에만 대시보드가 보임) 타입 안전을 위해 중립값으로 대체한다.
+  const recommendationProfile = profile
+    ? { goal: profile.goal, gender: profile.gender, bodyFatPercentage: profile.bodyFatPercentage }
+    : { goal: 'health_care' as const, gender: 'male' as const, bodyFatPercentage: null }
   const feedback = generateFeedback(consumed, nutritionTarget)
-  const recommendations = getRecommendedMeals(consumed, nutritionTarget, goal, eatenTodayFoodNames)
+  const recommendations = getRecommendedMeals(consumed, nutritionTarget, recommendationProfile, eatenTodayFoodNames)
 
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
@@ -105,7 +109,7 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
       </button>
 
       <FeedbackPanel feedback={feedback} />
-      <RecommendationCard meals={recommendations} goal={goal} />
+      <RecommendationCard meals={recommendations} goal={recommendationProfile.goal} />
 
       {selectedMeal && (
         <MealDetailModal
