@@ -77,6 +77,22 @@ export function generateFeedback(
   return feedback
 }
 
+// 영양소별 추천 풀이 넓어져서(각 10개), 호출마다 항상 같은 상위 4개만 나오지 않도록
+// "오늘" 기준으로 고정된 순서로 섞는다. 같은 날에는 같은 추천이 유지되고, 날이 바뀌면 달라진다.
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
+}
+
+function shuffleWithSeed<T>(items: T[], seed: number): T[] {
+  const result = [...items]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom(seed + i) * (i + 1))
+    ;[result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
+
 /**
  * 가장 부족한(달성률이 낮은) 영양소를 기준으로 추천 음식을 뽑는 규칙 기반 로직.
  */
@@ -93,9 +109,12 @@ export function getRecommendedFoods(
 
   const priorityNutrients = deficiency.length > 0 ? deficiency.map((d) => d.nutrient) : macros
 
+  const daySeed = Math.floor(Date.now() / 86400000)
+
   const result: RecommendedFood[] = []
   for (const nutrient of priorityNutrients) {
-    const candidates = RECOMMENDATION_FOODS.filter((f) => f.nutrient === nutrient)
+    const pool = RECOMMENDATION_FOODS.filter((f) => f.nutrient === nutrient)
+    const candidates = shuffleWithSeed(pool, daySeed + macros.indexOf(nutrient))
     for (const food of candidates) {
       if (result.length >= 4) break
       if (!result.some((r) => r.id === food.id)) result.push(food)

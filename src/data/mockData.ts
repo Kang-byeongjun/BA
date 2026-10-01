@@ -188,19 +188,55 @@ export function getMockInBodyExtraction(): InBodyExtraction {
 
 // ---------------------------------------------------------------------------
 // 부족 영양소 기반 추천 음식 풀
+// 1인분 기준 섭취량을 가정해 src/data/foodDatabase.ts의 100g당 수치로부터 계산했다.
 // ---------------------------------------------------------------------------
 
 export const RECOMMENDATION_FOODS: RecommendedFood[] = [
-  { id: 'egg', name: '달걀', emoji: '🥚', nutrient: 'protein', amount: 6 },
-  { id: 'chicken', name: '닭가슴살', emoji: '🐔', nutrient: 'protein', amount: 25 },
-  { id: 'tofu', name: '두부', emoji: '🍲', nutrient: 'protein', amount: 10 },
-  { id: 'greekyogurt', name: '그릭요거트', emoji: '🥣', nutrient: 'protein', amount: 12 },
+  // 단백질
+  { id: 'egg', name: '달걀 1개', emoji: '🥚', nutrient: 'protein', amount: 6 },
+  { id: 'chicken-breast', name: '닭가슴살', emoji: '🍗', nutrient: 'protein', amount: 31 },
+  { id: 'tofu', name: '두부 반모', emoji: '🥢', nutrient: 'protein', amount: 12 },
+  { id: 'greek-yogurt', name: '그릭요거트', emoji: '🥣', nutrient: 'protein', amount: 14 },
+  { id: 'salmon', name: '연어', emoji: '🐟', nutrient: 'protein', amount: 24 },
+  { id: 'tuna-can', name: '참치캔', emoji: '🥫', nutrient: 'protein', amount: 28 },
+  { id: 'shrimp', name: '새우', emoji: '🦐', nutrient: 'protein', amount: 24 },
+  { id: 'beef-tenderloin', name: '소고기 안심', emoji: '🥩', nutrient: 'protein', amount: 30 },
+  { id: 'pork-tenderloin', name: '돼지고기 안심', emoji: '🐖', nutrient: 'protein', amount: 25 },
+  { id: 'edamame', name: '에다마메', emoji: '🫛', nutrient: 'protein', amount: 11 },
+
+  // 식이섬유
   { id: 'broccoli', name: '브로콜리', emoji: '🥦', nutrient: 'fiber', amount: 3 },
-  { id: 'sweetpotato', name: '고구마', emoji: '🍠', nutrient: 'fiber', amount: 4 },
-  { id: 'oats', name: '오트밀', emoji: '🌾', nutrient: 'fiber', amount: 4 },
-  { id: 'apple', name: '사과', emoji: '🍎', nutrient: 'fiber', amount: 3 },
-  { id: 'banana', name: '바나나', emoji: '🍌', nutrient: 'carbohydrates', amount: 27 },
-  { id: 'rice', name: '현미밥 반공기', emoji: '🍚', nutrient: 'carbohydrates', amount: 35 },
-  { id: 'avocado', name: '아보카도', emoji: '🥑', nutrient: 'fat', amount: 15 },
-  { id: 'nuts', name: '아몬드 한 줌', emoji: '🥜', nutrient: 'fat', amount: 14 },
+  { id: 'sweet-potato', name: '고구마 1개', emoji: '🍠', nutrient: 'fiber', amount: 5 },
+  { id: 'apple', name: '사과 1개', emoji: '🍎', nutrient: 'fiber', amount: 5 },
+  { id: 'pear', name: '배', emoji: '🍐', nutrient: 'fiber', amount: 3 },
+  { id: 'carrot', name: '당근', emoji: '🥕', nutrient: 'fiber', amount: 3 },
+  { id: 'cabbage', name: '양배추', emoji: '🥬', nutrient: 'fiber', amount: 3 },
+  { id: 'eggplant', name: '가지', emoji: '🍆', nutrient: 'fiber', amount: 3 },
+  { id: 'kiwi', name: '키위 1개', emoji: '🥝', nutrient: 'fiber', amount: 3 },
+  { id: 'spinach', name: '시금치', emoji: '🌿', nutrient: 'fiber', amount: 2 },
+  { id: 'bean-sprout', name: '콩나물', emoji: '🌱', nutrient: 'fiber', amount: 3 },
+
+  // 탄수화물
+  { id: 'banana', name: '바나나 1개', emoji: '🍌', nutrient: 'carbohydrates', amount: 28 },
+  { id: 'brown-rice', name: '현미밥 반공기', emoji: '🍚', nutrient: 'carbohydrates', amount: 32 },
+  { id: 'oatmeal', name: '오트밀', emoji: '🌾', nutrient: 'carbohydrates', amount: 10 },
+  { id: 'bagel', name: '베이글 반개', emoji: '🥯', nutrient: 'carbohydrates', amount: 48 },
+  { id: 'onigiri', name: '오니기리', emoji: '🍙', nutrient: 'carbohydrates', amount: 35 },
+  { id: 'potato', name: '감자 1개', emoji: '🥔', nutrient: 'carbohydrates', amount: 26 },
+  { id: 'multigrain-rice', name: '잡곡밥', emoji: '🍘', nutrient: 'carbohydrates', amount: 30 },
+  { id: 'mango', name: '망고', emoji: '🥭', nutrient: 'carbohydrates', amount: 23 },
+  { id: 'grape', name: '포도', emoji: '🍇', nutrient: 'carbohydrates', amount: 18 },
+  { id: 'white-rice', name: '흰쌀밥 반공기', emoji: '🍚', nutrient: 'carbohydrates', amount: 31 },
+
+  // 지방
+  { id: 'avocado', name: '아보카도 반개', emoji: '🥑', nutrient: 'fat', amount: 15 },
+  { id: 'almond', name: '아몬드 한 줌', emoji: '🥜', nutrient: 'fat', amount: 15 },
+  { id: 'mixed-nuts-fat', name: '견과류믹스 한 줌', emoji: '🌰', nutrient: 'fat', amount: 15 },
+  { id: 'croissant', name: '크루아상 반개', emoji: '🥐', nutrient: 'fat', amount: 11 },
+  { id: 'pork-belly', name: '삼겹살', emoji: '🥓', nutrient: 'fat', amount: 22 },
+  { id: 'duck-smoked', name: '훈제오리', emoji: '🦆', nutrient: 'fat', amount: 15 },
+  { id: 'tonkatsu', name: '돈카츠', emoji: '🍖', nutrient: 'fat', amount: 20 },
+  { id: 'bacon', name: '베이컨', emoji: '🍳', nutrient: 'fat', amount: 19 },
+  { id: 'karaage', name: '치킨가라아게', emoji: '🍗', nutrient: 'fat', amount: 17 },
+  { id: 'beef-sirloin-fat', name: '소고기 등심', emoji: '🥩', nutrient: 'fat', amount: 14 },
 ]

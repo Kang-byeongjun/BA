@@ -61,6 +61,12 @@ export interface InBodyHistoryEntry {
   basalMetabolicRate: number | null
 }
 
+export const IN_BODY_SOURCE_LABELS: Record<InBodySource, string> = {
+  onboarding: '온보딩 입력',
+  scan: '결과지 스캔',
+  estimated: '간편 입력(추정)',
+}
+
 // ---------- 운동 프로필 (온보딩에서 수집, 운동 추천 엔진의 입력값) ----------
 
 export type WorkoutGoal = 'fat_loss' | 'muscle_gain' | 'strength' | 'body_shape'

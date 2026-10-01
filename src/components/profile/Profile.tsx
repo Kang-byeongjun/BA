@@ -16,6 +16,7 @@ import {
 } from '../../types'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
 import WorkoutProfileInput from '../onboarding/WorkoutProfileInput'
+import InBodyTrend from './InBodyTrend'
 
 // 나이/키/체중은 항상 값이 있고, 나머지 체성분 항목은 InBody 없이 시작했으면 null일 수 있다.
 const REQUIRED_INBODY_ROWS: { key: 'age' | 'height' | 'weight'; label: string; unit: string }[] = [
@@ -43,7 +44,7 @@ const GOALS = Object.keys(GOAL_LABELS) as Goal[]
 const TARGET_KEYS: (keyof NutritionTarget)[] = ['calories', 'protein', 'carbohydrates', 'fat', 'fiber']
 
 export default function Profile() {
-  const { profile, nutritionTarget, workoutProfile, isDemo, aiMode, dispatch } = useApp()
+  const { profile, nutritionTarget, workoutProfile, inBodyHistory, isDemo, aiMode, dispatch } = useApp()
   const [draftTarget, setDraftTarget] = useState<NutritionTarget | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -208,6 +209,8 @@ export default function Profile() {
           </p>
         )}
       </div>
+
+      <InBodyTrend history={inBodyHistory} />
 
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
