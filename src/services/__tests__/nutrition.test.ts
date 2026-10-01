@@ -125,6 +125,9 @@ describe('nutritionTargetService', () => {
       skeletalMuscleMass: null,
       bodyFatMass: null,
       bodyFatPercentage: 20.5,
+      bodyWater: null,
+      proteinMass: null,
+      mineralMass: null,
       basalMetabolicRate: 1800,
     })
     expect(merged).toMatchObject({ weight: 80, bodyFatPercentage: 20.5, basalMetabolicRate: 1800 })

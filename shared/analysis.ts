@@ -22,6 +22,9 @@ export interface InBodyExtraction {
   skeletalMuscleMassKg: number | null
   bodyFatMassKg: number | null
   bodyFatPercentage: number | null
+  bodyWaterL: number | null
+  proteinMassKg: number | null
+  mineralMassKg: number | null
   bmi: number | null
   basalMetabolicRateKcal: number | null
   // 0~1

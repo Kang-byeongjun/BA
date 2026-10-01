@@ -31,6 +31,9 @@ type InBodyValueKey =
   | 'skeletalMuscleMassKg'
   | 'bodyFatMassKg'
   | 'bodyFatPercentage'
+  | 'bodyWaterL'
+  | 'proteinMassKg'
+  | 'mineralMassKg'
   | 'bmi'
   | 'basalMetabolicRateKcal'
 
@@ -39,6 +42,9 @@ const IN_BODY_RANGES: Record<InBodyValueKey, { min: number; max: number; label: 
   skeletalMuscleMassKg: { min: 5, max: 100, label: '골격근량', decimals: 1 },
   bodyFatMassKg: { min: 1, max: 200, label: '체지방량', decimals: 1 },
   bodyFatPercentage: { min: 1, max: 75, label: '체지방률', decimals: 1 },
+  bodyWaterL: { min: 5, max: 150, label: '체수분', decimals: 1 },
+  proteinMassKg: { min: 2, max: 40, label: '단백질량', decimals: 1 },
+  mineralMassKg: { min: 0.5, max: 10, label: '무기질량', decimals: 2 },
   bmi: { min: 10, max: 70, label: 'BMI', decimals: 1 },
   basalMetabolicRateKcal: { min: 600, max: 4500, label: '기초대사량', decimals: 0 },
 }
@@ -57,6 +63,9 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     skeletalMuscleMassKg: null,
     bodyFatMassKg: null,
     bodyFatPercentage: null,
+    bodyWaterL: null,
+    proteinMassKg: null,
+    mineralMassKg: null,
     bmi: null,
     basalMetabolicRateKcal: null,
   }
@@ -85,6 +94,15 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
   }
   if (weightKg !== null && skeletalMuscleMassKg !== null && skeletalMuscleMassKg > weightKg * 0.75) {
     warnings.push('골격근량이 체중에 비해 너무 커요. 결과지를 보고 값을 확인해주세요.')
+  }
+
+  // 체수분 + 단백질 + 무기질 + 체지방량은 체중과 거의 같아야 한다(InBody 체성분 구성의 기본 원리).
+  const { bodyWaterL, proteinMassKg, mineralMassKg } = values
+  if (weightKg !== null && bodyWaterL !== null && proteinMassKg !== null && mineralMassKg !== null && bodyFatMassKg !== null) {
+    const sum = bodyWaterL + proteinMassKg + mineralMassKg + bodyFatMassKg
+    if (Math.abs(sum - weightKg) > weightKg * 0.1) {
+      warnings.push('체수분·단백질·무기질·체지방량을 더한 값이 체중과 맞지 않아요. 결과지를 보고 값을 확인해주세요.')
+    }
   }
 
   return {

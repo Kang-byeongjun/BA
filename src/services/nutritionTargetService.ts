@@ -55,6 +55,11 @@ export function mergeInBodyMeasurements(profile: UserProfile, measurements: InBo
     skeletalMuscleMass: measurements.skeletalMuscleMass ?? profile.skeletalMuscleMass,
     bodyFatMass: measurements.bodyFatMass ?? profile.bodyFatMass,
     bodyFatPercentage: measurements.bodyFatPercentage ?? profile.bodyFatPercentage,
+    bodyWater: measurements.bodyWater ?? profile.bodyWater,
+    proteinMass: measurements.proteinMass ?? profile.proteinMass,
+    mineralMass: measurements.mineralMass ?? profile.mineralMass,
     basalMetabolicRate: measurements.basalMetabolicRate ?? profile.basalMetabolicRate,
+    // 실측 기초대사량이 새로 들어왔으면 더 이상 추정값이 아니다.
+    basalMetabolicRateEstimated: measurements.basalMetabolicRate !== null ? false : profile.basalMetabolicRateEstimated,
   }
 }

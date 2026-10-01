@@ -33,6 +33,9 @@ const inbody: InBodyExtraction = {
   skeletalMuscleMassKg: 34.1,
   bodyFatMassKg: null,
   bodyFatPercentage: 18.4,
+  bodyWaterL: 42.5,
+  proteinMassKg: 13.0,
+  mineralMassKg: 4.5,
   bmi: 24.6,
   basalMetabolicRateKcal: 1702,
   confidence: 0.55,
@@ -274,6 +277,9 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
       skeletalMuscleMass: 34.1,
       bodyFatMass: 13.8,
       bodyFatPercentage: 18.4,
+      bodyWater: 42.5,
+      proteinMass: 13,
+      mineralMass: 4.5,
       basalMetabolicRate: 1702,
     })
   })

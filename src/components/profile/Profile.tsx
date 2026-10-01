@@ -2,24 +2,39 @@ import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
-import { generateNutritionTarget, mergeInBodyMeasurements } from '../../services/nutritionTargetService'
+import { generateNutritionTarget } from '../../services/nutritionTargetService'
 import {
   GOAL_LABELS,
   NUTRIENT_LABELS,
   NUTRIENT_UNITS,
+  PAIN_AREA_LABELS,
+  WORKOUT_EXPERIENCE_LABELS,
+  WORKOUT_GOAL_LABELS,
   type Goal,
   type InBodyMeasurements,
   type NutritionTarget,
 } from '../../types'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
+import WorkoutProfileInput from '../onboarding/WorkoutProfileInput'
 
-const INBODY_ROWS: { key: 'age' | 'height' | 'weight' | 'skeletalMuscleMass' | 'bodyFatMass' | 'bodyFatPercentage' | 'basalMetabolicRate'; label: string; unit: string }[] = [
+// 나이/키/체중은 항상 값이 있고, 나머지 체성분 항목은 InBody 없이 시작했으면 null일 수 있다.
+const REQUIRED_INBODY_ROWS: { key: 'age' | 'height' | 'weight'; label: string; unit: string }[] = [
   { key: 'age', label: '나이', unit: '세' },
   { key: 'height', label: '키', unit: 'cm' },
   { key: 'weight', label: '체중', unit: 'kg' },
+]
+
+const OPTIONAL_INBODY_ROWS: {
+  key: 'skeletalMuscleMass' | 'bodyFatMass' | 'bodyFatPercentage' | 'bodyWater' | 'proteinMass' | 'mineralMass' | 'basalMetabolicRate'
+  label: string
+  unit: string
+}[] = [
   { key: 'skeletalMuscleMass', label: '골격근량', unit: 'kg' },
   { key: 'bodyFatMass', label: '체지방량', unit: 'kg' },
   { key: 'bodyFatPercentage', label: '체지방률', unit: '%' },
+  { key: 'bodyWater', label: '체수분', unit: 'L' },
+  { key: 'proteinMass', label: '단백질량', unit: 'kg' },
+  { key: 'mineralMass', label: '무기질량', unit: 'kg' },
   { key: 'basalMetabolicRate', label: '기초대사량', unit: 'kcal' },
 ]
 
@@ -28,11 +43,12 @@ const GOALS = Object.keys(GOAL_LABELS) as Goal[]
 const TARGET_KEYS: (keyof NutritionTarget)[] = ['calories', 'protein', 'carbohydrates', 'fat', 'fiber']
 
 export default function Profile() {
-  const { profile, nutritionTarget, isDemo, aiMode, dispatch } = useApp()
+  const { profile, nutritionTarget, workoutProfile, isDemo, aiMode, dispatch } = useApp()
   const [draftTarget, setDraftTarget] = useState<NutritionTarget | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const [saved, setSaved] = useState(false)
   const [scanOpen, setScanOpen] = useState(false)
+  const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
   if (!profile || !nutritionTarget) return null
@@ -42,16 +58,26 @@ export default function Profile() {
       <InBodyScanFlow
         mode={resolveAnalysisMode(isDemo, aiMode)}
         onApply={(measurements: InBodyMeasurements) => {
-          // InBody 데이터가 바뀌면 개인 영양 목표를 다시 계산한다. (계산된 목표는 아래에서 직접 수정 가능)
-          const nextProfile = mergeInBodyMeasurements(profile, measurements)
-          const nextTarget = generateNutritionTarget(nextProfile)
-          dispatch({ type: 'UPDATE_PROFILE', profile: nextProfile })
-          dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: nextTarget })
-          setDraftTarget(nextTarget)
+          // InBody 데이터가 바뀌면 개인 영양 목표도 자동으로 다시 계산되고 측정 이력에 남는다.
+          dispatch({ type: 'UPDATE_INBODY', measurements, source: 'scan' })
+          setDraftTarget(null)
           setNotice('InBody 정보가 바뀌어 영양 목표를 다시 계산했어요. 필요하면 아래에서 직접 수정할 수 있어요.')
           setScanOpen(false)
         }}
         onClose={() => setScanOpen(false)}
+      />
+    )
+  }
+
+  if (workoutEditOpen && workoutProfile) {
+    return (
+      <WorkoutProfileInput
+        initial={workoutProfile}
+        onBack={() => setWorkoutEditOpen(false)}
+        onNext={(next) => {
+          dispatch({ type: 'SET_WORKOUT_PROFILE', workoutProfile: next })
+          setWorkoutEditOpen(false)
+        }}
       />
     )
   }
@@ -146,7 +172,7 @@ export default function Profile() {
             <span className="text-xs text-slate-500">성별</span>
             <span className="text-sm font-semibold text-slate-800">{profile.gender === 'male' ? '남성' : '여성'}</span>
           </div>
-          {INBODY_ROWS.map((row) => (
+          {REQUIRED_INBODY_ROWS.map((row) => (
             <div key={row.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
               <span className="text-xs text-slate-500">{row.label}</span>
               <span className="text-sm font-semibold text-slate-800">
@@ -155,7 +181,73 @@ export default function Profile() {
               </span>
             </div>
           ))}
+          {OPTIONAL_INBODY_ROWS.map((row) => {
+            const value = profile[row.key]
+            const isEstimated = row.key === 'basalMetabolicRate' && profile.basalMetabolicRateEstimated
+            return (
+              <div key={row.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <span className="text-xs text-slate-500">{row.label}</span>
+                <span className="text-sm font-semibold text-slate-800">
+                  {value === null ? (
+                    <span className="text-xs font-normal text-slate-400">측정 안 함</span>
+                  ) : (
+                    <>
+                      {value}
+                      {row.unit}
+                      {isEstimated && <span className="ml-1 text-[11px] font-normal text-amber-500">(추정)</span>}
+                    </>
+                  )}
+                </span>
+              </div>
+            )
+          })}
         </div>
+        {profile.skeletalMuscleMass === null && (
+          <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            아직 InBody 결과가 없어요. 결과지 사진을 올리면 체성분 항목이 채워지고 기초대사량도 더 정확해져요.
+          </p>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-800">운동 프로필</p>
+          <button onClick={() => setWorkoutEditOpen(true)} className="text-xs font-medium text-emerald-600">
+            수정
+          </button>
+        </div>
+        {workoutProfile ? (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+              <span className="text-xs text-slate-500">운동 목표</span>
+              <span className="text-sm font-semibold text-slate-800">{WORKOUT_GOAL_LABELS[workoutProfile.goal]}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+              <span className="text-xs text-slate-500">운동 경험</span>
+              <span className="text-sm font-semibold text-slate-800">
+                {WORKOUT_EXPERIENCE_LABELS[workoutProfile.experience]}
+              </span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+              <span className="text-xs text-slate-500">주당 횟수</span>
+              <span className="text-sm font-semibold text-slate-800">{workoutProfile.weeklyFrequency}회</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+              <span className="text-xs text-slate-500">1회 시간</span>
+              <span className="text-sm font-semibold text-slate-800">{workoutProfile.sessionDuration}분</span>
+            </div>
+            <div className="col-span-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+              <span className="text-xs text-slate-500">통증·부상</span>
+              <span className="text-sm font-semibold text-slate-800">
+                {workoutProfile.painAreas.length === 0
+                  ? '없음'
+                  : workoutProfile.painAreas.map((a) => PAIN_AREA_LABELS[a]).join(', ')}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400">운동 프로필 정보가 없어요.</p>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-100 bg-white p-4">

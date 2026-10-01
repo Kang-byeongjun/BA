@@ -26,6 +26,9 @@ const FIELDS: { key: FieldKey; label: string; unit: string }[] = [
   { key: 'skeletalMuscleMass', label: '골격근량', unit: 'kg' },
   { key: 'bodyFatMass', label: '체지방량', unit: 'kg' },
   { key: 'bodyFatPercentage', label: '체지방률', unit: '%' },
+  { key: 'bodyWater', label: '체수분', unit: 'L' },
+  { key: 'proteinMass', label: '단백질량', unit: 'kg' },
+  { key: 'mineralMass', label: '무기질량', unit: 'kg' },
   { key: 'basalMetabolicRate', label: '기초대사량', unit: 'kcal' },
 ]
 
@@ -49,7 +52,18 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
   const [stage, setStage] = useState(0)
   const [preview, setPreview] = useState<string | null>(null)
   const [extraction, setExtraction] = useState<InBodyExtraction | null>(null)
-  const [values, setValues] = useState<Record<FieldKey, string>>(() => toInputValues({ weight: null, skeletalMuscleMass: null, bodyFatMass: null, bodyFatPercentage: null, basalMetabolicRate: null }))
+  const [values, setValues] = useState<Record<FieldKey, string>>(() =>
+    toInputValues({
+      weight: null,
+      skeletalMuscleMass: null,
+      bodyFatMass: null,
+      bodyFatPercentage: null,
+      bodyWater: null,
+      proteinMass: null,
+      mineralMass: null,
+      basalMetabolicRate: null,
+    }),
+  )
   const [missing, setMissing] = useState<Set<FieldKey>>(new Set())
   const [error, setError] = useState<{ code: AnalysisErrorCode; message: string; canRetry: boolean } | null>(null)
 

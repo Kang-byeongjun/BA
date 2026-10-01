@@ -17,10 +17,17 @@ export interface UserProfile {
   age: number
   height: number // cm
   weight: number // kg
-  skeletalMuscleMass: number // kg
-  bodyFatMass: number // kg
-  bodyFatPercentage: number // %
-  basalMetabolicRate: number // kcal
+  // InBody 체성분 데이터. 간편 온보딩(키·체중만 입력)으로 시작한 경우 null — "있으면 더 정교해지는
+  // 보너스 입력"으로 다루고, 식단 목표 계산(nutritionTargetService)은 이 값들 없이도 동작해야 한다.
+  skeletalMuscleMass: number | null // kg
+  bodyFatMass: number | null // kg
+  bodyFatPercentage: number | null // %
+  bodyWater: number | null // 체수분, L
+  proteinMass: number | null // 단백질량, kg
+  mineralMass: number | null // 무기질량, kg
+  basalMetabolicRate: number // kcal — 실측값이 없으면 공식(estimateBasalMetabolicRate)으로 추정해 채운다
+  // true면 basalMetabolicRate가 InBody 실측이 아니라 공식으로 추정한 값
+  basalMetabolicRateEstimated: boolean
 }
 
 // InBody 결과지에서 읽어온(또는 사용자가 확인·수정한) 체성분 측정값. null이면 값이 없는 항목.
@@ -29,7 +36,66 @@ export interface InBodyMeasurements {
   skeletalMuscleMass: number | null
   bodyFatMass: number | null
   bodyFatPercentage: number | null
+  bodyWater: number | null
+  proteinMass: number | null
+  mineralMass: number | null
   basalMetabolicRate: number | null
+}
+
+// 측정 시점의 InBody 스냅샷. "이전 측정 대비 변화"를 보여주기 위해 최신 값 위에 쌓아간다(최신이 배열 앞).
+export type InBodySource =
+  | 'onboarding' // 온보딩 중 입력(수동 또는 스캔 보조)
+  | 'scan' // 마이 탭 "결과지 사진으로 업데이트"
+  | 'estimated' // InBody 없이 간편 온보딩, 체성분 항목 없음
+
+export interface InBodyHistoryEntry {
+  timestamp: number
+  source: InBodySource
+  weight: number | null
+  skeletalMuscleMass: number | null
+  bodyFatMass: number | null
+  bodyFatPercentage: number | null
+  bodyWater: number | null
+  proteinMass: number | null
+  mineralMass: number | null
+  basalMetabolicRate: number | null
+}
+
+// ---------- 운동 프로필 (온보딩에서 수집, 운동 추천 엔진의 입력값) ----------
+
+export type WorkoutGoal = 'fat_loss' | 'muscle_gain' | 'strength' | 'body_shape'
+
+export const WORKOUT_GOAL_LABELS: Record<WorkoutGoal, string> = {
+  fat_loss: '체지방 감량',
+  muscle_gain: '근육 증가',
+  strength: '근력 향상',
+  body_shape: '체형 개선',
+}
+
+export type WorkoutExperience = 'beginner' | 'intermediate' | 'advanced'
+
+export const WORKOUT_EXPERIENCE_LABELS: Record<WorkoutExperience, string> = {
+  beginner: '초보',
+  intermediate: '중급',
+  advanced: '고급',
+}
+
+export type PainArea = 'shoulder' | 'back' | 'knee' | 'wrist' | 'ankle'
+
+export const PAIN_AREA_LABELS: Record<PainArea, string> = {
+  shoulder: '어깨',
+  back: '허리',
+  knee: '무릎',
+  wrist: '손목',
+  ankle: '발목',
+}
+
+export interface WorkoutProfile {
+  goal: WorkoutGoal
+  experience: WorkoutExperience
+  weeklyFrequency: number // 주당 운동 가능 횟수
+  sessionDuration: number // 1회 운동 가능 시간(분)
+  painAreas: PainArea[] // 통증·부상 부위, 없으면 빈 배열
 }
 
 // ---------- 영양 목표 & 섭취 ----------

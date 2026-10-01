@@ -1,14 +1,19 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
-import { buildDemoMeals, DEMO_NUTRITION_TARGET, DEMO_PROFILE } from '../data/mockData'
+import { buildDemoMeals, DEMO_NUTRITION_TARGET, DEMO_PROFILE, DEMO_WORKOUT_PROFILE } from '../data/mockData'
 import { generateId } from '../lib/id'
 import type { AiMode } from '../lib/aiMode'
 import { loadFromStorage, removeFromStorage, saveToStorage, STORAGE_KEYS } from '../lib/storage'
+import { generateNutritionTarget, mergeInBodyMeasurements } from '../services/nutritionTargetService'
 import type {
   ActiveWorkoutSession,
+  InBodyHistoryEntry,
+  InBodyMeasurements,
+  InBodySource,
   Meal,
   NutritionTarget,
   UserProfile,
   Workout,
+  WorkoutProfile,
   WorkoutType,
 } from '../types'
 
@@ -20,6 +25,10 @@ interface AppState {
   aiMode: AiMode
   profile: UserProfile | null
   nutritionTarget: NutritionTarget | null
+  // 운동 루틴 추천에 쓰는 온보딩 응답 (InBody와 별개로 항상 존재해야 하는 정보)
+  workoutProfile: WorkoutProfile | null
+  // InBody 측정/추정 이력. 최신 항목이 배열 맨 앞에 온다.
+  inBodyHistory: InBodyHistoryEntry[]
   meals: Meal[]
   workouts: Workout[]
   activeWorkout: ActiveWorkoutSession | null
@@ -27,11 +36,13 @@ interface AppState {
 }
 
 type Action =
-  | { type: 'COMPLETE_ONBOARDING'; profile: UserProfile; nutritionTarget: NutritionTarget }
+  | { type: 'COMPLETE_ONBOARDING'; profile: UserProfile; nutritionTarget: NutritionTarget; workoutProfile: WorkoutProfile }
   | { type: 'LOAD_DEMO' }
   | { type: 'SET_AI_MODE'; aiMode: AiMode }
   | { type: 'UPDATE_NUTRITION_TARGET'; target: NutritionTarget }
   | { type: 'UPDATE_PROFILE'; profile: UserProfile }
+  | { type: 'UPDATE_INBODY'; measurements: InBodyMeasurements; source: InBodySource }
+  | { type: 'SET_WORKOUT_PROFILE'; workoutProfile: WorkoutProfile }
   | { type: 'ADD_MEAL'; meal: Meal }
   | { type: 'DELETE_MEAL'; id: string }
   | { type: 'START_WORKOUT'; workoutType: WorkoutType }
@@ -43,6 +54,21 @@ type Action =
   | { type: 'DISCARD_PENDING_WORKOUT' }
   | { type: 'RESET_APP' }
 
+function historyEntryFromProfile(profile: UserProfile, source: InBodySource): InBodyHistoryEntry {
+  return {
+    timestamp: Date.now(),
+    source,
+    weight: profile.weight,
+    skeletalMuscleMass: profile.skeletalMuscleMass,
+    bodyFatMass: profile.bodyFatMass,
+    bodyFatPercentage: profile.bodyFatPercentage,
+    bodyWater: profile.bodyWater,
+    proteinMass: profile.proteinMass,
+    mineralMass: profile.mineralMass,
+    basalMetabolicRate: profile.basalMetabolicRate,
+  }
+}
+
 function initState(): AppState {
   return {
     onboarded: loadFromStorage(STORAGE_KEYS.onboarded, false),
@@ -50,6 +76,8 @@ function initState(): AppState {
     aiMode: loadFromStorage<AiMode>(STORAGE_KEYS.aiMode, 'real'),
     profile: loadFromStorage<UserProfile | null>(STORAGE_KEYS.profile, null),
     nutritionTarget: loadFromStorage<NutritionTarget | null>(STORAGE_KEYS.nutritionTarget, null),
+    workoutProfile: loadFromStorage<WorkoutProfile | null>(STORAGE_KEYS.workoutProfile, null),
+    inBodyHistory: loadFromStorage<InBodyHistoryEntry[]>(STORAGE_KEYS.inBodyHistory, []),
     meals: loadFromStorage<Meal[]>(STORAGE_KEYS.meals, []),
     workouts: loadFromStorage<Workout[]>(STORAGE_KEYS.workouts, []),
     activeWorkout: loadFromStorage<ActiveWorkoutSession | null>(STORAGE_KEYS.activeWorkout, null),
@@ -67,6 +95,8 @@ function reducer(state: AppState, action: Action): AppState {
         aiMode: 'real',
         profile: action.profile,
         nutritionTarget: action.nutritionTarget,
+        workoutProfile: action.workoutProfile,
+        inBodyHistory: [historyEntryFromProfile(action.profile, 'onboarding'), ...state.inBodyHistory],
       }
 
     case 'LOAD_DEMO':
@@ -77,6 +107,8 @@ function reducer(state: AppState, action: Action): AppState {
         aiMode: 'mock',
         profile: DEMO_PROFILE,
         nutritionTarget: DEMO_NUTRITION_TARGET,
+        workoutProfile: DEMO_WORKOUT_PROFILE,
+        inBodyHistory: [historyEntryFromProfile(DEMO_PROFILE, 'onboarding')],
         meals: buildDemoMeals(),
       }
 
@@ -88,6 +120,21 @@ function reducer(state: AppState, action: Action): AppState {
 
     case 'UPDATE_PROFILE':
       return { ...state, profile: action.profile }
+
+    case 'UPDATE_INBODY': {
+      if (!state.profile) return state
+      const profile = mergeInBodyMeasurements(state.profile, action.measurements)
+      const nutritionTarget = generateNutritionTarget(profile)
+      return {
+        ...state,
+        profile,
+        nutritionTarget,
+        inBodyHistory: [historyEntryFromProfile(profile, action.source), ...state.inBodyHistory],
+      }
+    }
+
+    case 'SET_WORKOUT_PROFILE':
+      return { ...state, workoutProfile: action.workoutProfile }
 
     case 'ADD_MEAL':
       return { ...state, meals: [action.meal, ...state.meals] }
@@ -164,6 +211,8 @@ function reducer(state: AppState, action: Action): AppState {
         aiMode: 'real',
         profile: null,
         nutritionTarget: null,
+        workoutProfile: null,
+        inBodyHistory: [],
         meals: [],
         workouts: [],
         activeWorkout: null,
@@ -203,6 +252,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.nutritionTarget, state.nutritionTarget)
   }, [state.nutritionTarget])
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.workoutProfile, state.workoutProfile)
+  }, [state.workoutProfile])
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.inBodyHistory, state.inBodyHistory)
+  }, [state.inBodyHistory])
 
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.meals, state.meals)

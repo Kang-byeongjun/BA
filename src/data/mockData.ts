@@ -1,5 +1,5 @@
 import type { FoodExtraction, InBodyExtraction } from '../../shared/analysis'
-import type { Meal, NutritionTarget, RecommendedFood, UserProfile } from '../types'
+import type { Meal, NutritionTarget, RecommendedFood, UserProfile, WorkoutProfile } from '../types'
 
 /**
  * Mock 데이터 모음.
@@ -22,7 +22,11 @@ export const DEMO_PROFILE: UserProfile = {
   skeletalMuscleMass: 34,
   bodyFatMass: 13.5,
   bodyFatPercentage: 18,
+  bodyWater: 43.0,
+  proteinMass: 13.5,
+  mineralMass: 4.5,
   basalMetabolicRate: 1650,
+  basalMetabolicRateEstimated: false,
 }
 
 export const DEMO_NUTRITION_TARGET: NutritionTarget = {
@@ -31,6 +35,14 @@ export const DEMO_NUTRITION_TARGET: NutritionTarget = {
   carbohydrates: 240,
   fat: 60,
   fiber: 28,
+}
+
+export const DEMO_WORKOUT_PROFILE: WorkoutProfile = {
+  goal: 'fat_loss',
+  experience: 'intermediate',
+  weeklyFrequency: 3,
+  sessionDuration: 60,
+  painAreas: [],
 }
 
 // 데모 모드 시작 시 이미 기록되어 있는 오늘의 식사 (아침 + 점심)
@@ -131,6 +143,9 @@ export const INBODY_ANALYSIS_MOCKS: InBodyExtraction[] = [
     skeletalMuscleMassKg: 33.2,
     bodyFatMassKg: 14.5,
     bodyFatPercentage: 17.8,
+    bodyWaterL: 41.0,
+    proteinMassKg: 12.5,
+    mineralMassKg: 4.0,
     bmi: 23.5,
     basalMetabolicRateKcal: 1620,
     confidence: 0.95,
@@ -142,6 +157,9 @@ export const INBODY_ANALYSIS_MOCKS: InBodyExtraction[] = [
     skeletalMuscleMassKg: 22.4,
     bodyFatMassKg: 14.1,
     bodyFatPercentage: 24.6,
+    bodyWaterL: 28.0,
+    proteinMassKg: 9.5,
+    mineralMassKg: 4.4,
     bmi: 21.3,
     basalMetabolicRateKcal: 1310,
     confidence: 0.95,
@@ -153,6 +171,9 @@ export const INBODY_ANALYSIS_MOCKS: InBodyExtraction[] = [
     skeletalMuscleMassKg: 38.9,
     bodyFatMassKg: 20.2,
     bodyFatPercentage: 22.1,
+    bodyWaterL: 46.0,
+    proteinMassKg: 15.0,
+    mineralMassKg: 3.8,
     bmi: 26.2,
     basalMetabolicRateKcal: 1780,
     confidence: 0.95,

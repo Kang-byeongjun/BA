@@ -29,6 +29,9 @@ Read the CURRENT measurement of each item. Labels may appear in Korean or Englis
 - skeletalMuscleMassKg: 골격근량 / Skeletal Muscle Mass, SMM (kg). Do not confuse with 제지방량 / Lean Body Mass or 근육량 / Soft Lean Mass.
 - bodyFatMassKg: 체지방량 / Body Fat Mass, BFM (kg)
 - bodyFatPercentage: 체지방률 / Percent Body Fat, PBF (%)
+- bodyWaterL: 체수분 / Total Body Water, TBW (L). This is usually shown together with protein, minerals and body fat mass as the four components that add up to body weight.
+- proteinMassKg: 단백질 / Protein (kg), one of the same four body-composition components as above. This is the body's protein mass, not a dietary nutrient.
+- mineralMassKg: 무기질 / Minerals (kg), one of the same four body-composition components as above.
 - bmi: BMI (kg/m2)
 - basalMetabolicRateKcal: 기초대사량 / Basal Metabolic Rate, BMR (kcal)
 

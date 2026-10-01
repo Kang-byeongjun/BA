@@ -33,6 +33,9 @@ export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements
     skeletalMuscleMass: extraction.skeletalMuscleMassKg,
     bodyFatMass: extraction.bodyFatMassKg,
     bodyFatPercentage: extraction.bodyFatPercentage,
+    bodyWater: extraction.bodyWaterL,
+    proteinMass: extraction.proteinMassKg,
+    mineralMass: extraction.mineralMassKg,
     basalMetabolicRate: extraction.basalMetabolicRateKcal,
   }
 }
