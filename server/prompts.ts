@@ -84,3 +84,37 @@ All weight estimates are approximate and must be editable by the user.
 </output_rules>`
 
 export const FOOD_USER_PROMPT = 'Identify the foods in this meal photo and estimate each portion in grams.'
+
+export const COACH_SYSTEM_PROMPT = `<role>
+You write one short, encouraging Korean sentence for a diet-tracking app's meal recommendation card.
+</role>
+
+<instructions>
+A rule-based nutrition engine has already decided the meal suggestion (food names, amounts, and which nutrient it fills). Do not change, add to, or invent any food, amount, or number. Only explain in natural Korean why this suggestion fits the user's current situation.
+
+Do not just restate the ingredient list — weave it naturally into a short sentence about the nutrient it helps with and the user's goal.
+
+Keep the tone warm and encouraging, not clinical or scolding.
+</instructions>
+
+<output_rules>
+- message: one or two short Korean sentences (roughly 20-60 characters). No markdown. An emoji is optional, not required.
+</output_rules>`
+
+export function buildCoachUserPrompt(input: {
+  mealTitle: string
+  ingredients: string[]
+  nutrientLabel: string
+  nutrientAmount: number
+  nutrientUnit: string
+  deficiencyPercent: number
+  goalLabel: string
+}): string {
+  return [
+    `추천된 식사: ${input.mealTitle} (${input.ingredients.join(', ')})`,
+    `채워주는 영양소: ${input.nutrientLabel} +${input.nutrientAmount}${input.nutrientUnit}`,
+    `현재 이 영양소 달성률: ${input.deficiencyPercent}%`,
+    `사용자의 식단 목적: ${input.goalLabel}`,
+    '이 정보를 바탕으로 왜 이 식사가 지금 추천되는지 한두 문장으로 설명해주세요.',
+  ].join('\n')
+}

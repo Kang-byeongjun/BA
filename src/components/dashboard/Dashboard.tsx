@@ -2,7 +2,7 @@ import { Camera, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import MealDetailModal from '../meals/MealDetailModal'
-import { generateFeedback, getRecommendedFoods, sumMeals } from '../../lib/nutrition'
+import { generateFeedback, getRecommendedMeals, sumMeals } from '../../lib/nutrition'
 import { isSameDay } from '../../lib/time'
 import type { Meal } from '../../types'
 import CalorieSummary from './CalorieSummary'
@@ -30,11 +30,13 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
 
   const todayMeals = useMemo(() => meals.filter((m) => isSameDay(m.timestamp, Date.now())), [meals])
   const consumed = useMemo(() => sumMeals(todayMeals), [todayMeals])
+  const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
 
   if (!nutritionTarget) return null
 
+  const goal = profile?.goal ?? 'health_care'
   const feedback = generateFeedback(consumed, nutritionTarget)
-  const recommendations = getRecommendedFoods(consumed, nutritionTarget)
+  const recommendations = getRecommendedMeals(consumed, nutritionTarget, goal, eatenTodayFoodNames)
 
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
@@ -103,7 +105,7 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
       </button>
 
       <FeedbackPanel feedback={feedback} />
-      <RecommendationCard foods={recommendations} />
+      <RecommendationCard meals={recommendations} goal={goal} />
 
       {selectedMeal && (
         <MealDetailModal

@@ -172,12 +172,23 @@ export interface Meal {
 
 // ---------- 추천 ----------
 
-export interface RecommendedFood {
-  id: string
+export interface MealComboIngredientDisplay {
   name: string
+  // 표시용 문자열. 예: "120g"
+  amount: string
+}
+
+export interface RecommendedMeal {
+  id: string
+  title: string
   emoji: string
-  nutrient: NutrientKey
-  amount: number // 해당 영양소 증가량
+  ingredients: MealComboIngredientDisplay[]
+  // 이 조합을 먹으면 채워지는 영양소 총량(계산된 값, AI가 만든 숫자가 아님)
+  nutrients: NutritionTarget
+  // 이 조합을 추천한 핵심 이유(가장 부족했던 영양소)
+  primaryNutrient: Exclude<NutrientKey, 'calories'>
+  // 추천 시점의 primaryNutrient 달성률(%). AI 코칭 문구 요청에 그대로 전달한다.
+  deficiencyPercent: number
 }
 
 // ---------- 운동 ----------

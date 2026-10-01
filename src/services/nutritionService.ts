@@ -1,4 +1,6 @@
-import { FOOD_DATABASE, searchFoodDatabase, type FoodDbEntry } from '../data/foodDatabase'
+import { FOOD_DATABASE, getFoodById, searchFoodDatabase, type FoodDbEntry } from '../data/foodDatabase'
+import type { MealComboDef } from '../data/mealCombos'
+import type { MealComboIngredientDisplay } from '../types'
 
 /**
  * nutritionService — 음식 이름 + 중량(g)으로 영양소를 계산한다.
@@ -155,5 +157,22 @@ export function roundNutrients(n: NutrientTotals): NutrientTotals {
     carbohydrates: Math.round(n.carbohydrates),
     fat: Math.round(n.fat),
     fiber: Math.round(n.fiber),
+  }
+}
+
+export interface ResolvedMealCombo {
+  ingredients: MealComboIngredientDisplay[]
+  nutrients: NutrientTotals
+}
+
+/** 추천 식사 조합(mealCombos.ts)의 재료 id+중량을 실제 영양 수치로 계산한다. */
+export function resolveMealCombo(combo: MealComboDef): ResolvedMealCombo {
+  const resolved = combo.ingredients.map((ing) => {
+    const entry = getFoodById(ing.foodId)
+    return { name: entry.name, amount: `${ing.grams}g`, nutrients: calculateNutrients(entry, ing.grams) }
+  })
+  return {
+    ingredients: resolved.map((r) => ({ name: r.name, amount: r.amount })),
+    nutrients: roundNutrients(sumNutrients(resolved.map((r) => r.nutrients))),
   }
 }

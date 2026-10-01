@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { FoodExtraction, InBodyExtraction } from './analysis.js'
+import type { CoachMealRequestBody, CoachMessage, FoodExtraction, InBodyExtraction } from './analysis.js'
 
 /**
  * Claude가 반환하는 구조화 JSON의 zod 스키마 (서버 전용 — 클라이언트 번들에 포함하지 않는다).
@@ -42,3 +42,18 @@ export const analyzeRequestSchema = z.object({
   image: z.string().min(1),
   mediaType: z.string().optional(),
 })
+
+// 식사 추천 코칭 문구 요청/응답 검증
+export const coachMealRequestSchema = z.object({
+  mealTitle: z.string().min(1).max(60),
+  ingredients: z.array(z.string().min(1).max(40)).min(1).max(6),
+  nutrientLabel: z.string().min(1).max(20),
+  nutrientAmount: z.number(),
+  nutrientUnit: z.string().min(1).max(10),
+  deficiencyPercent: z.number(),
+  goalLabel: z.string().min(1).max(20),
+}) satisfies z.ZodType<CoachMealRequestBody>
+
+export const coachMessageSchema = z.object({
+  message: z.string(),
+}) satisfies z.ZodType<CoachMessage>

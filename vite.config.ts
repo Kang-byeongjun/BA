@@ -11,12 +11,17 @@ interface HandlersModule {
     body: unknown,
     deps: { env: Record<string, string | undefined> },
   ): Promise<{ status: number; body: unknown }>
+  handleCoachMeal(
+    body: unknown,
+    deps: { env: Record<string, string | undefined> },
+  ): Promise<{ status: number; body: unknown }>
 }
 
 const ROUTES: Record<string, AnalysisKind> = {
   '/analyze-inbody': 'inbody',
   '/analyze-food': 'food',
 }
+const COACH_ROUTE = '/coach-meal'
 
 // Vercel Function 요청 본문 한도(4.5MB)보다 조금 넉넉하게, 그 이상은 로컬에서도 거부한다.
 const MAX_BODY_BYTES = 6 * 1024 * 1024
@@ -52,8 +57,10 @@ function localAnalysisApi(mode: string): Plugin {
       const env: Record<string, string | undefined> = { ...loadEnv(mode, process.cwd(), ''), ...process.env }
 
       server.middlewares.use('/api', (req, res, next) => {
-        const kind = ROUTES[(req.url ?? '').split('?')[0]]
-        if (!kind) return next()
+        const path = (req.url ?? '').split('?')[0]
+        const kind = ROUTES[path]
+        const isCoach = path === COACH_ROUTE
+        if (!kind && !isCoach) return next()
 
         const send = (status: number, body: unknown) => {
           res.statusCode = status
@@ -73,7 +80,9 @@ function localAnalysisApi(mode: string): Plugin {
               return send(413, { ok: false, error: { code: 'IMAGE_TOO_LARGE', message: '이미지 용량이 너무 커요. 더 작은 사진을 선택하거나 다시 촬영해주세요.' } })
             }
             const handlers = (await server.ssrLoadModule('/server/handlers.ts')) as unknown as HandlersModule
-            const result = await handlers.handleAnalysis(kind, raw, { env })
+            const result = isCoach
+              ? await handlers.handleCoachMeal(raw, { env })
+              : await handlers.handleAnalysis(kind, raw, { env })
             send(result.status, result.body)
           } catch {
             send(500, { ok: false, error: { code: 'INTERNAL', message: '분석 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.' } })

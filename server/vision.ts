@@ -35,7 +35,7 @@ export function mapVisionError(err: unknown, kind: AnalysisKind): AnalysisError 
   }
   if (err instanceof Anthropic.NotFoundError) return wrap('MODEL_UNAVAILABLE')
   if (err instanceof Anthropic.RateLimitError) return wrap('RATE_LIMITED')
-  if (err instanceof Anthropic.BadRequestError) return wrap('INVALID_IMAGE')
+  if (err instanceof Anthropic.BadRequestError) return wrap(kind === 'coach' ? 'INVALID_REQUEST' : 'INVALID_IMAGE')
   if (err instanceof Anthropic.APIError) return wrap('UPSTREAM_ERROR')
   if (err instanceof Anthropic.AnthropicError) return wrap('PARSE_FAILED')
   if (err instanceof SyntaxError || (err instanceof Error && err.name === 'ZodError')) return wrap('PARSE_FAILED')

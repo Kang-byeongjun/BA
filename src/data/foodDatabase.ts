@@ -276,3 +276,12 @@ export function searchFoodDatabase(query: string, limit = 6): FoodDbEntry[] {
   if (!q) return []
   return FOOD_DATABASE.filter((f) => f.name.toLowerCase().includes(q)).slice(0, limit)
 }
+
+const BY_ID = new Map(FOOD_DATABASE.map((f) => [f.id, f]))
+
+/** 추천 식사 조합(mealCombos.ts)이 참조하는 id로 DB 항목을 찾는다. id는 항상 FOOD_DATABASE에 있어야 한다. */
+export function getFoodById(id: string): FoodDbEntry {
+  const entry = BY_ID.get(id)
+  if (!entry) throw new Error(`Unknown food id: ${id}`)
+  return entry
+}

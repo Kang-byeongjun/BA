@@ -49,6 +49,26 @@ export interface FoodExtraction {
   warnings: string[]
 }
 
+// ---------- 식사 추천 코칭 문구 ----------
+// 추천할 식사(무엇을, 왜)는 규칙 기반 엔진이 이미 결정한다. Claude는 그 결과를
+// 자연스러운 한국어 한 줄로 설명하기만 하고, 음식·수치를 새로 만들어내지 않는다.
+
+export interface CoachMealRequestBody {
+  mealTitle: string
+  // 표시용 문자열. 예: "닭가슴살 120g"
+  ingredients: string[]
+  nutrientLabel: string
+  nutrientAmount: number
+  nutrientUnit: string
+  // 이 영양소의 현재 달성률(%)
+  deficiencyPercent: number
+  goalLabel: string
+}
+
+export interface CoachMessage {
+  message: string
+}
+
 // ---------- 공통 응답 ----------
 
 export interface ApiSuccess<T> {

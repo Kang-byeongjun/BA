@@ -1,10 +1,13 @@
-import { RECOMMENDATION_FOODS } from '../data/mockData'
+import { getFoodById } from '../data/foodDatabase'
+import { MEAL_COMBOS, type MealComboDef } from '../data/mealCombos'
+import { resolveMealCombo } from '../services/nutritionService'
 import type {
+  Goal,
   Meal,
   NutrientKey,
   NutritionStatus,
   NutritionTarget,
-  RecommendedFood,
+  RecommendedMeal,
 } from '../types'
 
 export function sumMeals(meals: Meal[]) {
@@ -77,7 +80,7 @@ export function generateFeedback(
   return feedback
 }
 
-// 영양소별 추천 풀이 넓어져서(각 10개), 호출마다 항상 같은 상위 4개만 나오지 않도록
+// 풀이 넓어져서(영양소별 6개씩) 호출마다 항상 같은 상위 조합만 나오지 않도록
 // "오늘" 기준으로 고정된 순서로 섞는다. 같은 날에는 같은 추천이 유지되고, 날이 바뀌면 달라진다.
 function seededRandom(seed: number): number {
   const x = Math.sin(seed) * 10000
@@ -93,13 +96,50 @@ function shuffleWithSeed<T>(items: T[], seed: number): T[] {
   return result
 }
 
+const MAX_RECOMMENDATIONS = 3
+
 /**
- * 가장 부족한(달성률이 낮은) 영양소를 기준으로 추천 음식을 뽑는 규칙 기반 로직.
+ * 오늘 이미 먹은 재료로만 구성된 조합은 뒤로 미룬다(완전히 겹칠 때만 제외 — 재료 하나가 겹친다고
+ * 막으면 풀이 과도하게 줄어든다). 사용자의 식단 목적(goal)과 맞는 조합을 그다음으로 우선한다.
  */
-export function getRecommendedFoods(
+function rankCombos(pool: MealComboDef[], goal: Goal, seed: number, eatenTodayNames: Set<string>): MealComboDef[] {
+  const notFullyEaten = pool.filter((combo) => {
+    if (eatenTodayNames.size === 0) return true
+    const ingredientNames = combo.ingredients.map((ing) => getFoodById(ing.foodId).name)
+    return !ingredientNames.every((name) => eatenTodayNames.has(name))
+  })
+  const candidates = notFullyEaten.length > 0 ? notFullyEaten : pool
+
+  const shuffled = shuffleWithSeed(candidates, seed)
+  const goalMatched = shuffled.filter((c) => c.bestFor.length === 0 || c.bestFor.includes(goal))
+  const others = shuffled.filter((c) => c.bestFor.length > 0 && !c.bestFor.includes(goal))
+  return [...goalMatched, ...others]
+}
+
+function buildRecommendedMeal(combo: MealComboDef, deficiencyPercent: number): RecommendedMeal {
+  const resolved = resolveMealCombo(combo)
+  return {
+    id: combo.id,
+    title: combo.title,
+    emoji: combo.emoji,
+    ingredients: resolved.ingredients,
+    nutrients: resolved.nutrients,
+    primaryNutrient: combo.primaryNutrient,
+    deficiencyPercent,
+  }
+}
+
+/**
+ * 가장 부족한(달성률이 낮은) 영양소를 기준으로 "다음 식사" 조합을 추천하는 규칙 기반 로직.
+ * 결정(무엇을 추천할지)은 전부 여기서 계산한다 — AI는 이 결과를 설명하는 코칭 문구만 덧붙인다
+ * (src/services/coachService.ts).
+ */
+export function getRecommendedMeals(
   consumed: Record<NutrientKey, number>,
   target: NutritionTarget,
-): RecommendedFood[] {
+  goal: Goal,
+  eatenTodayFoodNames: string[],
+): RecommendedMeal[] {
   const macros: Exclude<NutrientKey, 'calories'>[] = ['protein', 'carbohydrates', 'fat', 'fiber']
 
   const deficiency = macros
@@ -108,19 +148,20 @@ export function getRecommendedFoods(
     .sort((a, b) => a.percent - b.percent)
 
   const priorityNutrients = deficiency.length > 0 ? deficiency.map((d) => d.nutrient) : macros
-
+  const eatenTodayNames = new Set(eatenTodayFoodNames)
   const daySeed = Math.floor(Date.now() / 86400000)
 
-  const result: RecommendedFood[] = []
+  const result: RecommendedMeal[] = []
   for (const nutrient of priorityNutrients) {
-    const pool = RECOMMENDATION_FOODS.filter((f) => f.nutrient === nutrient)
-    const candidates = shuffleWithSeed(pool, daySeed + macros.indexOf(nutrient))
-    for (const food of candidates) {
-      if (result.length >= 4) break
-      if (!result.some((r) => r.id === food.id)) result.push(food)
+    const pool = MEAL_COMBOS.filter((c) => c.primaryNutrient === nutrient)
+    const ranked = rankCombos(pool, goal, daySeed + macros.indexOf(nutrient), eatenTodayNames)
+    const percent = getPercentage(consumed[nutrient], target[nutrient])
+    for (const combo of ranked) {
+      if (result.length >= MAX_RECOMMENDATIONS) break
+      if (!result.some((r) => r.id === combo.id)) result.push(buildRecommendedMeal(combo, percent))
     }
-    if (result.length >= 4) break
+    if (result.length >= MAX_RECOMMENDATIONS) break
   }
 
-  return result.slice(0, 4)
+  return result.slice(0, MAX_RECOMMENDATIONS)
 }

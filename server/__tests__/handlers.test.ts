@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FoodExtraction, InBodyExtraction } from '../../shared/analysis.js'
-import { handleAnalysis } from '../handlers.js'
+import type { CoachMealRequestBody, FoodExtraction, InBodyExtraction } from '../../shared/analysis.js'
+import { handleAnalysis, handleCoachMeal } from '../handlers.js'
 import type { VisionClient } from '../vision.js'
 
 // 실제 Anthropic API를 호출하지 않고, 서버 로직(요청 검증·응답 검증·에러 매핑)을 검증한다.
@@ -288,5 +288,45 @@ describe('AI 응답/API 오류 처리 (mock 결과로 대체하지 않는다)', 
     const logged = JSON.stringify((console.error as unknown as { mock: { calls: unknown[] } }).mock.calls)
     expect(logged).not.toContain(validImage.slice(0, 40))
     expect(logged).not.toContain('test-key-not-real')
+  })
+})
+
+describe('추천 식사 코칭 문구 (handleCoachMeal)', () => {
+  const goodCoachRequest: CoachMealRequestBody = {
+    mealTitle: '닭가슴살 현미밥 브로콜리',
+    ingredients: ['닭가슴살 120g', '현미밥 150g', '브로콜리 80g'],
+    nutrientLabel: '단백질',
+    nutrientAmount: 43,
+    nutrientUnit: 'g',
+    deficiencyPercent: 45,
+    goalLabel: '체지방 감량',
+  }
+
+  it('이미지 없이 요청 본문만으로 코칭 문구를 반환한다', async () => {
+    const { client, parse } = fakeClient(okReply({ message: '단백질이 부족하니 닭가슴살 조합이 딱이에요!' }))
+    const res = await handleCoachMeal(goodCoachRequest, { env, client })
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({ ok: true, data: { message: '단백질이 부족하니 닭가슴살 조합이 딱이에요!' } })
+    // 이미지 블록 없이 순수 텍스트로만 요청해야 한다
+    const params = (parse.mock.calls[0] as unknown as [Record<string, any>])[0]
+    expect(typeof params.messages[0].content).toBe('string')
+  })
+
+  it('요청 본문이 스키마에 맞지 않으면 INVALID_REQUEST', async () => {
+    const res = await handleCoachMeal({ mealTitle: '' }, { env, client: fakeClient(okReply({ message: 'x' })).client })
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } })
+  })
+
+  it('API Key가 없으면 MISSING_API_KEY를 반환한다', async () => {
+    const res = await handleCoachMeal(goodCoachRequest, { env: {} })
+    expect(res.status).toBe(500)
+    expect(res.body).toMatchObject({ ok: false, error: { code: 'MISSING_API_KEY' } })
+  })
+
+  it('모델이 거절하면 REFUSED', async () => {
+    const { client } = fakeClient({ stop_reason: 'refusal', parsed_output: null })
+    const res = await handleCoachMeal(goodCoachRequest, { env, client })
+    expect(res.body).toMatchObject({ ok: false, error: { code: 'REFUSED' } })
   })
 })

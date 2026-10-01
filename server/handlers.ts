@@ -1,7 +1,8 @@
-import type { ApiResponse } from '../shared/analysis.js'
+import type { ApiResponse, CoachMealRequestBody } from '../shared/analysis.js'
 import { AnalysisError } from '../shared/errors.js'
 import type { AnalysisKind } from '../shared/errors.js'
-import { analyzeRequestSchema, foodExtractionSchema, inBodyExtractionSchema } from '../shared/schemas.js'
+import { analyzeRequestSchema, coachMealRequestSchema, foodExtractionSchema, inBodyExtractionSchema } from '../shared/schemas.js'
+import { generateCoachMessage } from './coach.js'
 import type { Env } from './config.js'
 import { validateImage } from './image.js'
 import { normalizeFood, normalizeInBody } from './normalize.js'
@@ -76,6 +77,40 @@ export async function handleAnalysis(kind: AnalysisKind, rawBody: unknown, deps:
     const error = mapVisionError(err, kind)
     // 이미지·API Key·사용자 데이터는 로그에 남기지 않고, 원인 파악에 필요한 최소 정보만 남긴다.
     console.error(`[analyze-${kind}] ${error.code} (${describeCause(err)})`)
+    return { status: error.status, body: { ok: false, error: { code: error.code, message: error.message } } }
+  }
+}
+
+function parseCoachRequestBody(raw: unknown): CoachMealRequestBody {
+  let value: unknown = raw
+  if (Buffer.isBuffer(value)) value = value.toString('utf8')
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value)
+    } catch {
+      throw new AnalysisError('INVALID_REQUEST', 'coach')
+    }
+  }
+  const parsed = coachMealRequestSchema.safeParse(value)
+  if (!parsed.success) throw new AnalysisError('INVALID_REQUEST', 'coach')
+  return parsed.data
+}
+
+/**
+ * 추천 식사에 대한 AI 코칭 문구 생성. 식사·수치는 클라이언트가 이미 규칙 기반으로 결정해 보내고,
+ * 여기서는 그 결과를 설명하는 한국어 문장만 만든다(이미지 없음, 숫자 재생성 없음).
+ */
+export async function handleCoachMeal(rawBody: unknown, deps: HandlerDeps = {}): Promise<HandlerResult> {
+  const env: Env = deps.env ?? process.env
+
+  try {
+    const client = deps.client ?? createVisionClient(env, 'coach')
+    const input = parseCoachRequestBody(rawBody)
+    const data = await generateCoachMessage(client, env, input)
+    return { status: 200, body: { ok: true, data } }
+  } catch (err) {
+    const error = mapVisionError(err, 'coach')
+    console.error(`[coach-meal] ${error.code} (${describeCause(err)})`)
     return { status: error.status, body: { ok: false, error: { code: error.code, message: error.message } } }
   }
 }

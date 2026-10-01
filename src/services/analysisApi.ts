@@ -4,9 +4,12 @@ import { AnalysisError, type AnalysisErrorCode, type AnalysisKind } from '../../
 /**
  * 서버(api/analyze-*)로 이미지를 보내 분석 결과를 받아오는 클라이언트.
  * Anthropic API는 절대 브라우저에서 직접 호출하지 않는다 — API Key는 서버 환경변수에만 있다.
+ * (코칭 문구(coach)는 이미지가 없는 별도 엔드포인트라 services/coachService.ts에서 다룬다)
  */
 
-const ENDPOINTS: Record<AnalysisKind, string> = {
+export type ImageAnalysisKind = Exclude<AnalysisKind, 'coach'>
+
+const ENDPOINTS: Record<ImageAnalysisKind, string> = {
   inbody: '/api/analyze-inbody',
   food: '/api/analyze-food',
 }
@@ -41,7 +44,7 @@ function isApiResponse(value: unknown): value is ApiResponse<unknown> {
   return typeof value === 'object' && value !== null && 'ok' in value && typeof value.ok === 'boolean'
 }
 
-function errorFromStatus(status: number, kind: AnalysisKind): AnalysisError {
+function errorFromStatus(status: number, kind: ImageAnalysisKind): AnalysisError {
   if (status === 413) return new AnalysisError('IMAGE_TOO_LARGE', kind)
   if (status === 504) return new AnalysisError('TIMEOUT', kind)
   // 404/405나 200(SPA index.html) 등 → API 함수가 없는 환경(예: vite preview)
@@ -52,7 +55,7 @@ function errorFromStatus(status: number, kind: AnalysisKind): AnalysisError {
 }
 
 export async function requestAnalysis<T>(
-  kind: AnalysisKind,
+  kind: ImageAnalysisKind,
   imageBase64: string,
   isValid: (data: unknown) => data is T,
   signal?: AbortSignal,
