@@ -1,11 +1,38 @@
 import { Loader2, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { requestCoachMessage } from '../../services/coachService'
-import { GOAL_LABELS, NUTRIENT_LABELS, NUTRIENT_UNITS, type Goal, type RecommendedMeal } from '../../types'
+import {
+  GOAL_LABELS,
+  NUTRIENT_LABELS,
+  NUTRIENT_UNITS,
+  type Goal,
+  type MealFlexibility,
+  type NutrientKey,
+  type RecommendedMeal,
+} from '../../types'
 
 interface Props {
   meals: RecommendedMeal[]
   goal: Goal
+  mealFlexibility: MealFlexibility
+}
+
+interface NutrientGroup {
+  nutrient: Exclude<NutrientKey, 'calories'>
+  percent: number
+  items: RecommendedMeal[]
+}
+
+// 추천 배열은 이미 영양소 우선순위대로 묶여서 들어온다(getRecommendedMeals) — 화면에서는
+// 같은 영양소 칩을 카드마다 반복하지 않고, 영양소 1개당 섹션 1개로 묶어서 보여준다.
+function groupByNutrient(meals: RecommendedMeal[]): NutrientGroup[] {
+  const groups: NutrientGroup[] = []
+  for (const meal of meals) {
+    const last = groups[groups.length - 1]
+    if (last && last.nutrient === meal.primaryNutrient) last.items.push(meal)
+    else groups.push({ nutrient: meal.primaryNutrient, percent: meal.deficiencyPercent, items: [meal] })
+  }
+  return groups
 }
 
 type CoachState =
@@ -70,37 +97,57 @@ function MealCoach({ meal, goal }: { meal: RecommendedMeal; goal: Goal }) {
   )
 }
 
-export default function RecommendationCard({ meals, goal }: Props) {
+export default function RecommendationCard({ meals, goal, mealFlexibility }: Props) {
+  const isFixed = mealFlexibility === 'fixed'
+  const title = isFixed ? '오늘 보충하면 좋은 재료' : '다음 식사 추천'
+
   if (meals.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
-        <h3 className="mb-1 text-sm font-semibold text-slate-800">다음 식사 추천</h3>
+        <h3 className="mb-1 text-sm font-semibold text-slate-800">{title}</h3>
         <p className="text-sm text-slate-500">오늘 목표를 모두 달성했어요! 훌륭해요 🎉</p>
       </div>
     )
   }
 
+  const groups = groupByNutrient(meals)
+
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4">
-      <h3 className="mb-3 text-sm font-semibold text-slate-800">다음 식사 추천</h3>
-      <div className="space-y-3">
-        {meals.map((meal) => (
-          <div key={meal.id} className="rounded-xl bg-slate-50 p-3">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">{meal.emoji}</span>
-              <div className="flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-800">{meal.title}</p>
-                  <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                    {NUTRIENT_LABELS[meal.primaryNutrient]} +{meal.nutrients[meal.primaryNutrient]}
-                    {NUTRIENT_UNITS[meal.primaryNutrient]}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  {meal.ingredients.map((i) => `${i.name} ${i.amount}`).join(' · ')}
-                </p>
-                <MealCoach meal={meal} goal={goal} />
-              </div>
+      <h3 className="mb-3 text-sm font-semibold text-slate-800">{title}</h3>
+      <div className="space-y-4">
+        {groups.map((group) => (
+          <div key={group.nutrient}>
+            <p className="mb-2 text-xs font-semibold text-emerald-700">
+              {NUTRIENT_LABELS[group.nutrient]}이 부족해요 · 목표의 {group.percent}%
+            </p>
+            <div className="space-y-2">
+              {group.items.map((meal) => {
+                // 재료 추천(1개 재료, 이름이 제목과 같음)은 재료 목록 줄이 제목과 중복되니 생략한다.
+                const showIngredients = meal.ingredients.length > 1 || meal.ingredients[0]?.name !== meal.title
+                return (
+                  <div key={meal.id} className="rounded-xl bg-slate-50 p-3">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">{meal.emoji}</span>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold text-slate-800">{meal.title}</p>
+                          <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                            +{meal.nutrients[meal.primaryNutrient]}
+                            {NUTRIENT_UNITS[meal.primaryNutrient]}
+                          </span>
+                        </div>
+                        {showIngredients && (
+                          <p className="mt-1 text-xs text-slate-500">
+                            {meal.ingredients.map((i) => `${i.name} ${i.amount}`).join(' · ')}
+                          </p>
+                        )}
+                        <MealCoach meal={meal} goal={goal} />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         ))}

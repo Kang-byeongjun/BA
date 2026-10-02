@@ -7,6 +7,7 @@ import {
   createEmptyRow,
   createRowsFromExtraction,
   isActiveRow,
+  LOW_CONFIDENCE,
   rowNutrients,
   summarizeRows,
   type FoodRow,
@@ -26,7 +27,20 @@ interface Props {
 
 const SLOTS: MealSlot[] = ['아침', '점심', '저녁', '간식']
 const GRAM_STEP = 10
-const LOW_CONFIDENCE = 0.6
+
+// 그램 수를 바로 입력하는 대신, 익숙한 크기 비교로 양을 조정할 수 있게 한다 — 사진 한 장으로
+// 정확한 중량을 재는 건 어렵고, 사용자는 숫자보다 "이만큼"을 훨씬 잘 판단하기 때문이다.
+// AI가 처음 추정한 양(originalGrams)을 기준으로 비율을 매긴다.
+const SIZE_PRESETS: { label: string; multiplier: number }[] = [
+  { label: '적게', multiplier: 0.7 },
+  { label: '보통', multiplier: 1 },
+  { label: '많이', multiplier: 1.3 },
+  { label: '아주 많이', multiplier: 1.6 },
+]
+
+function presetGrams(baseGrams: number, multiplier: number): number {
+  return Math.max(GRAM_STEP, Math.round((baseGrams * multiplier) / GRAM_STEP) * GRAM_STEP)
+}
 
 const COOKING_LABELS: Record<string, string> = {
   grilled: '구이',
@@ -175,7 +189,7 @@ export default function FoodAnalysis({ preview, extraction, mode, onReanalyze, o
         <div className="rounded-2xl border border-slate-100 bg-white p-4">
           <p className="mb-1 text-xs font-medium text-slate-500">인식된 음식</p>
           <p className="mb-3 text-[11px] text-slate-400">
-            사진 분석을 기반으로 한 예상량입니다. 실제 섭취량에 맞게 수정해주세요.
+            사진 분석을 기반으로 한 예상량입니다. 그램 수가 가늠되지 않으면 아래 크기 버튼으로, 알고 있으면 숫자로 직접 맞춰주세요.
           </p>
 
           <div className="space-y-3">
@@ -252,6 +266,28 @@ export default function FoodAnalysis({ preview, extraction, mode, onReanalyze, o
                       )}
                     </div>
                   </div>
+
+                  {row.originalGrams !== null && (
+                    <div className="mt-2 flex gap-1">
+                      {SIZE_PRESETS.map((preset) => {
+                        const presetValue = presetGrams(row.originalGrams!, preset.multiplier)
+                        const active = row.grams === presetValue
+                        return (
+                          <button
+                            key={preset.label}
+                            onClick={() => setGrams(row.key, presetValue)}
+                            className={`flex-1 rounded-lg border py-1.5 text-[11px] font-medium transition ${
+                              active
+                                ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                                : 'border-slate-200 bg-white text-slate-500'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
 
                   {rounded && (
                     <p className="mt-2 text-[11px] text-slate-500">

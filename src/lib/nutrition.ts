@@ -1,10 +1,11 @@
 import { getFoodById } from '../data/foodDatabase'
-import { MEAL_COMBOS, type MealComboDef } from '../data/mealCombos'
+import { INGREDIENT_MEAL_COMBOS, MEAL_COMBOS, type MealComboDef } from '../data/mealCombos'
 import { computeGoalFit, resolveMealCombo, type ResolvedMealCombo } from '../services/nutritionService'
 import type {
   Gender,
   Goal,
   Meal,
+  MealFlexibility,
   NutrientKey,
   NutritionStatus,
   NutritionTarget,
@@ -39,6 +40,9 @@ export function getNutritionStatus(percent: number): NutritionStatus {
 export interface MacroFeedback {
   nutrient: NutrientKey
   message: string
+  // 보조 정보(그램 수). 사진 기반 섭취량 추정은 본질적으로 정밀하지 않으므로, 메인 메시지는
+  // 퍼센트·단계로만 말하고 그램 수는 "약 OOg" 식으로 부가 정보로만 보여준다.
+  detail: string | null
 }
 
 const FEEDBACK_LABELS: Record<Exclude<NutrientKey, 'calories'>, string> = {
@@ -48,8 +52,17 @@ const FEEDBACK_LABELS: Record<Exclude<NutrientKey, 'calories'>, string> = {
   fiber: '식이섬유',
 }
 
+// 사진 기반 추정값에 그램 단위까지 정밀하게 보여주면 실제보다 더 정확한 것처럼 보인다.
+// 5g 단위로 뭉뚱그려서 "약 30g" 식으로만 보여준다.
+function approximateGrams(value: number): number {
+  return Math.round(value / 5) * 5
+}
+
 /**
  * 현재 섭취량 vs 목표량을 비교하는 단순 규칙 기반 피드백.
+ * 메시지는 퍼센트·단계(부족/적정/목표 근접/초과)로 먼저 말하고, 그램 수는 보조 정보로만 덧붙인다 —
+ * 사진으로 추정한 섭취량 자체가 정밀하지 않은데 "30g 더 필요해요"처럼 숫자를 메인으로 내세우면
+ * 실제보다 더 정확한 것처럼 보이기 때문이다.
  */
 export function generateFeedback(
   consumed: Record<NutrientKey, number>,
@@ -61,20 +74,30 @@ export function generateFeedback(
   for (const nutrient of macros) {
     const percent = getPercentage(consumed[nutrient], target[nutrient])
     const label = FEEDBACK_LABELS[nutrient]
+    const status = getNutritionStatus(percent)
     const remaining = Math.max(0, target[nutrient] - consumed[nutrient])
     const over = Math.max(0, consumed[nutrient] - target[nutrient])
 
-    if (percent >= 110) {
-      feedback.push({ nutrient, message: `${label}이(가) 목표보다 ${over}g 초과했어요.` })
-    } else if (percent >= 90) {
-      feedback.push({ nutrient, message: `${label}은(는) 목표량에 거의 도달했어요.` })
-    } else if (percent < 60) {
+    if (status === 'exceeded') {
       feedback.push({
         nutrient,
-        message: `${label}이(가) 목표의 ${percent}%밖에 채워지지 않았어요. ${remaining}g 더 필요해요.`,
+        message: `${label}이(가) 목표보다 많이 초과했어요.`,
+        detail: over > 0 ? `약 ${approximateGrams(over)}g 더 섭취했어요` : null,
+      })
+    } else if (status === 'near_goal') {
+      feedback.push({ nutrient, message: `${label}은(는) 목표량에 거의 도달했어요.`, detail: null })
+    } else if (status === 'deficient') {
+      feedback.push({
+        nutrient,
+        message: `${label}이(가) 목표의 ${percent}%밖에 채워지지 않았어요.`,
+        detail: remaining > 0 ? `약 ${approximateGrams(remaining)}g 더 필요해요` : null,
       })
     } else {
-      feedback.push({ nutrient, message: `오늘 ${label}이(가) ${remaining}g 부족해요.` })
+      feedback.push({
+        nutrient,
+        message: `${label}이(가) 아직 목표에 조금 못 미쳤어요.`,
+        detail: remaining > 0 ? `약 ${approximateGrams(remaining)}g 더 필요해요` : null,
+      })
     }
   }
 
@@ -131,10 +154,11 @@ function rankCombos(pool: MealComboDef[], goal: Goal, seed: number, eatenTodayNa
 const BODY_FAT_HIGH_THRESHOLD: Record<Gender, number> = { male: 25, female: 32 }
 const PRIORITY_BIAS = 15
 
-interface RecommendationProfile {
+export interface RecommendationProfile {
   goal: Goal
   gender: Gender
   bodyFatPercentage: number | null
+  mealFlexibility: MealFlexibility
 }
 
 function priorityBias(profile: RecommendationProfile): Partial<Record<Exclude<NutrientKey, 'calories'>, number>> {
@@ -179,9 +203,13 @@ export function getRecommendedMeals(
   const eatenTodayNames = new Set(eatenTodayFoodNames)
   const daySeed = Math.floor(Date.now() / 86400000)
 
+  // 식단을 자유롭게 바꿀 수 없는 사용자('fixed')에게는 완성된 한 끼 조합을 추천해도 지킬 수 없다 —
+  // 지금 먹는 식단에 더하기만 하면 되는 재료 단위 풀을 쓴다.
+  const comboPool = profile.mealFlexibility === 'fixed' ? INGREDIENT_MEAL_COMBOS : MEAL_COMBOS
+
   const result: RecommendedMeal[] = []
   for (const nutrient of priorityNutrients) {
-    const pool = MEAL_COMBOS.filter((c) => c.primaryNutrient === nutrient)
+    const pool = comboPool.filter((c) => c.primaryNutrient === nutrient)
     const ranked = rankCombos(pool, profile.goal, daySeed + macros.indexOf(nutrient), eatenTodayNames)
     const percent = getPercentage(consumed[nutrient], target[nutrient])
     for (const { combo, resolved } of ranked) {

@@ -31,14 +31,20 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
   const todayMeals = useMemo(() => meals.filter((m) => isSameDay(m.timestamp, Date.now())), [meals])
   const consumed = useMemo(() => sumMeals(todayMeals), [todayMeals])
   const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
+  const hasUncertainPortionsToday = todayMeals.some((m) => m.hasLowConfidencePortions)
 
   if (!nutritionTarget) return null
 
-  // 체지방률 기반 추천 우선순위 보정에 쓰는 최소 정보. profile이 없을 상황은 실질적으로 없지만
-  // (데모/온보딩 완료 후에만 대시보드가 보임) 타입 안전을 위해 중립값으로 대체한다.
+  // 체지방률 기반 추천 우선순위 보정 + 재료/조합 추천 방식 선택에 쓰는 최소 정보. profile이 없을
+  // 상황은 실질적으로 없지만(데모/온보딩 완료 후에만 대시보드가 보임) 타입 안전을 위해 중립값으로 대체한다.
   const recommendationProfile = profile
-    ? { goal: profile.goal, gender: profile.gender, bodyFatPercentage: profile.bodyFatPercentage }
-    : { goal: 'health_care' as const, gender: 'male' as const, bodyFatPercentage: null }
+    ? {
+        goal: profile.goal,
+        gender: profile.gender,
+        bodyFatPercentage: profile.bodyFatPercentage,
+        mealFlexibility: profile.mealFlexibility,
+      }
+    : { goal: 'health_care' as const, gender: 'male' as const, bodyFatPercentage: null, mealFlexibility: 'flexible' as const }
   const feedback = generateFeedback(consumed, nutritionTarget)
   const recommendations = getRecommendedMeals(consumed, nutritionTarget, recommendationProfile, eatenTodayFoodNames)
 
@@ -108,8 +114,13 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
         음식 촬영하고 기록하기
       </button>
 
+      {hasUncertainPortionsToday && (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          오늘 기록 중 AI가 자신 없어했던 양이 그대로 포함돼 있어요. 아래 % 숫자는 참고용으로 봐주세요.
+        </p>
+      )}
       <FeedbackPanel feedback={feedback} />
-      <RecommendationCard meals={recommendations} goal={recommendationProfile.goal} />
+      <RecommendationCard meals={recommendations} goal={recommendationProfile.goal} mealFlexibility={recommendationProfile.mealFlexibility} />
 
       {selectedMeal && (
         <MealDetailModal

@@ -18,7 +18,10 @@ export default function FeedbackPanel({ feedback }: Props) {
         {feedback.map((f) => (
           <li key={f.nutrient} className="flex gap-2 text-sm text-slate-600">
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
-            <span>{f.message}</span>
+            <span>
+              {f.message}
+              {f.detail && <span className="ml-1 text-xs text-slate-400">({f.detail})</span>}
+            </span>
           </li>
         ))}
       </ul>

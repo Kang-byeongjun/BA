@@ -130,6 +130,32 @@ describe('mealService', () => {
     expect(meal.foods.map((f) => f.amount)).toEqual(['120g', '180g', '70g'])
     expect(meal.foods).toHaveLength(3)
   })
+
+  it('신뢰도가 낮은 추정 중량을 사용자가 고치지 않고 저장하면 hasLowConfidencePortions가 true다', () => {
+    const lowConfidenceExtraction: FoodExtraction = {
+      ...extraction,
+      foods: [{ name: '닭가슴살', estimatedGrams: 120, cookingMethod: 'grilled', confidence: 0.4 }],
+    }
+    const rows = createRowsFromExtraction(lowConfidenceExtraction)
+    const meal = buildMeal({ title: '식사', slot: '저녁', rows, thumbnail: null })
+    expect(meal.hasLowConfidencePortions).toBe(true)
+  })
+
+  it('신뢰도가 낮아도 사용자가 그램 수를 직접 고치면 hasLowConfidencePortions가 false다', () => {
+    const lowConfidenceExtraction: FoodExtraction = {
+      ...extraction,
+      foods: [{ name: '닭가슴살', estimatedGrams: 120, cookingMethod: 'grilled', confidence: 0.4 }],
+    }
+    const rows = createRowsFromExtraction(lowConfidenceExtraction).map((r) => ({ ...r, grams: 150 }))
+    const meal = buildMeal({ title: '식사', slot: '저녁', rows, thumbnail: null })
+    expect(meal.hasLowConfidencePortions).toBe(false)
+  })
+
+  it('신뢰도가 높으면 고치지 않아도 hasLowConfidencePortions가 false다', () => {
+    const rows = createRowsFromExtraction(extraction)
+    const meal = buildMeal({ title: '식사', slot: '저녁', rows, thumbnail: null })
+    expect(meal.hasLowConfidencePortions).toBe(false)
+  })
 })
 
 describe('nutritionTargetService', () => {

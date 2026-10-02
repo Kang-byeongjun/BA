@@ -101,7 +101,7 @@ describe('음식 사진 흐름 (Test B)', () => {
     expect(screen.getByDisplayValue('현미밥')).toBeTruthy()
     expect(screen.getByDisplayValue('브로콜리')).toBeTruthy()
     expect(screen.getByText(/총 495/)).toBeTruthy()
-    expect(screen.getByText('사진 분석을 기반으로 한 예상량입니다. 실제 섭취량에 맞게 수정해주세요.')).toBeTruthy()
+    expect(screen.getByText(/사진 분석을 기반으로 한 예상량입니다/)).toBeTruthy()
 
     // 중량 수정 → 영양소 재계산 (현미밥 180g → 190g: 495 → 511)
     fireEvent.click(screen.getAllByLabelText('10g 늘리기')[1])

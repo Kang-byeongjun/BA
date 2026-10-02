@@ -28,6 +28,7 @@ export const DEMO_PROFILE: UserProfile = {
   mineralMass: 4.5,
   basalMetabolicRate: 1650,
   basalMetabolicRateEstimated: false,
+  mealFlexibility: 'flexible',
 }
 
 export const DEMO_NUTRITION_TARGET: NutritionTarget = {
@@ -71,6 +72,7 @@ export function buildDemoMeals(): Meal[] {
       carbohydrates: 45,
       fat: 6,
       fiber: 3,
+      hasLowConfidencePortions: false,
     },
     {
       id: 'demo-meal-lunch',
@@ -87,6 +89,7 @@ export function buildDemoMeals(): Meal[] {
       carbohydrates: 70,
       fat: 15,
       fiber: 6,
+      hasLowConfidencePortions: false,
     },
   ]
 }

@@ -12,12 +12,16 @@ import type { NutrientKey } from '../types'
  * goal을 지정하던 방식에서, 계산된 영양 비율로 자동 판정하는 방식(nutritionService.computeGoalFit)
  * 으로 바꿨다.
  *
- * 풀 자체도 두 부분으로 구성된다:
- * - CURATED_MEAL_COMBOS: 재료 2~3가지를 사람이 직접 짝지은 조합(아래)
- * - generateDishCombos(): foodDatabase.ts의 한식/중식/일식/양식/분식 "완성 요리"를
- *   전부 1인분 추천 조합으로 자동 변환한 것. 하나씩 고르는 대신 요리당 1인분 칼로리(500kcal
- *   기준)로 환산하고, primaryNutrient도 계산된 비율로 자동 분류한다 — 그래서 손으로 24개를
- *   고르는 방식보다 풀이 훨씬 커지고(150개 이상), 식재료가 바뀌면 자동으로 따라간다.
+ * 풀은 두 묶음으로 나뉜다:
+ * - MEAL_COMBOS: "다음 식사" 추천용. CURATED_MEAL_COMBOS(재료 2~3가지를 사람이 직접 짝지은
+ *   조합) + generateDishCombos()(foodDatabase.ts의 한식/중식/일식/양식/분식 "완성 요리"를
+ *   1인분 칼로리(500kcal 기준)로 환산해 자동 변환한 것). 식단을 자유롭게 바꿀 수 있는
+ *   사용자(UserProfile.mealFlexibility === 'flexible')에게 쓴다.
+ * - INGREDIENT_MEAL_COMBOS: "지금 식단에 더하기" 추천용. 재료/채소/과일 카테고리에서
+ *   보충용 1회분(150kcal 기준)으로 자동 변환한 단일 재료 풀. 매번 비슷한 식단을 먹을 수밖에
+ *   없는 사용자('fixed')에게 쓴다 — 완성 요리를 통째로 추천하면 지킬 수 없기 때문이다.
+ * 어느 쪽이든 primaryNutrient는 계산된 영양 비율로 자동 분류한다 — 손으로 고르는 방식보다
+ * 풀이 훨씬 커지고, 식재료가 바뀌면 자동으로 따라간다.
  */
 
 export interface MealComboIngredientSpec {
@@ -356,11 +360,16 @@ function determinePrimaryNutrient(n: EstimatedNutrients): Exclude<NutrientKey, '
   return 'carbohydrates'
 }
 
+/** 목표 칼로리가 되도록 1인분 그램 수를 역산하고, 10g 단위로 반올림해 min~max 범위로 제한한다. */
+function computeServingGrams(entry: FoodDbEntry, targetKcal: number, min: number, max: number): number {
+  const rawGrams = (targetKcal / entry.caloriesPer100g) * 100
+  return Math.min(max, Math.max(min, Math.round(rawGrams / 10) * 10))
+}
+
 function generateDishCombos(): MealComboDef[] {
   return FOOD_DATABASE.filter((entry) => DISH_CATEGORIES.includes(entry.category) && !DISH_EXCLUDE_IDS.has(entry.id)).map(
     (entry) => {
-      const rawGrams = (TARGET_MEAL_CALORIES / entry.caloriesPer100g) * 100
-      const grams = Math.min(MAX_SERVING_GRAMS, Math.max(MIN_SERVING_GRAMS, Math.round(rawGrams / 10) * 10))
+      const grams = computeServingGrams(entry, TARGET_MEAL_CALORIES, MIN_SERVING_GRAMS, MAX_SERVING_GRAMS)
       const nutrients = estimateNutrients(entry, grams)
       return {
         id: `auto-${entry.id}`,
@@ -374,3 +383,41 @@ function generateDishCombos(): MealComboDef[] {
 }
 
 export const MEAL_COMBOS: MealComboDef[] = [...CURATED_MEAL_COMBOS, ...generateDishCombos()]
+
+// ---------------------------------------------------------------------------
+// 재료 단위 추천(식단 유형 = "매번 비슷한 식단") — 완성된 한 끼가 아니라, 지금 먹는 식단에
+// "더하기만 하면 되는" 단일 재료를 추천한다. 식단을 자유롭게 바꿀 수 없는 사용자도 실행 가능한
+// 조언이 되도록, 재료/채소/과일 카테고리에서만 뽑는다(완성 요리는 제외 — 그건 위 generateDishCombos).
+// ---------------------------------------------------------------------------
+
+const INGREDIENT_CATEGORIES: FoodCategory[] = ['재료', '채소', '과일']
+
+// "한 끼"가 아니라 "보충용 1회분"이라 목표 칼로리를 훨씬 낮게 잡는다(달걀 1~2개, 견과류 한 줌 정도).
+const TARGET_INGREDIENT_CALORIES = 150
+const MIN_INGREDIENT_GRAMS = 15
+const MAX_INGREDIENT_GRAMS = 250
+
+// 재료는 요리 이름이 없으니, "왜 추천됐는지"(부족한 영양소)를 그대로 아이콘으로 보여준다.
+const NUTRIENT_EMOJI: Record<Exclude<NutrientKey, 'calories'>, string> = {
+  protein: '🍗',
+  carbohydrates: '🍚',
+  fat: '🥑',
+  fiber: '🥦',
+}
+
+function generateIngredientCombos(): MealComboDef[] {
+  return FOOD_DATABASE.filter((entry) => INGREDIENT_CATEGORIES.includes(entry.category)).map((entry) => {
+    const grams = computeServingGrams(entry, TARGET_INGREDIENT_CALORIES, MIN_INGREDIENT_GRAMS, MAX_INGREDIENT_GRAMS)
+    const nutrients = estimateNutrients(entry, grams)
+    const primaryNutrient = determinePrimaryNutrient(nutrients)
+    return {
+      id: `ingredient-${entry.id}`,
+      title: entry.name,
+      emoji: NUTRIENT_EMOJI[primaryNutrient],
+      ingredients: [{ foodId: entry.id, grams }],
+      primaryNutrient,
+    }
+  })
+}
+
+export const INGREDIENT_MEAL_COMBOS: MealComboDef[] = generateIngredientCombos()

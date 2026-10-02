@@ -19,10 +19,16 @@ import {
  * foodVisionService(무엇을, 얼마나) → nutritionService(영양소 계산) → mealService(식사 기록)
  */
 
+// AI 추정 신뢰도가 이 미만이면 "낮음"으로 본다. FoodAnalysis.tsx의 신뢰도 배지와 같은 기준.
+export const LOW_CONFIDENCE = 0.6
+
 export interface FoodRow {
   key: string
   name: string
   grams: number
+  // AI가 처음 추정한 그램 수. 사용자가 직접 추가한 행은 null. grams와 비교해 "사용자가 직접
+  // 확인·수정했는지"를 판단하는 데 쓴다(바꿨다면 신뢰도가 낮았어도 사용자가 검증한 것으로 본다).
+  originalGrams: number | null
   // 영양 DB와 연결된 항목. null이면 영양 정보를 아직 찾지 못한 상태.
   entry: FoodDbEntry | null
   matchType: MatchType
@@ -38,6 +44,7 @@ export function createRowsFromExtraction(extraction: FoodExtraction, provider: N
       key: generateId('row'),
       name: food.name,
       grams: food.estimatedGrams,
+      originalGrams: food.estimatedGrams,
       entry,
       matchType,
       cookingMethod: food.cookingMethod,
@@ -47,7 +54,21 @@ export function createRowsFromExtraction(extraction: FoodExtraction, provider: N
 }
 
 export function createEmptyRow(): FoodRow {
-  return { key: generateId('row'), name: '', grams: 100, entry: null, matchType: 'none', cookingMethod: null, confidence: null }
+  return {
+    key: generateId('row'),
+    name: '',
+    grams: 100,
+    originalGrams: null,
+    entry: null,
+    matchType: 'none',
+    cookingMethod: null,
+    confidence: null,
+  }
+}
+
+/** AI가 자신없어했는데(신뢰도 낮음) 사용자가 그 그램 수를 그대로 저장했으면 true. */
+export function hasUnverifiedLowConfidence(row: FoodRow): boolean {
+  return row.confidence !== null && row.confidence < LOW_CONFIDENCE && row.grams === row.originalGrams
 }
 
 /** 이름을 입력하지 않은 빈 행은 계산·저장에서 제외한다. */
@@ -105,5 +126,6 @@ export function buildMeal({ title, slot, rows, thumbnail, timestamp }: BuildMeal
     image: thumbnail,
     foods,
     ...totals,
+    hasLowConfidencePortions: active.some(hasUnverifiedLowConfidence),
   }
 }
