@@ -1,3 +1,4 @@
+import { FOOD_DATABASE, type FoodCategory, type FoodDbEntry } from './foodDatabase'
 import type { NutrientKey } from '../types'
 
 /**
@@ -10,6 +11,13 @@ import type { NutrientKey } from '../types'
  * 이 조합이 어떤 식단 목적에 어울리는지도 여기서 직접 정하지 않는다 — 조합마다 사람이
  * goal을 지정하던 방식에서, 계산된 영양 비율로 자동 판정하는 방식(nutritionService.computeGoalFit)
  * 으로 바꿨다.
+ *
+ * 풀 자체도 두 부분으로 구성된다:
+ * - CURATED_MEAL_COMBOS: 재료 2~3가지를 사람이 직접 짝지은 조합(아래)
+ * - generateDishCombos(): foodDatabase.ts의 한식/중식/일식/양식/분식 "완성 요리"를
+ *   전부 1인분 추천 조합으로 자동 변환한 것. 하나씩 고르는 대신 요리당 1인분 칼로리(500kcal
+ *   기준)로 환산하고, primaryNutrient도 계산된 비율로 자동 분류한다 — 그래서 손으로 24개를
+ *   고르는 방식보다 풀이 훨씬 커지고(150개 이상), 식재료가 바뀌면 자동으로 따라간다.
  */
 
 export interface MealComboIngredientSpec {
@@ -26,7 +34,7 @@ export interface MealComboDef {
   primaryNutrient: Exclude<NutrientKey, 'calories'>
 }
 
-export const MEAL_COMBOS: MealComboDef[] = [
+const CURATED_MEAL_COMBOS: MealComboDef[] = [
   // ------------------------------------------------------------------
   // 단백질
   // ------------------------------------------------------------------
@@ -282,3 +290,87 @@ export const MEAL_COMBOS: MealComboDef[] = [
     primaryNutrient: 'fiber',
   },
 ]
+
+// ---------------------------------------------------------------------------
+// 완성 요리 자동 변환 — foodDatabase.ts의 한식/중식/일식/양식/분식 카테고리를 전부 1인분
+// 추천 조합으로 바꾼다. 재료(단백질/탄수화물 등)·과일·채소·디저트·음료 카테고리는 제외한다
+// (재료는 위 CURATED_MEAL_COMBOS에서 이미 의미 있게 조합했고, 과일/채소/디저트/음료 단독은
+// "한 끼 식사"로 보기 어렵다).
+// ---------------------------------------------------------------------------
+
+const DISH_CATEGORIES: FoodCategory[] = ['한식', '중식', '일식', '양식', '분식']
+
+// 칼로리 계산상 문제는 없지만 반찬(소량 곁들임)이라 "500g이 한 끼"로 환산하면 비현실적인
+// 두 가지만 예외로 뺀다. 나머지는 그대로 자동 변환한다(판단을 최소화하기 위함).
+const DISH_EXCLUDE_IDS = new Set(['kimchi', 'kkakdugi'])
+
+const CATEGORY_EMOJI: Partial<Record<FoodCategory, string>> = {
+  한식: '🍚',
+  중식: '🥡',
+  일식: '🍱',
+  양식: '🍝',
+  분식: '🍢',
+}
+
+// 한 끼로 추천할 만한 칼로리 — 이 칼로리에 맞춰 요리별 1인분 그램 수를 역산한다.
+const TARGET_MEAL_CALORIES = 500
+const MIN_SERVING_GRAMS = 120
+const MAX_SERVING_GRAMS = 500
+
+// computeGoalFit(nutritionService.ts)의 건강관리 판정 기준과 같은 값 — 식이섬유가
+// 칼로리 대비 이 정도면 "식이섬유 중심" 음식으로 본다. 기준을 두 곳에서 따로 정하지 않기 위해 맞춘다.
+const FIBER_PRIMARY_THRESHOLD_PER_1000KCAL = 8
+
+interface EstimatedNutrients {
+  calories: number
+  protein: number
+  carbohydrates: number
+  fat: number
+  fiber: number
+}
+
+function estimateNutrients(entry: FoodDbEntry, grams: number): EstimatedNutrients {
+  const factor = grams / 100
+  return {
+    calories: entry.caloriesPer100g * factor,
+    protein: entry.proteinPer100g * factor,
+    carbohydrates: entry.carbsPer100g * factor,
+    fat: entry.fatPer100g * factor,
+    fiber: entry.fiberPer100g * factor,
+  }
+}
+
+/** 식이섬유 비중이 충분히 높으면 식이섬유로, 아니면 칼로리 비중이 가장 큰 매크로로 분류한다. */
+function determinePrimaryNutrient(n: EstimatedNutrients): Exclude<NutrientKey, 'calories'> {
+  if (n.calories <= 0) return 'carbohydrates'
+
+  const fiberPer1000Kcal = (n.fiber / n.calories) * 1000
+  if (fiberPer1000Kcal >= FIBER_PRIMARY_THRESHOLD_PER_1000KCAL) return 'fiber'
+
+  const proteinKcal = n.protein * 4
+  const carbKcal = n.carbohydrates * 4
+  const fatKcal = n.fat * 9
+  const maxKcal = Math.max(proteinKcal, carbKcal, fatKcal)
+  if (maxKcal === proteinKcal) return 'protein'
+  if (maxKcal === fatKcal) return 'fat'
+  return 'carbohydrates'
+}
+
+function generateDishCombos(): MealComboDef[] {
+  return FOOD_DATABASE.filter((entry) => DISH_CATEGORIES.includes(entry.category) && !DISH_EXCLUDE_IDS.has(entry.id)).map(
+    (entry) => {
+      const rawGrams = (TARGET_MEAL_CALORIES / entry.caloriesPer100g) * 100
+      const grams = Math.min(MAX_SERVING_GRAMS, Math.max(MIN_SERVING_GRAMS, Math.round(rawGrams / 10) * 10))
+      const nutrients = estimateNutrients(entry, grams)
+      return {
+        id: `auto-${entry.id}`,
+        title: entry.name,
+        emoji: CATEGORY_EMOJI[entry.category] ?? '🍽️',
+        ingredients: [{ foodId: entry.id, grams }],
+        primaryNutrient: determinePrimaryNutrient(nutrients),
+      }
+    },
+  )
+}
+
+export const MEAL_COMBOS: MealComboDef[] = [...CURATED_MEAL_COMBOS, ...generateDishCombos()]

@@ -7,6 +7,33 @@ import { getRecommendedMeals } from '../nutrition'
 const target: NutritionTarget = { calories: 2000, protein: 120, carbohydrates: 250, fat: 70, fiber: 30 }
 const healthCareProfile = { goal: 'health_care' as const, gender: 'male' as const, bodyFatPercentage: null }
 
+describe('MEAL_COMBOS — 완성 요리 자동 생성 풀', () => {
+  it('한식/중식/일식/양식/분식 완성 요리를 자동으로 조합 풀에 포함한다(수십 개 이상으로 확장)', () => {
+    expect(MEAL_COMBOS.length).toBeGreaterThan(100)
+    expect(MEAL_COMBOS.some((c) => c.id.startsWith('auto-'))).toBe(true)
+  })
+
+  it('반찬(소량 곁들임) 2종은 "1인분 500g" 환산이 비현실적이라 자동 생성에서 제외한다', () => {
+    expect(MEAL_COMBOS.some((c) => c.id === 'auto-kimchi')).toBe(false)
+    expect(MEAL_COMBOS.some((c) => c.id === 'auto-kkakdugi')).toBe(false)
+  })
+
+  it('자동 생성된 조합도 1인분 그램 수가 120~500g 범위 안에 있다', () => {
+    const generated = MEAL_COMBOS.filter((c) => c.id.startsWith('auto-'))
+    expect(generated.length).toBeGreaterThan(100)
+    for (const combo of generated) {
+      expect(combo.ingredients).toHaveLength(1)
+      expect(combo.ingredients[0].grams).toBeGreaterThanOrEqual(120)
+      expect(combo.ingredients[0].grams).toBeLessThanOrEqual(500)
+    }
+  })
+
+  it('조합 id는 전부 유일하다(수동 조합과 자동 조합 사이 충돌 없음)', () => {
+    const ids = MEAL_COMBOS.map((c) => c.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+})
+
 describe('resolveMealCombo', () => {
   it('재료 id+중량으로부터 실제 영양 수치를 계산한다(숫자를 지어내지 않는다)', () => {
     const combo = MEAL_COMBOS.find((c) => c.id === 'combo-chicken-rice-broccoli')
