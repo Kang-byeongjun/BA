@@ -80,12 +80,13 @@ export default function OnboardingFlow() {
       mealFlexibility: 'flexible',
     }
     setProfile(nextProfile)
-    setTarget(generateNutritionTarget(nextProfile))
     setStep('workout')
   }
 
   const handleWorkoutNext = (nextWorkoutProfile: WorkoutProfile) => {
+    if (!profile) return
     setWorkoutProfile(nextWorkoutProfile)
+    setTarget(generateNutritionTarget(profile, nextWorkoutProfile))
     setStep('target')
   }
 

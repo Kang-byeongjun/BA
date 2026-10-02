@@ -1,10 +1,20 @@
-import type { Gender, Goal, InBodyMeasurements, NutritionTarget, UserProfile } from '../types'
+import type { Gender, Goal, InBodyMeasurements, NutritionTarget, UserProfile, WorkoutProfile } from '../types'
 
 /**
  * nutritionTargetService — InBody 체성분 데이터 + 사용자가 선택한 목표로 하루 영양 목표를 계산한다.
  *
  * 프로토타입용 단순 공식이며 의학적 진단이나 처방이 아니다. 사용자는 계산된 목표를 언제든 직접 수정할 수 있다.
  * InBody 데이터나 목표가 바뀌면 이 서비스로 다시 계산한다. (추후 서버의 영양 목표 산출 API로 교체 가능)
+ *
+ * 근거 문헌:
+ * - 단백질(체지방감량 외 목적) — ISSN Position Stand(Jäger et al., 2017, 1.4–2.0g/kg)와
+ *   ACSM/AND/DC 공동 성명(2016, 1.2–2.0g/kg) 범위 안에서 목적별로 보간한 값.
+ * - 단백질(체지방감량, 제지방량 기준) — Helms et al.(2014) 체계적 문헌고찰: 저체지방·근력훈련자가
+ *   칼로리 제한 중 필요한 단백질은 2.3–3.1g/kg 제지방량(마르고 제한이 강할수록 상단).
+ * - 탄수화물 — ACSM/AND/DC 공동 성명(2016)의 운동량별 탄수화물 g/kg 권고(가벼운 운동 3–5,
+ *   중강도 5–7, 고강도 6–10, 초고강도 8–12g/kg)를 WorkoutProfile의 주당 운동량으로 근사해 적용.
+ * - 지방 — IOM(현 NAM) Dietary Reference Intakes AMDR, 성인 총열량의 20–35%.
+ * - 식이섬유 — IOM AMDR, 1,000kcal당 14g.
  */
 
 // 체중 기준(체지방량 없음 — 간편 온보딩 등 그레이스풀 디그레이데이션 경로)
@@ -17,11 +27,20 @@ const PROTEIN_PER_KG_WEIGHT: Record<Goal, number> = {
 
 // 제지방량(체중 − 체지방량) 기준 — 단백질 필요량은 지방보다 근육·수분 등 제지방 조직에 더 좌우된다.
 // 체중 기준보다 계수를 높게 잡는다(같은 사람이라도 제지방량은 체중보다 작으므로).
-const PROTEIN_PER_KG_LEAN_MASS: Record<Goal, number> = {
-  fat_loss: 2.0,
+// fat_loss는 칼로리 제한 중 근손실 방지가 핵심이라 별도 근거(Helms et al., 2014)로 체지방률별로 세분화한다.
+const PROTEIN_PER_KG_LEAN_MASS: Record<Exclude<Goal, 'fat_loss'>, number> = {
   muscle_gain: 2.2,
   weight_maintain: 1.8,
   health_care: 1.6,
+}
+
+// Helms et al.(2014): 칼로리 제한 중인 저체지방·근력훈련자는 2.3–3.1g/kg 제지방량 필요,
+// 마르고(leanness) 제한이 강할수록(severity) 상단에 가깝다. 체지방률이 낮을수록(=더 마름) 상단,
+// 높을수록(=지방 여유가 더 있음, Helms의 연구 대상 범위를 벗어나는 체지방률) 하단(=문헌 범위의 최소값)을 쓴다.
+const FAT_LOSS_PROTEIN_PER_KG_LEAN_MASS: Record<'high' | 'normal' | 'low', number> = {
+  high: 2.3,
+  normal: 2.6,
+  low: 3.0,
 }
 
 // 체지방 1kg ≈ 7,700kcal — "주당 체중 변화율(%)" 목표를 하루 칼로리 보정폭으로 역산할 때 쓰는
@@ -54,13 +73,63 @@ function bodyFatCategory(gender: Gender, bodyFatPercentage: number | null): 'hig
   return 'normal'
 }
 
-function resolveProteinTarget(profile: Pick<UserProfile, 'weight' | 'bodyFatMass' | 'goal'>): number {
-  const { weight, bodyFatMass, goal } = profile
+function resolveProteinTarget(profile: Pick<UserProfile, 'weight' | 'bodyFatMass' | 'bodyFatPercentage' | 'gender' | 'goal'>): number {
+  const { weight, bodyFatMass, bodyFatPercentage, gender, goal } = profile
   if (bodyFatMass === null) return Math.round(weight * PROTEIN_PER_KG_WEIGHT[goal])
 
   // 체지방량이 체중 절반을 넘는 등 비정상적인 값이면 제지방량이 너무 작아지지 않게 하한을 둔다.
   const leanMass = Math.max(weight - bodyFatMass, weight * 0.5)
-  return Math.round(leanMass * PROTEIN_PER_KG_LEAN_MASS[goal])
+  const perKgLeanMass =
+    goal === 'fat_loss'
+      ? FAT_LOSS_PROTEIN_PER_KG_LEAN_MASS[bodyFatCategory(gender, bodyFatPercentage)]
+      : PROTEIN_PER_KG_LEAN_MASS[goal]
+  return Math.round(leanMass * perKgLeanMass)
+}
+
+// ACSM/AND/DC 공동 성명(2016)의 운동량별 탄수화물 권고(g/kg)를 각 구간의 중간값으로 근사한다.
+// WorkoutProfile의 "주당 횟수 × 1회 시간"을 하루 평균 운동 시간으로 환산해 구간을 고른다.
+const CARB_PER_KG_BY_TRAINING_VOLUME = { light: 4, moderate: 6, high: 8, very_high: 10 } as const
+type TrainingVolume = keyof typeof CARB_PER_KG_BY_TRAINING_VOLUME
+
+function resolveTrainingVolume(workoutProfile: WorkoutProfile | null): TrainingVolume {
+  if (!workoutProfile) return 'light'
+  const avgDailyMinutes = (workoutProfile.weeklyFrequency * workoutProfile.sessionDuration) / 7
+  if (avgDailyMinutes < 30) return 'light'
+  if (avgDailyMinutes < 60) return 'moderate'
+  if (avgDailyMinutes < 120) return 'high'
+  return 'very_high'
+}
+
+// 지방 AMDR(IOM, 총열량의 20–35%) 안에서 탄수화물·지방을 나눈다.
+// 탄수화물은 운동량 기준 g/kg을 우선 반영하되, 그 결과로 지방이 AMDR 하한 아래로 내려가면 탄수화물을 줄이고,
+// 반대로 지방이 AMDR 상한을 넘기면(=운동량 대비 탄수화물 필요량이 적음) 남는 여유를 탄수화물로 돌린다.
+const FAT_AMDR_MIN_RATIO = 0.2
+const FAT_AMDR_MAX_RATIO = 0.35
+
+function resolveCarbsAndFat(
+  calories: number,
+  proteinKcal: number,
+  workoutProfile: WorkoutProfile | null,
+  weight: number,
+): { carbohydrates: number; fat: number } {
+  const availableKcal = Math.max(0, calories - proteinKcal)
+  const minFatKcal = calories * FAT_AMDR_MIN_RATIO
+  const maxFatKcal = calories * FAT_AMDR_MAX_RATIO
+
+  const carbPerKg = CARB_PER_KG_BY_TRAINING_VOLUME[resolveTrainingVolume(workoutProfile)]
+  let carbKcal = carbPerKg * weight * 4
+  carbKcal = Math.min(carbKcal, Math.max(0, availableKcal - minFatKcal))
+
+  let fatKcal = availableKcal - carbKcal
+  if (fatKcal > maxFatKcal) {
+    fatKcal = maxFatKcal
+    carbKcal = availableKcal - fatKcal
+  }
+
+  return {
+    carbohydrates: Math.max(0, Math.round(carbKcal / 4)),
+    fat: Math.max(0, Math.round(fatKcal / 9)),
+  }
 }
 
 /** 주당 체중 변화율(%) 목표를 하루 칼로리 보정폭(kcal)으로 역산한다. */
@@ -90,18 +159,16 @@ function resolveCalorieAdjustment(profile: Pick<UserProfile, 'goal' | 'gender' |
   return clampAdjustment(Math.round(weeklyRateToDailyCalories(weight, ratePct)))
 }
 
-export function generateNutritionTarget(profile: UserProfile): NutritionTarget {
-  const { basalMetabolicRate } = profile
+export function generateNutritionTarget(profile: UserProfile, workoutProfile: WorkoutProfile | null = null): NutritionTarget {
+  const { basalMetabolicRate, weight } = profile
 
   const activityFactor = 1.4 // 프로토타입용 고정 활동계수
   const tdee = basalMetabolicRate * activityFactor
   const calories = tdee + resolveCalorieAdjustment(profile, tdee)
 
   const protein = resolveProteinTarget(profile)
-  const fat = Math.round((calories * 0.25) / 9)
   const proteinKcal = protein * 4
-  const fatKcal = fat * 9
-  const carbohydrates = Math.max(0, Math.round((calories - proteinKcal - fatKcal) / 4))
+  const { carbohydrates, fat } = resolveCarbsAndFat(calories, proteinKcal, workoutProfile, weight)
   const fiber = Math.round((calories / 1000) * 14)
 
   return {

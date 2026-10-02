@@ -13,7 +13,8 @@ import {
   sumNutrients,
 } from '../nutritionService'
 import { generateNutritionTarget, mergeInBodyMeasurements } from '../nutritionTargetService'
-import { DEMO_PROFILE } from '../../data/mockData'
+import { DEMO_PROFILE, DEMO_WORKOUT_PROFILE } from '../../data/mockData'
+import type { WorkoutProfile } from '../../types'
 
 function findCombo(id: string) {
   const combo = MEAL_COMBOS.find((c) => c.id === id)
@@ -185,9 +186,20 @@ describe('nutritionTargetService', () => {
   })
 
   it('체지방량이 있으면 체중이 아니라 제지방량(체중-체지방량) 기준으로 단백질을 계산한다', () => {
-    // DEMO_PROFILE: weight 75, bodyFatMass 13.5, goal fat_loss → 제지방량 61.5 × 2.0 = 123
+    // DEMO_PROFILE: weight 75, bodyFatMass 13.5, bodyFatPercentage 18(보통), goal fat_loss
+    // → 제지방량 61.5 × 2.6(Helms et al. 2014, 보통 체지방률 구간) = 159.9 → 160
     const target = generateNutritionTarget(DEMO_PROFILE)
-    expect(target.protein).toBe(123)
+    expect(target.protein).toBe(160)
+  })
+
+  it('체지방감량은 체지방률이 낮을수록(=더 마름) 제지방량당 단백질 계수를 더 높게 쓴다(Helms et al. 2014)', () => {
+    // 체지방률 10(male 기준 낮음) → 2.6이 아니라 3.0 적용, 28(male 기준 높음) → 2.3 적용
+    const lowBodyFat = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 10 })
+    const highBodyFat = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 28 })
+    expect(lowBodyFat.protein).toBeGreaterThan(highBodyFat.protein)
+    // 둘 다 같은 제지방량(61.5kg)이므로 계수 차이(3.0 vs 2.3)만큼 그대로 비례한다
+    expect(lowBodyFat.protein).toBe(Math.round(61.5 * 3.0))
+    expect(highBodyFat.protein).toBe(Math.round(61.5 * 2.3))
   })
 
   it('체지방량이 없으면(간편 온보딩) 체중 기준으로 되돌아간다', () => {
@@ -233,6 +245,43 @@ describe('nutritionTargetService', () => {
     const veryHeavy = generateNutritionTarget({ ...DEMO_PROFILE, weight: 300, bodyFatPercentage: 28 })
     const tdee = DEMO_PROFILE.basalMetabolicRate * 1.4
     expect(tdee - veryHeavy.calories).toBeLessThanOrEqual(760) // 750 보정 + 10kcal 반올림 여유
+  })
+})
+
+describe('generateNutritionTarget — 탄수화물/지방 산출 근거(ACSM 운동량 기준 g/kg + IOM AMDR)', () => {
+  // bodyFatMass를 비워서 단백질을 체중 기준 고정값(1.4g/kg)으로 두고, 운동량에 따른 탄수화물 변화만 본다.
+  const baseProfile = {
+    ...DEMO_PROFILE,
+    goal: 'weight_maintain' as const,
+    bodyFatMass: null,
+    basalMetabolicRate: 2000,
+    weight: 70,
+  }
+  const moderateWorkout: WorkoutProfile = { ...DEMO_WORKOUT_PROFILE, weeklyFrequency: 4, sessionDuration: 60 }
+  const highWorkout: WorkoutProfile = { ...DEMO_WORKOUT_PROFILE, weeklyFrequency: 6, sessionDuration: 90 }
+
+  it('운동 프로필이 없으면 "가벼운 운동량"으로 간주하고, 운동량이 많을수록 탄수화물 목표가 커진다', () => {
+    const none = generateNutritionTarget(baseProfile, null)
+    const moderate = generateNutritionTarget(baseProfile, moderateWorkout)
+    const high = generateNutritionTarget(baseProfile, highWorkout)
+    expect(none.carbohydrates).toBeLessThan(moderate.carbohydrates)
+    expect(moderate.carbohydrates).toBeLessThan(high.carbohydrates)
+  })
+
+  it('운동량과 무관하게 지방은 항상 총열량의 20~35% 부근(IOM AMDR)에 머문다', () => {
+    for (const workoutProfile of [null, moderateWorkout, highWorkout]) {
+      const target = generateNutritionTarget(baseProfile, workoutProfile)
+      const fatRatio = (target.fat * 9) / target.calories
+      expect(fatRatio).toBeGreaterThanOrEqual(0.19) // 그램 반올림 오차 허용
+      expect(fatRatio).toBeLessThanOrEqual(0.36)
+    }
+  })
+
+  it('탄수화물 요구량이 커서 지방이 AMDR 하한 아래로 내려갈 상황이면 탄수화물을 줄여 지방 하한을 지킨다', () => {
+    // DEMO_PROFILE 기본 시나리오: 체지방감량이라 단백질 비중이 높고 칼로리가 낮아, 운동량이 적어도 탄수화물 요구가 남는 칼로리보다 크다
+    const target = generateNutritionTarget(DEMO_PROFILE, null)
+    const fatRatio = (target.fat * 9) / target.calories
+    expect(fatRatio).toBeGreaterThanOrEqual(0.19)
   })
 })
 

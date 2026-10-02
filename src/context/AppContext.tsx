@@ -124,7 +124,7 @@ function reducer(state: AppState, action: Action): AppState {
     case 'UPDATE_INBODY': {
       if (!state.profile) return state
       const profile = mergeInBodyMeasurements(state.profile, action.measurements)
-      const nutritionTarget = generateNutritionTarget(profile)
+      const nutritionTarget = generateNutritionTarget(profile, state.workoutProfile)
       return {
         ...state,
         profile,

@@ -82,6 +82,11 @@ export default function Profile() {
         onBack={() => setWorkoutEditOpen(false)}
         onNext={(next) => {
           dispatch({ type: 'SET_WORKOUT_PROFILE', workoutProfile: next })
+          // 운동량이 탄수화물 목표 산출에 쓰이므로, 운동 프로필이 바뀌면 영양 목표도 다시 계산한다.
+          const recalculated = generateNutritionTarget(profile, next)
+          dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: recalculated })
+          setDraftTarget(null)
+          setNotice('운동 프로필이 바뀌어 영양 목표를 다시 계산했어요. 필요하면 아래에서 직접 수정할 수 있어요.')
           setWorkoutEditOpen(false)
         }}
       />
@@ -91,7 +96,7 @@ export default function Profile() {
   const handleGoalChange = (goal: Goal) => {
     if (goal === profile.goal) return
     const nextProfile = { ...profile, goal }
-    const nextTarget = generateNutritionTarget(nextProfile)
+    const nextTarget = generateNutritionTarget(nextProfile, workoutProfile)
     dispatch({ type: 'UPDATE_PROFILE', profile: nextProfile })
     dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: nextTarget })
     setDraftTarget(nextTarget)
@@ -117,7 +122,7 @@ export default function Profile() {
   }
 
   const handleRecalculate = () => {
-    const recalculated = generateNutritionTarget(profile)
+    const recalculated = generateNutritionTarget(profile, workoutProfile)
     setDraftTarget(recalculated)
     dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: recalculated })
     setSaved(true)
