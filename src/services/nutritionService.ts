@@ -1,6 +1,6 @@
 import { FOOD_DATABASE, getFoodById, searchFoodDatabase, type FoodDbEntry } from '../data/foodDatabase'
 import type { MealComboDef } from '../data/mealCombos'
-import type { MealComboIngredientDisplay } from '../types'
+import type { Goal, MealComboIngredientDisplay } from '../types'
 
 /**
  * nutritionService — 음식 이름 + 중량(g)으로 영양소를 계산한다.
@@ -175,4 +175,54 @@ export function resolveMealCombo(combo: MealComboDef): ResolvedMealCombo {
     ingredients: resolved.map((r) => ({ name: r.name, amount: r.amount })),
     nutrients: roundNutrients(sumNutrients(resolved.map((r) => r.nutrients))),
   }
+}
+
+// ---------------------------------------------------------------------------
+// 식사 조합이 어떤 식단 목적에 어울리는지 — 계산된 영양 비율로 자동 판정한다.
+// (이전에는 조합마다 사람이 직접 goal을 지정했다. 지금은 실제 칼로리 구성비로 계산한다.)
+//
+// 단순히 "지방 칼로리 비율이 낮다"만 보면 연어·소고기처럼 자연스럽게 지방이 있는
+// 좋은 단백질원이 전부 fat_loss에서 밀려난다. 그래서 지방 비율 대신 "단백질 대 지방"
+// 비율(proteinToFat)을 주로 쓴다 — 지방이 있어도 그만큼 단백질이 충분하면 통과시킨다.
+// 이 방식도 "좋은 지방(불포화) vs 나쁜 지방(포화)"까지는 구분하지 못하는 한계가 있다.
+// ---------------------------------------------------------------------------
+
+const GOAL_FIT_THRESHOLDS = {
+  // 체지방감량 — 단백질 비중이 있고, 단백질 대비 지방이 적은(=린한) 조합
+  fatLoss: { minProteinToFat: 1.2, minProteinPct: 0.25 },
+  // 근육증가 — 단백질이 어느 정도 있고, 탄수화물이 넉넉하거나 전체 칼로리가 충분한(증량에 쓸 수 있는) 조합
+  muscleGain: { minProteinPct: 0.2, minCarbPct: 0.3, minCalories: 400 },
+  // 건강관리 — 칼로리 대비 식이섬유가 풍부하고, 단백질 대비 지방이 과하지 않은 조합
+  healthCare: { minFiberPer1000Kcal: 8, minProteinToFat: 0.8 },
+  // 체중유지 — 어느 영양소도 극단적이지 않은, 무난하고 균형 잡힌 조합
+  weightMaintain: { proteinPctRange: [0.15, 0.4] as const, maxCarbPct: 0.65, maxFatPct: 0.45 },
+}
+
+export function computeGoalFit(n: NutrientTotals): Goal[] {
+  if (n.calories <= 0) return []
+
+  const proteinPct = (n.protein * 4) / n.calories
+  const fatPct = (n.fat * 9) / n.calories
+  const carbPct = (n.carbohydrates * 4) / n.calories
+  const fiberPer1000Kcal = (n.fiber / n.calories) * 1000
+  const proteinToFat = n.protein / Math.max(n.fat, 1)
+
+  const fits: Goal[] = []
+  const t = GOAL_FIT_THRESHOLDS
+
+  if (proteinToFat >= t.fatLoss.minProteinToFat && proteinPct >= t.fatLoss.minProteinPct) {
+    fits.push('fat_loss')
+  }
+  if (proteinPct >= t.muscleGain.minProteinPct && (carbPct >= t.muscleGain.minCarbPct || n.calories >= t.muscleGain.minCalories)) {
+    fits.push('muscle_gain')
+  }
+  if (fiberPer1000Kcal >= t.healthCare.minFiberPer1000Kcal && proteinToFat >= t.healthCare.minProteinToFat) {
+    fits.push('health_care')
+  }
+  const [minP, maxP] = t.weightMaintain.proteinPctRange
+  if (proteinPct >= minP && proteinPct <= maxP && carbPct <= t.weightMaintain.maxCarbPct && fatPct <= t.weightMaintain.maxFatPct) {
+    fits.push('weight_maintain')
+  }
+
+  return fits
 }

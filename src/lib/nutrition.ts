@@ -1,6 +1,6 @@
 import { getFoodById } from '../data/foodDatabase'
 import { MEAL_COMBOS, type MealComboDef } from '../data/mealCombos'
-import { resolveMealCombo } from '../services/nutritionService'
+import { computeGoalFit, resolveMealCombo, type ResolvedMealCombo } from '../services/nutritionService'
 import type {
   Gender,
   Goal,
@@ -99,21 +99,29 @@ function shuffleWithSeed<T>(items: T[], seed: number): T[] {
 
 const MAX_RECOMMENDATIONS = 3
 
+interface RankedCombo {
+  combo: MealComboDef
+  resolved: ResolvedMealCombo
+}
+
 /**
  * 오늘 이미 먹은 재료로만 구성된 조합은 뒤로 미룬다(완전히 겹칠 때만 제외 — 재료 하나가 겹친다고
- * 막으면 풀이 과도하게 줄어든다). 사용자의 식단 목적(goal)과 맞는 조합을 그다음으로 우선한다.
+ * 막으면 풀이 과도하게 줄어든다). 사용자의 식단 목적(goal)과 맞는 조합을 그다음으로 우선한다 —
+ * "어울림"은 조합마다 미리 정해둔 값이 아니라, 실제 계산된 영양 비율로 그때그때 판정한다
+ * (nutritionService.computeGoalFit).
  */
-function rankCombos(pool: MealComboDef[], goal: Goal, seed: number, eatenTodayNames: Set<string>): MealComboDef[] {
+function rankCombos(pool: MealComboDef[], goal: Goal, seed: number, eatenTodayNames: Set<string>): RankedCombo[] {
   const notFullyEaten = pool.filter((combo) => {
     if (eatenTodayNames.size === 0) return true
     const ingredientNames = combo.ingredients.map((ing) => getFoodById(ing.foodId).name)
     return !ingredientNames.every((name) => eatenTodayNames.has(name))
   })
   const candidates = notFullyEaten.length > 0 ? notFullyEaten : pool
+  const resolvedCandidates: RankedCombo[] = candidates.map((combo) => ({ combo, resolved: resolveMealCombo(combo) }))
 
-  const shuffled = shuffleWithSeed(candidates, seed)
-  const goalMatched = shuffled.filter((c) => c.bestFor.length === 0 || c.bestFor.includes(goal))
-  const others = shuffled.filter((c) => c.bestFor.length > 0 && !c.bestFor.includes(goal))
+  const shuffled = shuffleWithSeed(resolvedCandidates, seed)
+  const goalMatched = shuffled.filter((c) => computeGoalFit(c.resolved.nutrients).includes(goal))
+  const others = shuffled.filter((c) => !computeGoalFit(c.resolved.nutrients).includes(goal))
   return [...goalMatched, ...others]
 }
 
@@ -136,8 +144,7 @@ function priorityBias(profile: RecommendationProfile): Partial<Record<Exclude<Nu
   return { protein: -PRIORITY_BIAS, fat: PRIORITY_BIAS }
 }
 
-function buildRecommendedMeal(combo: MealComboDef, deficiencyPercent: number): RecommendedMeal {
-  const resolved = resolveMealCombo(combo)
+function buildRecommendedMeal(combo: MealComboDef, resolved: ResolvedMealCombo, deficiencyPercent: number): RecommendedMeal {
   return {
     id: combo.id,
     title: combo.title,
@@ -177,9 +184,9 @@ export function getRecommendedMeals(
     const pool = MEAL_COMBOS.filter((c) => c.primaryNutrient === nutrient)
     const ranked = rankCombos(pool, profile.goal, daySeed + macros.indexOf(nutrient), eatenTodayNames)
     const percent = getPercentage(consumed[nutrient], target[nutrient])
-    for (const combo of ranked) {
+    for (const { combo, resolved } of ranked) {
       if (result.length >= MAX_RECOMMENDATIONS) break
-      if (!result.some((r) => r.id === combo.id)) result.push(buildRecommendedMeal(combo, percent))
+      if (!result.some((r) => r.id === combo.id)) result.push(buildRecommendedMeal(combo, resolved, percent))
     }
     if (result.length >= MAX_RECOMMENDATIONS) break
   }

@@ -1,4 +1,4 @@
-import type { Goal, NutrientKey } from '../types'
+import type { NutrientKey } from '../types'
 
 /**
  * 부족 영양소 기반 "다음 식사" 추천 풀.
@@ -6,6 +6,10 @@ import type { Goal, NutrientKey } from '../types'
  * 개별 재료가 아니라 실제로 먹을 법한 한 끼 조합(2~3가지 재료)으로 추천한다.
  * 영양소 숫자는 여기서 만들지 않는다 — foodId로 src/data/foodDatabase.ts를 참조하고,
  * 실제 수치는 nutritionService.resolveMealCombo()가 100g당 데이터로 계산한다.
+ *
+ * 이 조합이 어떤 식단 목적에 어울리는지도 여기서 직접 정하지 않는다 — 조합마다 사람이
+ * goal을 지정하던 방식에서, 계산된 영양 비율로 자동 판정하는 방식(nutritionService.computeGoalFit)
+ * 으로 바꿨다.
  */
 
 export interface MealComboIngredientSpec {
@@ -20,8 +24,6 @@ export interface MealComboDef {
   ingredients: MealComboIngredientSpec[]
   // 이 조합을 추천할 때 기준이 되는 영양소
   primaryNutrient: Exclude<NutrientKey, 'calories'>
-  // 이 조합이 특히 더 어울리는 식단 목적. 비어 있으면 모든 목적에 중립적으로 어울린다.
-  bestFor: Goal[]
 }
 
 export const MEAL_COMBOS: MealComboDef[] = [
@@ -38,7 +40,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'broccoli', grams: 80 },
     ],
     primaryNutrient: 'protein',
-    bestFor: ['muscle_gain', 'fat_loss'],
   },
   {
     id: 'combo-salmon-salad',
@@ -49,7 +50,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'green-salad', grams: 150 },
     ],
     primaryNutrient: 'protein',
-    bestFor: ['fat_loss', 'health_care'],
   },
   {
     id: 'combo-tofu-rice',
@@ -60,7 +60,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'white-rice', grams: 100 },
     ],
     primaryNutrient: 'protein',
-    bestFor: ['health_care', 'weight_maintain'],
   },
   {
     id: 'combo-yogurt-blueberry',
@@ -71,7 +70,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'blueberry', grams: 80 },
     ],
     primaryNutrient: 'protein',
-    bestFor: [],
   },
   {
     id: 'combo-shrimp-veggie',
@@ -83,7 +81,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'carrot', grams: 50 },
     ],
     primaryNutrient: 'protein',
-    bestFor: ['fat_loss'],
   },
   {
     id: 'combo-beef-salad',
@@ -94,7 +91,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'green-salad', grams: 100 },
     ],
     primaryNutrient: 'protein',
-    bestFor: ['muscle_gain'],
   },
 
   // ------------------------------------------------------------------
@@ -109,7 +105,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'bulgogi', grams: 100 },
     ],
     primaryNutrient: 'carbohydrates',
-    bestFor: ['muscle_gain'],
   },
   {
     id: 'combo-onigiri-edamame',
@@ -120,7 +115,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'edamame', grams: 80 },
     ],
     primaryNutrient: 'carbohydrates',
-    bestFor: [],
   },
   {
     id: 'combo-sweet-potato',
@@ -128,7 +122,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
     emoji: '🍠',
     ingredients: [{ foodId: 'sweet-potato', grams: 300 }],
     primaryNutrient: 'carbohydrates',
-    bestFor: ['fat_loss'],
   },
   {
     id: 'combo-banana-oatmeal',
@@ -139,7 +132,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'oatmeal', grams: 100 },
     ],
     primaryNutrient: 'carbohydrates',
-    bestFor: ['muscle_gain'],
   },
   {
     id: 'combo-multigrain-doenjang',
@@ -150,7 +142,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'doenjang-jjigae', grams: 200 },
     ],
     primaryNutrient: 'carbohydrates',
-    bestFor: ['health_care', 'weight_maintain'],
   },
   {
     id: 'combo-potato-salad',
@@ -161,7 +152,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'green-salad', grams: 100 },
     ],
     primaryNutrient: 'carbohydrates',
-    bestFor: [],
   },
 
   // ------------------------------------------------------------------
@@ -176,7 +166,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'bread', grams: 60 },
     ],
     primaryNutrient: 'fat',
-    bestFor: ['health_care'],
   },
   {
     id: 'combo-nuts-yogurt',
@@ -187,7 +176,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'greek-yogurt', grams: 150 },
     ],
     primaryNutrient: 'fat',
-    bestFor: [],
   },
   {
     id: 'combo-salmon-steak-salad',
@@ -198,7 +186,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'green-salad', grams: 100 },
     ],
     primaryNutrient: 'fat',
-    bestFor: ['muscle_gain'],
   },
   {
     id: 'combo-porkbelly-cabbage',
@@ -209,7 +196,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'cabbage', grams: 100 },
     ],
     primaryNutrient: 'fat',
-    bestFor: [],
   },
   {
     id: 'combo-tonkatsu-cabbage',
@@ -220,7 +206,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'cabbage', grams: 100 },
     ],
     primaryNutrient: 'fat',
-    bestFor: ['muscle_gain'],
   },
   {
     id: 'combo-almond-soymilk',
@@ -231,7 +216,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'soy-milk', grams: 200 },
     ],
     primaryNutrient: 'fat',
-    bestFor: [],
   },
 
   // ------------------------------------------------------------------
@@ -246,7 +230,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'sweet-potato', grams: 150 },
     ],
     primaryNutrient: 'fiber',
-    bestFor: ['fat_loss'],
   },
   {
     id: 'combo-broccoli-rice',
@@ -257,7 +240,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'brown-rice', grams: 100 },
     ],
     primaryNutrient: 'fiber',
-    bestFor: ['health_care'],
   },
   {
     id: 'combo-apple-oatmeal',
@@ -268,7 +250,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'oatmeal', grams: 80 },
     ],
     primaryNutrient: 'fiber',
-    bestFor: [],
   },
   {
     id: 'combo-namul-rice',
@@ -279,7 +260,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'multigrain-rice', grams: 100 },
     ],
     primaryNutrient: 'fiber',
-    bestFor: ['weight_maintain'],
   },
   {
     id: 'combo-siraegi-rice',
@@ -290,7 +270,6 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'brown-rice', grams: 100 },
     ],
     primaryNutrient: 'fiber',
-    bestFor: ['health_care'],
   },
   {
     id: 'combo-edamame-salad',
@@ -301,6 +280,5 @@ export const MEAL_COMBOS: MealComboDef[] = [
       { foodId: 'green-salad', grams: 100 },
     ],
     primaryNutrient: 'fiber',
-    bestFor: ['fat_loss'],
   },
 ]

@@ -2,10 +2,24 @@ import { describe, expect, it } from 'vitest'
 import type { FoodExtraction } from '../../../shared/analysis'
 import { FOOD_DATABASE } from '../../data/foodDatabase'
 import { resolveAnalysisMode } from '../../lib/aiMode'
+import { MEAL_COMBOS } from '../../data/mealCombos'
 import { buildMeal, createEmptyRow, createRowsFromExtraction, summarizeRows } from '../mealService'
-import { calculateNutrients, localNutritionProvider, roundNutrients, sumNutrients } from '../nutritionService'
+import {
+  calculateNutrients,
+  computeGoalFit,
+  localNutritionProvider,
+  resolveMealCombo,
+  roundNutrients,
+  sumNutrients,
+} from '../nutritionService'
 import { generateNutritionTarget, mergeInBodyMeasurements } from '../nutritionTargetService'
 import { DEMO_PROFILE } from '../../data/mockData'
+
+function findCombo(id: string) {
+  const combo = MEAL_COMBOS.find((c) => c.id === id)
+  if (!combo) throw new Error(`combo not found: ${id}`)
+  return combo
+}
 
 const extraction: FoodExtraction = {
   isFood: true,
@@ -172,6 +186,44 @@ describe('nutritionTargetService', () => {
     const maintained = generateNutritionTarget({ ...DEMO_PROFILE, goal: 'weight_maintain', bodyFatPercentage: 28 })
     const maintainedNoData = generateNutritionTarget({ ...DEMO_PROFILE, goal: 'weight_maintain', bodyFatPercentage: null })
     expect(maintained.calories).toBe(maintainedNoData.calories)
+  })
+})
+
+describe('computeGoalFit — 식사 조합이 어떤 식단 목적에 어울리는지 자동 판정', () => {
+  it('고단백 저지방 조합은 체지방감량에 어울린다', () => {
+    // 단백질 40g, 지방 5g, 칼로리 300 → proteinToFat 8, proteinPct 53%
+    const fits = computeGoalFit({ calories: 300, protein: 40, carbohydrates: 10, fat: 5, fiber: 2 })
+    expect(fits).toContain('fat_loss')
+  })
+
+  it('지방이 지배적인 조합은 체지방감량·체중유지 어디에도 어울리지 않는다', () => {
+    // 삼겹살 구이 양배추쌈과 비슷한 비율 — 단백질 27g, 지방 42g, 칼로리 520
+    const fits = computeGoalFit({ calories: 520, protein: 27, carbohydrates: 6, fat: 42, fiber: 2.5 })
+    expect(fits).not.toContain('fat_loss')
+    expect(fits).not.toContain('weight_maintain')
+  })
+
+  it('칼로리가 0 이하면 아무 목적에도 매칭하지 않는다(0으로 나누기 방지)', () => {
+    expect(computeGoalFit({ calories: 0, protein: 0, carbohydrates: 0, fat: 0, fiber: 0 })).toEqual([])
+  })
+
+  it('실제 조합: 닭가슴살 현미밥 브로콜리는 체지방감량·근육증가 둘 다에 어울린다', () => {
+    const { nutrients } = resolveMealCombo(findCombo('combo-chicken-rice-broccoli'))
+    const fits = computeGoalFit(nutrients)
+    expect(fits).toContain('fat_loss')
+    expect(fits).toContain('muscle_gain')
+  })
+
+  it('실제 조합: 삼겹살 구이는 근육증가(벌크용)에만 어울리고 체중유지엔 어울리지 않는다', () => {
+    const { nutrients } = resolveMealCombo(findCombo('combo-porkbelly-cabbage'))
+    const fits = computeGoalFit(nutrients)
+    expect(fits).toEqual(['muscle_gain'])
+  })
+
+  it('실제 조합: 아보카도 토스트는 지방 비중이 높아 특정 목적에 어울리지 않는다(중립)', () => {
+    const { nutrients } = resolveMealCombo(findCombo('combo-avocado-toast'))
+    const fits = computeGoalFit(nutrients)
+    expect(fits).toEqual([])
   })
 })
 
