@@ -16,7 +16,14 @@ interface Props {
 }
 
 const GOALS = Object.keys(WORKOUT_GOAL_LABELS) as WorkoutGoal[]
-const EXPERIENCES = Object.keys(WORKOUT_EXPERIENCE_LABELS) as WorkoutExperience[]
+
+// "초보/중급/고급"만으로는 기준이 안 와닿는다는 피드백 반영 — 운동 기간 + 할 수 있는 수준을
+// 함께 보여줘서 사용자가 스스로 판단할 수 있는 기준을 준다.
+const EXPERIENCE_OPTIONS: { value: WorkoutExperience; desc: string }[] = [
+  { value: 'beginner', desc: '6개월 미만 · 동작을 배우는 중' },
+  { value: 'intermediate', desc: '6개월~2년 · 혼자서 할 수 있음' },
+  { value: 'advanced', desc: '2년 이상 · 체계적으로 운동 중' },
+]
 const PAIN_AREAS = Object.keys(PAIN_AREA_LABELS) as PainArea[]
 const FREQUENCY_OPTIONS = [1, 2, 3, 4, 5, 6]
 const DURATION_OPTIONS = [20, 30, 45, 60, 90]
@@ -63,20 +70,24 @@ export default function WorkoutProfileInput({ initial, onBack, onNext }: Props) 
 
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-600">운동 경험</label>
-          <div className="grid grid-cols-3 gap-2">
-            {EXPERIENCES.map((e) => (
-              <button
-                key={e}
-                onClick={() => setProfile((prev) => ({ ...prev, experience: e }))}
-                className={`rounded-xl border-2 py-3 text-sm font-semibold transition ${
-                  profile.experience === e
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-slate-100 bg-white text-slate-500'
-                }`}
-              >
-                {WORKOUT_EXPERIENCE_LABELS[e]}
-              </button>
-            ))}
+          <div className="space-y-2">
+            {EXPERIENCE_OPTIONS.map((opt) => {
+              const active = profile.experience === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setProfile((prev) => ({ ...prev, experience: opt.value }))}
+                  className={`flex w-full items-center justify-between rounded-xl border-2 px-4 py-2.5 text-left transition ${
+                    active ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-white'
+                  }`}
+                >
+                  <span className={`text-sm font-semibold ${active ? 'text-emerald-700' : 'text-slate-700'}`}>
+                    {WORKOUT_EXPERIENCE_LABELS[opt.value]}
+                  </span>
+                  <span className={`text-xs ${active ? 'text-emerald-600' : 'text-slate-400'}`}>{opt.desc}</span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
