@@ -170,22 +170,43 @@ describe('nutritionTargetService', () => {
     expect(target.protein).toBe(120)
   })
 
-  it('체지방률이 성별 기준 높은 편이고 목적이 체지방감량이면 칼로리를 추가로 낮춘다', () => {
-    const base = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 20 }) // 중간값, 보정 없음
-    const highBodyFat = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 28 }) // male 25 이상
-    expect(highBodyFat.calories).toBe(base.calories - 50)
+  it('체지방감량 칼로리 보정은 체중 대비 "주당 변화율(%)"을 7,700kcal/kg으로 역산한다', () => {
+    // weight 75, 체지방률 20(보통) → 0.5%/주 → 75*0.005*7700/7 = 412.5 → 413kcal 적자
+    // tdee = 1650*1.4 = 2310 → 2310-413=1897 → 10kcal 단위 반올림 → 1900
+    const target = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 20 })
+    expect(target.calories).toBe(1900)
   })
 
-  it('체지방률이 성별 기준 낮은 편이면 근손실 방지를 위해 칼로리를 덜 줄인다', () => {
+  it('체지방률이 성별 기준 높은 편이면 체지방감량 목표 변화율을 더 공격적으로 잡는다(0.5%→0.7%/주)', () => {
+    const base = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 20 }) // 중간값, 0.5%/주
+    const highBodyFat = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 28 }) // male 25 이상, 0.7%/주
+    expect(highBodyFat.calories).toBeLessThan(base.calories)
+    expect(base.calories - highBodyFat.calories).toBe(170)
+  })
+
+  it('체지방률이 성별 기준 낮은 편이면 근손실 방지를 위해 변화율을 늦춘다(0.5%→0.3%/주)', () => {
     const base = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 20 })
-    const lowBodyFat = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 10 }) // male 12 미만
-    expect(lowBodyFat.calories).toBe(base.calories + 50)
+    const lowBodyFat = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 10 }) // male 12 미만, 0.3%/주
+    expect(lowBodyFat.calories).toBeGreaterThan(base.calories)
+    expect(lowBodyFat.calories - base.calories).toBe(160)
   })
 
-  it('체지방감량 목적이 아니면 체지방률 보정을 적용하지 않는다', () => {
+  it('근육증가도 체지방률이 높은 편이면 더 보수적인 잉여(0.25%→0.15%/주)를 쓴다', () => {
+    const normal = generateNutritionTarget({ ...DEMO_PROFILE, goal: 'muscle_gain', bodyFatPercentage: 20 })
+    const highBodyFat = generateNutritionTarget({ ...DEMO_PROFILE, goal: 'muscle_gain', bodyFatPercentage: 28 })
+    expect(highBodyFat.calories).toBeLessThan(normal.calories)
+  })
+
+  it('체지방감량 목적이 아니면(체중유지) 체지방률과 무관하게 칼로리 보정이 없다', () => {
     const maintained = generateNutritionTarget({ ...DEMO_PROFILE, goal: 'weight_maintain', bodyFatPercentage: 28 })
     const maintainedNoData = generateNutritionTarget({ ...DEMO_PROFILE, goal: 'weight_maintain', bodyFatPercentage: null })
     expect(maintained.calories).toBe(maintainedNoData.calories)
+  })
+
+  it('체중이 매우 크거나 작아도 하루 보정폭은 ±750kcal를 넘지 않는다(안전장치)', () => {
+    const veryHeavy = generateNutritionTarget({ ...DEMO_PROFILE, weight: 300, bodyFatPercentage: 28 })
+    const tdee = DEMO_PROFILE.basalMetabolicRate * 1.4
+    expect(tdee - veryHeavy.calories).toBeLessThanOrEqual(760) // 750 보정 + 10kcal 반올림 여유
   })
 })
 
