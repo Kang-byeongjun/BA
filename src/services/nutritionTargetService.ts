@@ -223,6 +223,9 @@ export function describeNutritionRationale(
   workoutProfile: WorkoutProfile | null,
 ): Record<keyof NutritionTarget, NutrientRationale> {
   const { weight, bodyFatMass, bodyFatPercentage, gender, goal } = profile
+  // 실제로 적용된 값(특히 탄수화물·지방은 AMDR 클램프로 공식값과 달라질 수 있다)과 설명 문구가 어긋나지
+  // 않도록, 같은 입력으로 실제 계산 결과를 다시 구해서 숫자를 맞춘다.
+  const target = generateNutritionTarget(profile, workoutProfile)
 
   let protein: NutrientRationale
   if (bodyFatMass === null) {
@@ -249,15 +252,23 @@ export function describeNutritionRationale(
   }
 
   const volume = resolveTrainingVolume(workoutProfile)
+  const carbPerKg = CARB_PER_KG_BY_TRAINING_VOLUME[volume]
+  const requestedCarbs = Math.round(carbPerKg * weight)
+  const volumeNote = workoutProfile ? '' : ' — 운동 프로필 없어 보수적으로 가정'
+  const carbClampNote =
+    requestedCarbs === target.carbohydrates
+      ? ''
+      : requestedCarbs > target.carbohydrates
+        ? ` 다만 지방 섭취가 하한(총열량 20%) 아래로 내려가지 않도록 실제 목표는 ${target.carbohydrates}g으로 줄였어요.`
+        : ` 다만 지방이 상한(총열량 35%) 안에서 여유가 있어 남는 칼로리를 탄수화물로 돌려 실제 목표는 ${target.carbohydrates}g으로 늘렸어요.`
   const carbohydrates: NutrientRationale = {
-    summary: `체중 ${weight}kg × ${CARB_PER_KG_BY_TRAINING_VOLUME[volume]}g/kg (운동량: ${TRAINING_VOLUME_LABEL[volume]}${
-      workoutProfile ? '' : ' — 운동 프로필 없어 보수적으로 가정'
-    })`,
+    summary: `운동량(${TRAINING_VOLUME_LABEL[volume]}${volumeNote}) 기준 체중 ${weight}kg × ${carbPerKg}g/kg = ${requestedCarbs}g을 목표로 했어요.${carbClampNote}`,
     citation: 'ACSM·AND·DC 공동성명(2016) — 운동량별 탄수화물 권고 3~12g/kg/일 중 해당 구간',
   }
 
+  const fatRatioPct = target.calories > 0 ? Math.round((target.fat * 9 * 100) / target.calories) : 0
   const fat: NutrientRationale = {
-    summary: '단백질·탄수화물을 뺀 나머지 칼로리를, 총 열량의 20~35% 범위 안에서 맞췄어요.',
+    summary: `단백질·탄수화물을 뺀 나머지 칼로리를 ${target.fat}g(총 열량의 약 ${fatRatioPct}%)으로 맞췄어요. 총 열량의 20~35% 범위 안에 들어와요.`,
     citation: 'IOM(현 NAM) Dietary Reference Intakes AMDR — 성인 지방 20~35%',
   }
 

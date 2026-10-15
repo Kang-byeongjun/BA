@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { estimateBasalMetabolicRate } from '../../lib/bmr'
 import { generateNutritionTarget } from '../../services/nutritionTargetService'
-import type { Goal, NutritionTarget, UserProfile, WorkoutProfile } from '../../types'
+import { DEFAULT_WORKOUT_PROFILE, type Goal, type NutritionTarget, type UserProfile, type WorkoutProfile } from '../../types'
 import GoalSelect from './GoalSelect'
 import InBodyInput, { type InBodyEntryMode, type InBodyFormValues } from './InBodyInput'
 import NutritionTargetReview from './NutritionTargetReview'
@@ -24,14 +24,6 @@ const EMPTY_INBODY: InBodyFormValues = {
   basalMetabolicRate: '',
 }
 
-const EMPTY_WORKOUT_PROFILE: WorkoutProfile = {
-  goal: 'fat_loss',
-  experience: 'beginner',
-  weeklyFrequency: 3,
-  sessionDuration: 45,
-  painAreas: [],
-}
-
 // 결과지에 없을 수 있는 선택 항목. 비어 있으면 null로, 값이 있으면 숫자로 변환한다.
 function toNullableNumber(raw: string): number | null {
   const trimmed = raw.trim()
@@ -47,7 +39,7 @@ export default function OnboardingFlow() {
   const [inBody, setInBody] = useState<InBodyFormValues>(EMPTY_INBODY)
   const [inBodyMode, setInBodyMode] = useState<InBodyEntryMode>('full')
   const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [workoutProfile, setWorkoutProfile] = useState<WorkoutProfile>(EMPTY_WORKOUT_PROFILE)
+  const [workoutProfile, setWorkoutProfile] = useState<WorkoutProfile>(DEFAULT_WORKOUT_PROFILE)
   const [target, setTarget] = useState<NutritionTarget | null>(null)
 
   const handleInBodyNext = (values: InBodyFormValues, mode: InBodyEntryMode) => {

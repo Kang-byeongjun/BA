@@ -5,6 +5,7 @@ import { resolveAnalysisMode } from '../../lib/aiMode'
 import { BMI_CATEGORY_LABELS, calculateBmi, classifyBmi } from '../../lib/bmi'
 import { describeNutritionRationale, generateNutritionTarget } from '../../services/nutritionTargetService'
 import {
+  DEFAULT_WORKOUT_PROFILE,
   GOAL_LABELS,
   MEAL_FLEXIBILITY_LABELS,
   NUTRIENT_LABELS,
@@ -76,10 +77,10 @@ export default function Profile() {
     )
   }
 
-  if (workoutEditOpen && workoutProfile) {
+  if (workoutEditOpen) {
     return (
       <WorkoutProfileInput
-        initial={workoutProfile}
+        initial={workoutProfile ?? DEFAULT_WORKOUT_PROFILE}
         onBack={() => setWorkoutEditOpen(false)}
         onNext={(next) => {
           dispatch({ type: 'SET_WORKOUT_PROFILE', workoutProfile: next })

@@ -114,6 +114,15 @@ export interface WorkoutProfile {
   painAreas: PainArea[] // 통증·부상 부위, 없으면 빈 배열
 }
 
+// 운동 프로필이 아직 없을 때(온보딩에서 건너뛴 경우 등) 입력 폼의 시작값으로 쓰는 기본값.
+export const DEFAULT_WORKOUT_PROFILE: WorkoutProfile = {
+  goal: 'fat_loss',
+  experience: 'beginner',
+  weeklyFrequency: 3,
+  sessionDuration: 45,
+  painAreas: [],
+}
+
 // ---------- 영양 목표 & 섭취 ----------
 
 export interface NutritionTarget {
