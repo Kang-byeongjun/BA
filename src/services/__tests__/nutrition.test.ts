@@ -58,6 +58,14 @@ describe('nutritionService: 이름 → 영양 DB 연결', () => {
     expect(localNutritionProvider.match('정체불명 특별 메뉴')).toEqual({ entry: null, matchType: 'none' })
     expect(localNutritionProvider.match('')).toEqual({ entry: null, matchType: 'none' })
   })
+
+  it('이번에 확장한 아침 메뉴도 DB에서 바로 연결된다', () => {
+    expect(localNutritionProvider.match('북엇국')).toMatchObject({ matchType: 'exact', entry: { id: 'bugeo-guk' } })
+    expect(localNutritionProvider.match('전복죽')).toMatchObject({ matchType: 'exact', entry: { id: 'jeonbokjuk' } })
+    expect(localNutritionProvider.match('시리얼')).toMatchObject({ matchType: 'exact', entry: { id: 'cereal' } })
+    expect(localNutritionProvider.match('아보카도토스트')).toMatchObject({ matchType: 'exact', entry: { id: 'avocado-toast' } })
+    expect(localNutritionProvider.match('북어국')).toMatchObject({ matchType: 'exact', entry: { id: 'bugeo-guk' } }) // 별칭
+  })
 })
 
 describe('nutritionService: 계산', () => {

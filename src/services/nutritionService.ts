@@ -66,6 +66,15 @@ const ALIASES: Record<string, string> = {
   샐러드: 'green-salad',
   빵: 'bread',
   커피: 'americano',
+  북어국: 'bugeo-guk',
+  북어해장국: 'bugeo-guk',
+  카레: 'curry-rice',
+  죽: 'huinjuk',
+  계란죽: 'huinjuk',
+  시리얼우유: 'cereal',
+  콘플레이크: 'cereal',
+  토스트: 'egg-toast',
+  햄치즈토스트: 'ham-cheese-sandwich',
 }
 
 function createLocalProvider(entries: FoodDbEntry[]): NutritionProvider {

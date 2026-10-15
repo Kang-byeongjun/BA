@@ -89,6 +89,11 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'corn', name: '옥수수', category: '재료', caloriesPer100g: 86, proteinPer100g: 3.2, carbsPer100g: 19, fatPer100g: 1.2, fiberPer100g: 2.7 },
   { id: 'seaweed-dried', name: '마른김', category: '재료', caloriesPer100g: 290, proteinPer100g: 38, carbsPer100g: 41, fatPer100g: 2, fiberPer100g: 33 },
 
+  // 재료 추가 — 아침 식사에 흔히 나오는 가공 곡물류 보강.
+  { id: 'cereal', name: '시리얼', category: '재료', caloriesPer100g: 380, proteinPer100g: 8, carbsPer100g: 80, fatPer100g: 4, fiberPer100g: 4 },
+  { id: 'granola', name: '그래놀라', category: '재료', caloriesPer100g: 450, proteinPer100g: 10, carbsPer100g: 65, fatPer100g: 16, fiberPer100g: 7 },
+  { id: 'chia-seed', name: '치아씨드', category: '재료', caloriesPer100g: 490, proteinPer100g: 17, carbsPer100g: 42, fatPer100g: 31, fiberPer100g: 34 },
+
   // ---------------------------------------------------------------------
   // 한식
   // ---------------------------------------------------------------------
@@ -135,6 +140,30 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'kkakdugi', name: '깍두기', category: '한식', caloriesPer100g: 20, proteinPer100g: 1, carbsPer100g: 4, fatPer100g: 0.2, fiberPer100g: 1.5 },
   { id: 'sausage-vegetable-stirfry', name: '소시지야채볶음', category: '한식', caloriesPer100g: 190, proteinPer100g: 9, carbsPer100g: 10, fatPer100g: 13, fiberPer100g: 1.5 },
 
+  // 한식 추가 — 아침 메뉴(죽·국)와 가정식 반찬·덮밥류를 보강.
+  { id: 'bugeo-guk', name: '북엇국', category: '한식', caloriesPer100g: 45, proteinPer100g: 6, carbsPer100g: 3, fatPer100g: 1, fiberPer100g: 0.5 },
+  { id: 'kimchi-fried-rice', name: '김치볶음밥', category: '한식', caloriesPer100g: 180, proteinPer100g: 5, carbsPer100g: 28, fatPer100g: 5, fiberPer100g: 1.5 },
+  { id: 'rolled-egg', name: '계란말이', category: '한식', caloriesPer100g: 150, proteinPer100g: 11, carbsPer100g: 3, fatPer100g: 10, fiberPer100g: 0 },
+  { id: 'eomuk-bokkeum', name: '어묵볶음', category: '한식', caloriesPer100g: 150, proteinPer100g: 8, carbsPer100g: 12, fatPer100g: 8, fiberPer100g: 0.5 },
+  { id: 'myeolchi-bokkeum', name: '멸치볶음', category: '한식', caloriesPer100g: 200, proteinPer100g: 20, carbsPer100g: 15, fatPer100g: 8, fiberPer100g: 1 },
+  { id: 'jinmichae-bokkeum', name: '진미채볶음', category: '한식', caloriesPer100g: 220, proteinPer100g: 25, carbsPer100g: 18, fatPer100g: 5, fiberPer100g: 1 },
+  { id: 'doraji-muchim', name: '도라지무침', category: '한식', caloriesPer100g: 70, proteinPer100g: 2, carbsPer100g: 14, fatPer100g: 0.5, fiberPer100g: 3 },
+  { id: 'huinjuk', name: '흰죽', category: '한식', caloriesPer100g: 60, proteinPer100g: 1.5, carbsPer100g: 13, fatPer100g: 0.2, fiberPer100g: 0.3 },
+  { id: 'jeonbokjuk', name: '전복죽', category: '한식', caloriesPer100g: 80, proteinPer100g: 5, carbsPer100g: 13, fatPer100g: 1, fiberPer100g: 0.3 },
+  { id: 'hobakjuk', name: '호박죽', category: '한식', caloriesPer100g: 90, proteinPer100g: 2, carbsPer100g: 20, fatPer100g: 0.3, fiberPer100g: 1.5 },
+  { id: 'yachaejuk', name: '야채죽', category: '한식', caloriesPer100g: 70, proteinPer100g: 2, carbsPer100g: 14, fatPer100g: 0.5, fiberPer100g: 1 },
+  { id: 'nurungji', name: '누룽지', category: '한식', caloriesPer100g: 380, proteinPer100g: 7, carbsPer100g: 82, fatPer100g: 0.5, fiberPer100g: 1 },
+  { id: 'toran-guk', name: '토란국', category: '한식', caloriesPer100g: 40, proteinPer100g: 2, carbsPer100g: 6, fatPer100g: 1, fiberPer100g: 1.5 },
+  { id: 'sujebi', name: '수제비', category: '한식', caloriesPer100g: 110, proteinPer100g: 4, carbsPer100g: 20, fatPer100g: 1.5, fiberPer100g: 1 },
+  { id: 'mandu-guk', name: '만둣국', category: '한식', caloriesPer100g: 100, proteinPer100g: 6, carbsPer100g: 14, fatPer100g: 2.5, fiberPer100g: 1 },
+  { id: 'gomtang', name: '곰탕', category: '한식', caloriesPer100g: 85, proteinPer100g: 11, carbsPer100g: 1, fatPer100g: 4, fiberPer100g: 0.1 },
+  { id: 'galchi-jorim', name: '갈치조림', category: '한식', caloriesPer100g: 180, proteinPer100g: 16, carbsPer100g: 8, fatPer100g: 9, fiberPer100g: 0.5 },
+  { id: 'godeungeo-jorim', name: '고등어조림', category: '한식', caloriesPer100g: 210, proteinPer100g: 18, carbsPer100g: 7, fatPer100g: 12, fiberPer100g: 0.5 },
+  { id: 'ganjang-gejang', name: '간장게장', category: '한식', caloriesPer100g: 120, proteinPer100g: 15, carbsPer100g: 6, fatPer100g: 4, fiberPer100g: 0 },
+  { id: 'dak-bokkeum-tang', name: '닭볶음탕', category: '한식', caloriesPer100g: 160, proteinPer100g: 15, carbsPer100g: 8, fatPer100g: 7, fiberPer100g: 1 },
+  { id: 'curry-rice', name: '카레라이스', category: '한식', caloriesPer100g: 150, proteinPer100g: 4, carbsPer100g: 24, fatPer100g: 4, fiberPer100g: 1.5 },
+  { id: 'omurice', name: '오므라이스', category: '한식', caloriesPer100g: 190, proteinPer100g: 7, carbsPer100g: 26, fatPer100g: 6, fiberPer100g: 1 },
+
   // ---------------------------------------------------------------------
   // 중식
   // ---------------------------------------------------------------------
@@ -162,6 +191,19 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'hotpot', name: '훠궈', category: '중식', caloriesPer100g: 180, proteinPer100g: 14, carbsPer100g: 4, fatPer100g: 12, fiberPer100g: 0.5 },
   { id: 'wonton-noodle', name: '완탕면', category: '중식', caloriesPer100g: 110, proteinPer100g: 7, carbsPer100g: 16, fatPer100g: 2, fiberPer100g: 1 },
   { id: 'egg-fried-rice', name: '계란볶음밥', category: '중식', caloriesPer100g: 190, proteinPer100g: 6, carbsPer100g: 28, fatPer100g: 6, fiberPer100g: 1 },
+
+  // 중식 추가
+  { id: 'yusanseul', name: '류산슬', category: '중식', caloriesPer100g: 140, proteinPer100g: 10, carbsPer100g: 8, fatPer100g: 8, fiberPer100g: 1 },
+  { id: 'egg-drop-soup', name: '계란탕', category: '중식', caloriesPer100g: 60, proteinPer100g: 5, carbsPer100g: 2, fatPer100g: 4, fiberPer100g: 0 },
+  { id: 'jjajang-bap', name: '짜장밥', category: '중식', caloriesPer100g: 200, proteinPer100g: 5, carbsPer100g: 32, fatPer100g: 6, fiberPer100g: 1.3 },
+  { id: 'samseon-jjajang', name: '삼선짜장', category: '중식', caloriesPer100g: 210, proteinPer100g: 9, carbsPer100g: 30, fatPer100g: 7, fiberPer100g: 1.5 },
+  { id: 'yusanseul-bap', name: '유산슬밥', category: '중식', caloriesPer100g: 190, proteinPer100g: 9, carbsPer100g: 26, fatPer100g: 6, fiberPer100g: 1.2 },
+  { id: 'kkanpung-mandu', name: '깐풍만두', category: '중식', caloriesPer100g: 230, proteinPer100g: 9, carbsPer100g: 22, fatPer100g: 12, fiberPer100g: 1 },
+  { id: 'pork-mandu', name: '고기만두', category: '중식', caloriesPer100g: 220, proteinPer100g: 9, carbsPer100g: 24, fatPer100g: 9, fiberPer100g: 1.2 },
+  { id: 'shrimp-mandu', name: '새우만두', category: '중식', caloriesPer100g: 180, proteinPer100g: 9, carbsPer100g: 20, fatPer100g: 7, fiberPer100g: 0.8 },
+  { id: 'guabaorou', name: '꿔바로우', category: '중식', caloriesPer100g: 260, proteinPer100g: 10, carbsPer100g: 30, fatPer100g: 11, fiberPer100g: 1 },
+  { id: 'chinese-cold-noodle-salad', name: '중국냉채', category: '중식', caloriesPer100g: 130, proteinPer100g: 4, carbsPer100g: 22, fatPer100g: 3, fiberPer100g: 1.2 },
+  { id: 'gongbu-noodle-soup', name: '공부탕면', category: '중식', caloriesPer100g: 110, proteinPer100g: 6, carbsPer100g: 16, fatPer100g: 2.5, fiberPer100g: 1 },
 
   // ---------------------------------------------------------------------
   // 일식
@@ -191,6 +233,18 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'gyukatsu', name: '규카츠', category: '일식', caloriesPer100g: 280, proteinPer100g: 16, carbsPer100g: 15, fatPer100g: 18, fiberPer100g: 0.5 },
   { id: 'nabe', name: '나베', category: '일식', caloriesPer100g: 100, proteinPer100g: 9, carbsPer100g: 6, fatPer100g: 5, fiberPer100g: 1 },
   { id: 'poke-salmon', name: '연어 포케', category: '일식', caloriesPer100g: 145, proteinPer100g: 10, carbsPer100g: 12, fatPer100g: 6, fiberPer100g: 2 },
+
+  // 일식 추가
+  { id: 'sashimi-platter', name: '사시미모둠', category: '일식', caloriesPer100g: 120, proteinPer100g: 20, carbsPer100g: 1, fatPer100g: 4, fiberPer100g: 0 },
+  { id: 'chirashidon', name: '치라시동', category: '일식', caloriesPer100g: 160, proteinPer100g: 13, carbsPer100g: 20, fatPer100g: 3, fiberPer100g: 1 },
+  { id: 'natto-don', name: '낫또덮밥', category: '일식', caloriesPer100g: 150, proteinPer100g: 10, carbsPer100g: 18, fatPer100g: 5, fiberPer100g: 3 },
+  { id: 'yakisoba', name: '야키소바', category: '일식', caloriesPer100g: 180, proteinPer100g: 6, carbsPer100g: 24, fatPer100g: 6, fiberPer100g: 1.5 },
+  { id: 'tempura', name: '튀김덴푸라', category: '일식', caloriesPer100g: 260, proteinPer100g: 7, carbsPer100g: 24, fatPer100g: 15, fiberPer100g: 1 },
+  { id: 'motsunabe', name: '모츠나베', category: '일식', caloriesPer100g: 170, proteinPer100g: 14, carbsPer100g: 5, fatPer100g: 10, fiberPer100g: 1 },
+  { id: 'sukiyaki', name: '스키야키', category: '일식', caloriesPer100g: 170, proteinPer100g: 13, carbsPer100g: 8, fatPer100g: 9, fiberPer100g: 1 },
+  { id: 'tonjiru', name: '돈지루', category: '일식', caloriesPer100g: 70, proteinPer100g: 5, carbsPer100g: 6, fatPer100g: 3, fiberPer100g: 1.5 },
+  { id: 'umeboshi-onigiri', name: '우메보시주먹밥', category: '일식', caloriesPer100g: 165, proteinPer100g: 3, carbsPer100g: 36, fatPer100g: 0.5, fiberPer100g: 0.5 },
+  { id: 'chicken-nanban', name: '치킨난반', category: '일식', caloriesPer100g: 270, proteinPer100g: 16, carbsPer100g: 16, fatPer100g: 16, fiberPer100g: 0.5 },
 
   // ---------------------------------------------------------------------
   // 양식
@@ -229,6 +283,22 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'pilaf', name: '필라프', category: '양식', caloriesPer100g: 160, proteinPer100g: 4, carbsPer100g: 28, fatPer100g: 3, fiberPer100g: 1 },
   { id: 'cobb-salad', name: '콥샐러드', category: '양식', caloriesPer100g: 130, proteinPer100g: 10, carbsPer100g: 6, fatPer100g: 8, fiberPer100g: 2 },
 
+  // 양식 추가 — 아침 식사용 샌드위치·볼 메뉴 보강.
+  { id: 'eggs-benedict', name: '에그베네딕트', category: '양식', caloriesPer100g: 190, proteinPer100g: 10, carbsPer100g: 8, fatPer100g: 14, fiberPer100g: 0.5 },
+  { id: 'bulgogi-burger', name: '불고기버거', category: '양식', caloriesPer100g: 270, proteinPer100g: 13, carbsPer100g: 28, fatPer100g: 11, fiberPer100g: 1.3 },
+  { id: 'chicken-sandwich', name: '치킨샌드위치', category: '양식', caloriesPer100g: 230, proteinPer100g: 14, carbsPer100g: 24, fatPer100g: 8, fiberPer100g: 1.3 },
+  { id: 'veggie-sandwich', name: '야채샌드위치', category: '양식', caloriesPer100g: 180, proteinPer100g: 7, carbsPer100g: 26, fatPer100g: 5, fiberPer100g: 2 },
+  { id: 'ham-cheese-sandwich', name: '햄치즈샌드위치', category: '양식', caloriesPer100g: 240, proteinPer100g: 12, carbsPer100g: 26, fatPer100g: 9, fiberPer100g: 1.3 },
+  { id: 'avocado-toast', name: '아보카도토스트', category: '양식', caloriesPer100g: 200, proteinPer100g: 6, carbsPer100g: 20, fatPer100g: 11, fiberPer100g: 4 },
+  { id: 'egg-toast', name: '에그토스트', category: '양식', caloriesPer100g: 210, proteinPer100g: 9, carbsPer100g: 24, fatPer100g: 8, fiberPer100g: 1.2 },
+  { id: 'tomato-soup', name: '토마토수프', category: '양식', caloriesPer100g: 50, proteinPer100g: 1.5, carbsPer100g: 9, fatPer100g: 1, fiberPer100g: 1.3 },
+  { id: 'pumpkin-soup', name: '단호박수프', category: '양식', caloriesPer100g: 80, proteinPer100g: 1.5, carbsPer100g: 14, fatPer100g: 2, fiberPer100g: 1.5 },
+  { id: 'quinoa-salad', name: '퀴노아샐러드', category: '양식', caloriesPer100g: 130, proteinPer100g: 5, carbsPer100g: 18, fatPer100g: 4, fiberPer100g: 2.5 },
+  { id: 'poke-bowl', name: '포케보울', category: '양식', caloriesPer100g: 150, proteinPer100g: 12, carbsPer100g: 14, fatPer100g: 5, fiberPer100g: 2 },
+  { id: 'granola-yogurt-bowl', name: '그래놀라요거트볼', category: '양식', caloriesPer100g: 160, proteinPer100g: 7, carbsPer100g: 22, fatPer100g: 5, fiberPer100g: 2 },
+  { id: 'overnight-oats', name: '오버나이트오트밀', category: '양식', caloriesPer100g: 120, proteinPer100g: 4, carbsPer100g: 18, fatPer100g: 3, fiberPer100g: 2.5 },
+  { id: 'smoothie-bowl', name: '스무디볼', category: '양식', caloriesPer100g: 110, proteinPer100g: 3, carbsPer100g: 20, fatPer100g: 2, fiberPer100g: 2.5 },
+
   // ---------------------------------------------------------------------
   // 분식
   // ---------------------------------------------------------------------
@@ -242,6 +312,19 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'bungeoppang', name: '붕어빵', category: '분식', caloriesPer100g: 220, proteinPer100g: 5, carbsPer100g: 42, fatPer100g: 3, fiberPer100g: 1.5 },
   { id: 'hotteok', name: '호떡', category: '분식', caloriesPer100g: 260, proteinPer100g: 4, carbsPer100g: 45, fatPer100g: 7, fiberPer100g: 1 },
   { id: 'sugar-toast', name: '설탕버터토스트', category: '분식', caloriesPer100g: 300, proteinPer100g: 6, carbsPer100g: 45, fatPer100g: 10, fiberPer100g: 1 },
+
+  // 분식 추가
+  { id: 'tteok-kkochi', name: '떡꼬치', category: '분식', caloriesPer100g: 230, proteinPer100g: 4, carbsPer100g: 42, fatPer100g: 5, fiberPer100g: 1 },
+  { id: 'cheese-tteokbokki', name: '치즈떡볶이', category: '분식', caloriesPer100g: 220, proteinPer100g: 6, carbsPer100g: 36, fatPer100g: 6, fiberPer100g: 1.5 },
+  { id: 'tuna-gimbap', name: '참치김밥', category: '분식', caloriesPer100g: 180, proteinPer100g: 7, carbsPer100g: 26, fatPer100g: 5, fiberPer100g: 1.3 },
+  { id: 'cheese-gimbap', name: '치즈김밥', category: '분식', caloriesPer100g: 190, proteinPer100g: 7, carbsPer100g: 27, fatPer100g: 6, fiberPer100g: 1.3 },
+  { id: 'jjolmyeon', name: '쫄면', category: '분식', caloriesPer100g: 170, proteinPer100g: 4, carbsPer100g: 32, fatPer100g: 2, fiberPer100g: 1.5 },
+  { id: 'bibim-dangmyeon', name: '비빔당면', category: '분식', caloriesPer100g: 160, proteinPer100g: 3, carbsPer100g: 32, fatPer100g: 2, fiberPer100g: 1 },
+  { id: 'eomuk-kkochi', name: '오뎅꼬치', category: '분식', caloriesPer100g: 90, proteinPer100g: 7, carbsPer100g: 9, fatPer100g: 2.5, fiberPer100g: 0.5 },
+  { id: 'sundae-bokkeum', name: '순대볶음', category: '분식', caloriesPer100g: 190, proteinPer100g: 9, carbsPer100g: 18, fatPer100g: 9, fiberPer100g: 1 },
+  { id: 'jjapagetti', name: '짜파게티', category: '분식', caloriesPer100g: 150, proteinPer100g: 3, carbsPer100g: 22, fatPer100g: 5.5, fiberPer100g: 1 },
+  { id: 'buldak-bokkeum-myeon', name: '불닭볶음면', category: '분식', caloriesPer100g: 150, proteinPer100g: 3, carbsPer100g: 22, fatPer100g: 5.5, fiberPer100g: 1 },
+  { id: 'sotteok-sotteok', name: '소떡소떡', category: '분식', caloriesPer100g: 230, proteinPer100g: 8, carbsPer100g: 28, fatPer100g: 9, fiberPer100g: 0.8 },
 
   // ---------------------------------------------------------------------
   // 디저트
@@ -259,6 +342,19 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'jelly', name: '젤리', category: '디저트', caloriesPer100g: 320, proteinPer100g: 4, carbsPer100g: 78, fatPer100g: 0, fiberPer100g: 0 },
   { id: 'pudding', name: '푸딩', category: '디저트', caloriesPer100g: 150, proteinPer100g: 4, carbsPer100g: 20, fatPer100g: 6, fiberPer100g: 0 },
 
+  // 디저트 추가
+  { id: 'madeleine', name: '마들렌', category: '디저트', caloriesPer100g: 420, proteinPer100g: 5, carbsPer100g: 48, fatPer100g: 22, fiberPer100g: 0.8 },
+  { id: 'scone', name: '스콘', category: '디저트', caloriesPer100g: 380, proteinPer100g: 7, carbsPer100g: 50, fatPer100g: 16, fiberPer100g: 1.5 },
+  { id: 'creme-brulee', name: '크림브륄레', category: '디저트', caloriesPer100g: 290, proteinPer100g: 4, carbsPer100g: 22, fatPer100g: 20, fiberPer100g: 0 },
+  { id: 'walnut-pie', name: '호두파이', category: '디저트', caloriesPer100g: 400, proteinPer100g: 5, carbsPer100g: 44, fatPer100g: 22, fiberPer100g: 2 },
+  { id: 'yakgwa', name: '약과', category: '디저트', caloriesPer100g: 420, proteinPer100g: 4, carbsPer100g: 60, fatPer100g: 18, fiberPer100g: 0.5 },
+  { id: 'injeolmi', name: '인절미', category: '디저트', caloriesPer100g: 230, proteinPer100g: 5, carbsPer100g: 48, fatPer100g: 1.5, fiberPer100g: 1.5 },
+  { id: 'patjuk', name: '팥죽', category: '디저트', caloriesPer100g: 120, proteinPer100g: 5, carbsPer100g: 22, fatPer100g: 1, fiberPer100g: 4 },
+  { id: 'banana-bread', name: '바나나브레드', category: '디저트', caloriesPer100g: 320, proteinPer100g: 5, carbsPer100g: 48, fatPer100g: 13, fiberPer100g: 1.5 },
+  { id: 'cinnamon-roll', name: '시나몬롤', category: '디저트', caloriesPer100g: 380, proteinPer100g: 6, carbsPer100g: 50, fatPer100g: 16, fiberPer100g: 1.5 },
+  { id: 'egg-tart', name: '에그타르트', category: '디저트', caloriesPer100g: 330, proteinPer100g: 6, carbsPer100g: 30, fatPer100g: 20, fiberPer100g: 0.5 },
+  { id: 'chocolate-mousse', name: '초코무스', category: '디저트', caloriesPer100g: 280, proteinPer100g: 4, carbsPer100g: 26, fatPer100g: 17, fiberPer100g: 1.5 },
+
   // ---------------------------------------------------------------------
   // 음료
   // ---------------------------------------------------------------------
@@ -271,6 +367,23 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'sports-drink', name: '이온음료', category: '음료', caloriesPer100g: 25, proteinPer100g: 0, carbsPer100g: 6, fatPer100g: 0, fiberPer100g: 0 },
   { id: 'green-tea', name: '녹차', category: '음료', caloriesPer100g: 1, proteinPer100g: 0, carbsPer100g: 0.2, fatPer100g: 0, fiberPer100g: 0 },
   { id: 'yogurt-smoothie', name: '요거트 스무디', category: '음료', caloriesPer100g: 90, proteinPer100g: 3, carbsPer100g: 15, fatPer100g: 2, fiberPer100g: 0.5 },
+
+  // 음료 추가
+  { id: 'vanilla-latte', name: '바닐라라떼', category: '음료', caloriesPer100g: 70, proteinPer100g: 3, carbsPer100g: 9, fatPer100g: 3, fiberPer100g: 0 },
+  { id: 'cappuccino', name: '카푸치노', category: '음료', caloriesPer100g: 45, proteinPer100g: 2.5, carbsPer100g: 4, fatPer100g: 2, fiberPer100g: 0 },
+  { id: 'espresso', name: '에스프레소', category: '음료', caloriesPer100g: 9, proteinPer100g: 0.5, carbsPer100g: 1.5, fatPer100g: 0.2, fiberPer100g: 0 },
+  { id: 'iced-tea', name: '아이스티', category: '음료', caloriesPer100g: 20, proteinPer100g: 0, carbsPer100g: 5, fatPer100g: 0, fiberPer100g: 0 },
+  { id: 'lemonade', name: '레몬에이드', category: '음료', caloriesPer100g: 45, proteinPer100g: 0.1, carbsPer100g: 11, fatPer100g: 0, fiberPer100g: 0.1 },
+  { id: 'grapefruit-ade', name: '자몽에이드', category: '음료', caloriesPer100g: 45, proteinPer100g: 0.2, carbsPer100g: 11, fatPer100g: 0, fiberPer100g: 0.2 },
+  { id: 'sikhye', name: '식혜', category: '음료', caloriesPer100g: 55, proteinPer100g: 0.3, carbsPer100g: 13, fatPer100g: 0, fiberPer100g: 0.1 },
+  { id: 'sujeonggwa', name: '수정과', category: '음료', caloriesPer100g: 50, proteinPer100g: 0.1, carbsPer100g: 12, fatPer100g: 0, fiberPer100g: 0 },
+  { id: 'barley-tea', name: '보리차', category: '음료', caloriesPer100g: 1, proteinPer100g: 0, carbsPer100g: 0.2, fatPer100g: 0, fiberPer100g: 0 },
+  { id: 'corn-silk-tea', name: '옥수수수염차', category: '음료', caloriesPer100g: 1, proteinPer100g: 0, carbsPer100g: 0.2, fatPer100g: 0, fiberPer100g: 0 },
+  { id: 'soy-latte', name: '두유라떼', category: '음료', caloriesPer100g: 55, proteinPer100g: 2.5, carbsPer100g: 7, fatPer100g: 2, fiberPer100g: 0.4 },
+  { id: 'flat-white', name: '플랫화이트', category: '음료', caloriesPer100g: 65, proteinPer100g: 3.5, carbsPer100g: 5, fatPer100g: 3.5, fiberPer100g: 0 },
+  { id: 'cold-brew', name: '콜드브루', category: '음료', caloriesPer100g: 5, proteinPer100g: 0.2, carbsPer100g: 1, fatPer100g: 0, fiberPer100g: 0 },
+  { id: 'sprite', name: '사이다', category: '음료', caloriesPer100g: 40, proteinPer100g: 0, carbsPer100g: 10, fatPer100g: 0, fiberPer100g: 0 },
+  { id: 'hot-chocolate', name: '핫초코', category: '음료', caloriesPer100g: 85, proteinPer100g: 3, carbsPer100g: 12, fatPer100g: 3, fiberPer100g: 0.8 },
 
   // ---------------------------------------------------------------------
   // 과일
@@ -290,6 +403,16 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'grapefruit', name: '자몽', category: '과일', caloriesPer100g: 42, proteinPer100g: 0.8, carbsPer100g: 11, fatPer100g: 0.1, fiberPer100g: 1.6 },
   { id: 'cherry', name: '체리', category: '과일', caloriesPer100g: 63, proteinPer100g: 1.1, carbsPer100g: 16, fatPer100g: 0.2, fiberPer100g: 2.1 },
 
+  // 과일 추가
+  { id: 'plum', name: '자두', category: '과일', caloriesPer100g: 46, proteinPer100g: 0.7, carbsPer100g: 11, fatPer100g: 0.3, fiberPer100g: 1.4 },
+  { id: 'melon', name: '메론', category: '과일', caloriesPer100g: 34, proteinPer100g: 0.8, carbsPer100g: 8, fatPer100g: 0.2, fiberPer100g: 0.4 },
+  { id: 'pomegranate', name: '석류', category: '과일', caloriesPer100g: 83, proteinPer100g: 1.7, carbsPer100g: 19, fatPer100g: 1.2, fiberPer100g: 4 },
+  { id: 'fig', name: '무화과', category: '과일', caloriesPer100g: 74, proteinPer100g: 0.8, carbsPer100g: 19, fatPer100g: 0.3, fiberPer100g: 2.9 },
+  { id: 'korean-melon', name: '참외', category: '과일', caloriesPer100g: 32, proteinPer100g: 0.8, carbsPer100g: 7, fatPer100g: 0.2, fiberPer100g: 0.7 },
+  { id: 'dragon-fruit', name: '용과', category: '과일', caloriesPer100g: 60, proteinPer100g: 1.2, carbsPer100g: 13, fatPer100g: 0.4, fiberPer100g: 3 },
+  { id: 'hallabong', name: '한라봉', category: '과일', caloriesPer100g: 53, proteinPer100g: 0.8, carbsPer100g: 13, fatPer100g: 0.2, fiberPer100g: 1.9 },
+  { id: 'tangerine', name: '귤', category: '과일', caloriesPer100g: 53, proteinPer100g: 0.8, carbsPer100g: 13, fatPer100g: 0.2, fiberPer100g: 1.8 },
+
   // ---------------------------------------------------------------------
   // 채소
   // ---------------------------------------------------------------------
@@ -306,6 +429,16 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'bean-sprout', name: '콩나물', category: '채소', caloriesPer100g: 30, proteinPer100g: 3, carbsPer100g: 4, fatPer100g: 0.5, fiberPer100g: 2.5 },
   { id: 'zucchini', name: '애호박', category: '채소', caloriesPer100g: 20, proteinPer100g: 1.2, carbsPer100g: 4, fatPer100g: 0.2, fiberPer100g: 1 },
   { id: 'radish', name: '무', category: '채소', caloriesPer100g: 18, proteinPer100g: 0.6, carbsPer100g: 4, fatPer100g: 0.1, fiberPer100g: 1.6 },
+
+  // 채소 추가
+  { id: 'king-oyster-mushroom', name: '새송이버섯', category: '채소', caloriesPer100g: 25, proteinPer100g: 3, carbsPer100g: 4, fatPer100g: 0.3, fiberPer100g: 1.5 },
+  { id: 'shiitake-mushroom', name: '표고버섯', category: '채소', caloriesPer100g: 34, proteinPer100g: 2.5, carbsPer100g: 6, fatPer100g: 0.5, fiberPer100g: 2.5 },
+  { id: 'red-cabbage', name: '적양배추', category: '채소', caloriesPer100g: 28, proteinPer100g: 1.4, carbsPer100g: 7, fatPer100g: 0.2, fiberPer100g: 2.9 },
+  { id: 'perilla-leaf', name: '깻잎', category: '채소', caloriesPer100g: 36, proteinPer100g: 3.9, carbsPer100g: 5, fatPer100g: 0.6, fiberPer100g: 3 },
+  { id: 'chive', name: '부추', category: '채소', caloriesPer100g: 30, proteinPer100g: 2.5, carbsPer100g: 4, fatPer100g: 0.3, fiberPer100g: 2.4 },
+  { id: 'lettuce', name: '상추', category: '채소', caloriesPer100g: 15, proteinPer100g: 1.4, carbsPer100g: 2.9, fatPer100g: 0.2, fiberPer100g: 1.3 },
+  { id: 'minari', name: '미나리', category: '채소', caloriesPer100g: 20, proteinPer100g: 2.5, carbsPer100g: 3, fatPer100g: 0.1, fiberPer100g: 2.1 },
+  { id: 'sukju-namul', name: '숙주나물', category: '채소', caloriesPer100g: 30, proteinPer100g: 3, carbsPer100g: 5, fatPer100g: 0.2, fiberPer100g: 1.9 },
 ]
 
 export function searchFoodDatabase(query: string, limit = 6): FoodDbEntry[] {
