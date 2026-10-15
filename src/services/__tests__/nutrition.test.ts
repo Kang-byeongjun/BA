@@ -203,16 +203,17 @@ describe('nutritionTargetService', () => {
   })
 
   it('체지방량이 없으면(간편 온보딩) 체중 기준으로 되돌아간다', () => {
-    // weight 75, goal fat_loss → 75 × 1.6 = 120 (체지방량 있을 때의 123보다 작다)
+    // weight 75, goal fat_loss → 75 × 1.6 = 120 (체지방량 있을 때의 160보다 작다)
     const target = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatMass: null })
     expect(target.protein).toBe(120)
   })
 
   it('체지방감량 칼로리 보정은 체중 대비 "주당 변화율(%)"을 7,700kcal/kg으로 역산한다', () => {
     // weight 75, 체지방률 20(보통) → 0.5%/주 → 75*0.005*7700/7 = 412.5 → 413kcal 적자
-    // tdee = 1650*1.4 = 2310 → 2310-413=1897 → 10kcal 단위 반올림 → 1900
+    // 운동 프로필 없음(workoutProfile 미지정) → 훈련량 "가벼움"으로 간주 → 활동계수 1.375
+    // tdee = 1650*1.375 = 2268.75 → 2268.75-413=1855.75 → 10kcal 단위 반올림 → 1860
     const target = generateNutritionTarget({ ...DEMO_PROFILE, bodyFatPercentage: 20 })
-    expect(target.calories).toBe(1900)
+    expect(target.calories).toBe(1860)
   })
 
   it('체지방률이 성별 기준 높은 편이면 체지방감량 목표 변화율을 더 공격적으로 잡는다(0.5%→0.7%/주)', () => {
@@ -243,7 +244,8 @@ describe('nutritionTargetService', () => {
 
   it('체중이 매우 크거나 작아도 하루 보정폭은 ±750kcal를 넘지 않는다(안전장치)', () => {
     const veryHeavy = generateNutritionTarget({ ...DEMO_PROFILE, weight: 300, bodyFatPercentage: 28 })
-    const tdee = DEMO_PROFILE.basalMetabolicRate * 1.4
+    // 운동 프로필 없음 → 훈련량 "가벼움" → 활동계수 1.375 (고정 1.4 아님)
+    const tdee = DEMO_PROFILE.basalMetabolicRate * 1.375
     expect(tdee - veryHeavy.calories).toBeLessThanOrEqual(760) // 750 보정 + 10kcal 반올림 여유
   })
 })

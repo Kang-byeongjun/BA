@@ -15,6 +15,8 @@ import type { Gender, Goal, InBodyMeasurements, NutritionTarget, UserProfile, Wo
  *   중강도 5–7, 고강도 6–10, 초고강도 8–12g/kg)를 WorkoutProfile의 주당 운동량으로 근사해 적용.
  * - 지방 — IOM(현 NAM) Dietary Reference Intakes AMDR, 성인 총열량의 20–35%.
  * - 식이섬유 — IOM AMDR, 1,000kcal당 14g.
+ * - 활동계수(TDEE) — Mifflin-St Jeor(1990) 공식이 전제하는 표준 활동계수 5단계(좌식 1.2~매우 활발함 1.9)
+ *   중, WorkoutProfile로 추정한 훈련량에 맞는 단계를 적용(고정값 사용 안 함).
  */
 
 // 체중 기준(체지방량 없음 — 간편 온보딩 등 그레이스풀 디그레이데이션 경로)
@@ -100,6 +102,16 @@ function resolveTrainingVolume(workoutProfile: WorkoutProfile | null): TrainingV
   return 'very_high'
 }
 
+// Mifflin-St Jeor 공식의 표준 활동계수(TDEE = BMR × 활동계수) 5단계 중, 이 앱 온보딩의 운동 가능
+// 횟수·시간 선택지가 "전혀 운동 안 함"을 허용하지 않아 실제로 나올 수 있는 light~very_high 4단계만 쓴다.
+// (가벼운 활동 1.375 / 중간 1.55 / 활발함 1.725 / 매우 활발함 1.9 — 좌식 1.2는 선택지상 나오지 않음)
+const ACTIVITY_FACTOR_BY_TRAINING_VOLUME: Record<TrainingVolume, number> = {
+  light: 1.375,
+  moderate: 1.55,
+  high: 1.725,
+  very_high: 1.9,
+}
+
 const TRAINING_VOLUME_LABEL: Record<TrainingVolume, string> = {
   light: '가벼움',
   moderate: '중간',
@@ -175,7 +187,9 @@ function resolveCalorieAdjustment(profile: Pick<UserProfile, 'goal' | 'gender' |
 export function generateNutritionTarget(profile: UserProfile, workoutProfile: WorkoutProfile | null = null): NutritionTarget {
   const { basalMetabolicRate, weight } = profile
 
-  const activityFactor = 1.4 // 프로토타입용 고정 활동계수
+  // 운동 프로필(주당 횟수×시간)로 추정한 훈련량에 맞춰 Mifflin-St Jeor 표준 활동계수를 적용한다.
+  // 탄수화물 산출(resolveCarbsAndFat)과 같은 훈련량 분류(resolveTrainingVolume)를 재사용해 일관성을 맞춘다.
+  const activityFactor = ACTIVITY_FACTOR_BY_TRAINING_VOLUME[resolveTrainingVolume(workoutProfile)]
   const tdee = basalMetabolicRate * activityFactor
   const calories = tdee + resolveCalorieAdjustment(profile, tdee)
 
@@ -252,9 +266,10 @@ export function describeNutritionRationale(
     citation: 'IOM Dietary Reference Intakes — 1,000kcal당 14g 권고',
   }
 
+  const activityFactor = ACTIVITY_FACTOR_BY_TRAINING_VOLUME[volume]
   const calories: NutrientRationale = {
-    summary: '기초대사량 × 활동계수(1.4)에서 목적·체지방률에 따른 보정폭(±하루 최대 750kcal)을 더하거나 뺐어요.',
-    citation: '체지방 1kg≈7,700kcal 환산 + 스포츠영양학에서 통상 안전 범위로 보는 주당 체중변화율(%) 관행치',
+    summary: `기초대사량 × 활동계수(${activityFactor}, 운동량: ${TRAINING_VOLUME_LABEL[volume]})에서 목적·체지방률에 따른 보정폭(±하루 최대 750kcal)을 더하거나 뺐어요.`,
+    citation: 'Mifflin-St Jeor(1990) 활동계수 표준값 + 체지방 1kg≈7,700kcal 환산, 스포츠영양학에서 통상 안전 범위로 보는 주당 체중변화율(%) 관행치',
   }
 
   return { calories, protein, carbohydrates, fat, fiber }
