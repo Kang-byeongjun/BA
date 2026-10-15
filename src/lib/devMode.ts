@@ -6,8 +6,8 @@ import { useEffect, useState } from 'react'
  * 한 번 풀리면 localStorage에 남아 새로고침해도 다시 탭할 필요가 없다.
  */
 const STORAGE_KEY = 'devModeUnlocked'
-const TAP_THRESHOLD = 5
-const TAP_WINDOW_MS = 3000
+const TAP_THRESHOLD = 4
+const TAP_WINDOW_MS = 5000
 
 export function useDevMode(): [boolean, () => void] {
   const [unlocked, setUnlocked] = useState(() => {

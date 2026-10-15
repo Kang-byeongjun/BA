@@ -56,7 +56,10 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-slate-400 select-none" onClick={registerSecretTap}>
+        <p
+          className="touch-manipulation select-none py-2 text-sm text-slate-400"
+          onClick={registerSecretTap}
+        >
           안녕하세요{profile ? ',' : ''} 오늘도 목표를 향해 달려볼까요?
         </p>
         {devMode && (
