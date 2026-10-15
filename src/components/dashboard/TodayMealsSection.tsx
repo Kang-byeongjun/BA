@@ -5,7 +5,8 @@ import type { Meal, MealSlot } from '../../types'
 interface Props {
   meals: Meal[] // 오늘 기록된 식사만 전달
   onSelect: (meal: Meal) => void
-  onAdd: () => void
+  // 어느 칸의 "+추가"를 눌렀는지 slot으로 전달한다 — 그래야 촬영 화면이 그 칸으로 바로 기록된다.
+  onAdd: (slot: MealSlot) => void
 }
 
 const SLOTS: MealSlot[] = ['아침', '점심', '저녁', '간식']
@@ -40,7 +41,7 @@ export default function TodayMealsSection({ meals, onSelect, onAdd }: Props) {
 
               {slotMeals.length === 0 ? (
                 <button
-                  onClick={onAdd}
+                  onClick={() => onAdd(slot)}
                   className="flex w-full items-center justify-between rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-sm text-slate-400"
                 >
                   <span>아직 기록이 없어요</span>

@@ -20,6 +20,9 @@ interface Props {
   preview: string | null
   extraction: FoodExtraction
   mode: AnalysisMode
+  // 특정 칸("아침" 등)의 "+추가"로 들어왔으면 그 값을 넘겨받아 기본 선택값으로 쓴다.
+  // 없으면 지금 시각 기준으로 추정한다(inferMealSlot).
+  initialSlot?: MealSlot
   onReanalyze: () => void
   onConfirm: (input: { title: string; slot: MealSlot; rows: FoodRow[] }) => void
   onCancel: () => void
@@ -54,9 +57,9 @@ const COOKING_LABELS: Record<string, string> = {
   soup: '국물',
 }
 
-export default function FoodAnalysis({ preview, extraction, mode, onReanalyze, onConfirm, onCancel }: Props) {
+export default function FoodAnalysis({ preview, extraction, mode, initialSlot, onReanalyze, onConfirm, onCancel }: Props) {
   const [title, setTitle] = useState(extraction.mealName)
-  const [slot, setSlot] = useState<MealSlot>(() => inferMealSlot(Date.now()))
+  const [slot, setSlot] = useState<MealSlot>(() => initialSlot ?? inferMealSlot(Date.now()))
   const [rows, setRows] = useState<FoodRow[]>(() => createRowsFromExtraction(extraction))
   const [openSuggestKey, setOpenSuggestKey] = useState<string | null>(null)
   const nameInputRefs = useRef<Map<string, HTMLInputElement>>(new Map())

@@ -95,6 +95,17 @@ describe('getRecommendedMeals', () => {
     expect(result.length).toBeGreaterThan(0)
   })
 
+  it('부족한 영양소가 여러 개면 한 영양소로 자리를 다 채우지 않고 라운드로빈으로 고르게 섞는다', () => {
+    // 탄수화물(38%)·식이섬유(32%) 둘 다 부족한 상황 — 식이섬유 쪽 재료 풀이 3개 이상 있어도
+    // 식이섬유만 3개 채우지 않고 탄수화물도 최소 1개는 포함돼야 한다.
+    const consumed = { calories: 1686, protein: 109, carbohydrates: 139, fat: 73, fiber: 12 }
+    const biggerTarget: NutritionTarget = { calories: 2720, protein: 148, carbohydrates: 362, fat: 75, fiber: 38 }
+    const result = getRecommendedMeals(consumed, biggerTarget, healthCareProfile, [])
+    const nutrientsShown = new Set(result.map((r) => r.primaryNutrient))
+    expect(nutrientsShown.has('carbohydrates')).toBe(true)
+    expect(nutrientsShown.has('fiber')).toBe(true)
+  })
+
   it('오늘 이미 먹은 재료는 추천에서 제외한다', () => {
     const consumed = { calories: 500, protein: 10, carbohydrates: 200, fat: 60, fiber: 25 }
     // ingredient-salmon = 연어. 오늘 이미 먹었다면 그 재료는 추천하지 않는다.

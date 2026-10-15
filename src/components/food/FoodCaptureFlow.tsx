@@ -7,7 +7,7 @@ import { prepareImage, type PreparedImage } from '../../lib/imagePrep'
 import { sleep } from '../../lib/sleep'
 import { analyzeFoodImage } from '../../services/foodVisionService'
 import { buildMeal } from '../../services/mealService'
-import type { Meal } from '../../types'
+import type { Meal, MealSlot } from '../../types'
 import AnalysisErrorView from '../common/AnalysisErrorView'
 import AnalyzingLoader from '../common/AnalyzingLoader'
 import FoodAnalysis from './FoodAnalysis'
@@ -18,6 +18,8 @@ type Step = 'camera' | 'analyzing' | 'result' | 'error'
 interface Props {
   // 식사를 기록하고 닫히면 기록된 Meal을, 취소하고 닫히면 아무 값도 없이 호출된다.
   onDone: (savedMeal?: Meal) => void
+  // 특정 칸("아침" 등)에서 시작됐으면 결과 화면의 기본 선택값으로 넘겨준다.
+  initialSlot?: MealSlot
 }
 
 const STEPS = ['사진 확인', 'AI 분석', '영양 정보 계산', '완료']
@@ -26,7 +28,7 @@ const STEPS = ['사진 확인', 'AI 분석', '영양 정보 계산', '완료']
  * 음식 사진 흐름: 촬영/업로드 → (브라우저에서 리사이즈) → 서버 API → Claude Vision → 사용자 확인/수정 → 기록
  * 분석이 실패하면 mock 결과로 대체하지 않고 에러 화면을 보여준다.
  */
-export default function FoodCaptureFlow({ onDone }: Props) {
+export default function FoodCaptureFlow({ onDone, initialSlot }: Props) {
   const { dispatch, isDemo, aiMode } = useApp()
   const mode = resolveAnalysisMode(isDemo, aiMode)
 
@@ -141,6 +143,7 @@ export default function FoodCaptureFlow({ onDone }: Props) {
         preview={preview}
         extraction={extraction}
         mode={mode}
+        initialSlot={initialSlot}
         onReanalyze={() => preparedRef.current && void analyze(preparedRef.current)}
         onConfirm={({ title, slot, rows }) => {
           const meal = buildMeal({ title, slot, rows, thumbnail: preparedRef.current?.thumbnail ?? null })

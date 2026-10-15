@@ -193,18 +193,33 @@ export function getRecommendedMeals(
   const eatenTodayNames = new Set(eatenTodayFoodNames)
   const daySeed = Math.floor(Date.now() / 86400000)
 
-  const result: RecommendedMeal[] = []
-  for (const nutrient of priorityNutrients) {
-    // 완성된 한 끼 조합은 못 먹는 음식이거나 만들기 번거로울 수 있어 추천하지 않는다 —
-    // 지금 먹는 식단에 더하기만 하면 되는 재료 단위 풀에서만 추천한다.
+  // 완성된 한 끼 조합은 못 먹는 음식이거나 만들기 번거로울 수 있어 추천하지 않는다 —
+  // 지금 먹는 식단에 더하기만 하면 되는 재료 단위 풀에서만 추천한다.
+  const candidatesByNutrient = priorityNutrients.map((nutrient) => {
     const pool = INGREDIENT_MEAL_COMBOS.filter((c) => c.primaryNutrient === nutrient)
     const ranked = rankCombos(pool, profile.goal, daySeed + macros.indexOf(nutrient), eatenTodayNames)
     const percent = getPercentage(consumed[nutrient], target[nutrient])
-    for (const { combo, resolved } of ranked) {
+    return { ranked, percent, cursor: 0 }
+  })
+
+  // 부족한 영양소가 여러 개면 한 영양소에서 자리를 다 채우지 않고, 한 바퀴 돌며 영양소마다
+  // 한 자리씩 먼저 채운다(라운드로빈) — 그래야 "단백질만 3개" 대신 부족한 영양소가 고르게 보인다.
+  // 자리가 남으면(부족한 영양소가 적을 때) 다음 순위 재료로 마저 채운다.
+  const result: RecommendedMeal[] = []
+  let addedInPass = true
+  while (result.length < MAX_RECOMMENDATIONS && addedInPass) {
+    addedInPass = false
+    for (const candidate of candidatesByNutrient) {
       if (result.length >= MAX_RECOMMENDATIONS) break
-      if (!result.some((r) => r.id === combo.id)) result.push(buildRecommendedMeal(combo, resolved, percent))
+      while (candidate.cursor < candidate.ranked.length) {
+        const { combo, resolved } = candidate.ranked[candidate.cursor]
+        candidate.cursor += 1
+        if (result.some((r) => r.id === combo.id)) continue
+        result.push(buildRecommendedMeal(combo, resolved, candidate.percent))
+        addedInPass = true
+        break
+      }
     }
-    if (result.length >= MAX_RECOMMENDATIONS) break
   }
 
   return result.slice(0, MAX_RECOMMENDATIONS)

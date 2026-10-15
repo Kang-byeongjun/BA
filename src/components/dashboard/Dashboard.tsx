@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext'
 import MealDetailModal from '../meals/MealDetailModal'
 import { generateFeedback, getRecommendedMeals, sumMeals } from '../../lib/nutrition'
 import { isSameDay } from '../../lib/time'
-import type { Meal } from '../../types'
+import type { Meal, MealSlot } from '../../types'
 import CalorieSummary from './CalorieSummary'
 import FeedbackPanel from './FeedbackPanel'
 import NutritionBar from './NutritionBar'
@@ -13,7 +13,9 @@ import TodayMealsSection from './TodayMealsSection'
 import UpdatesPanel from './UpdatesPanel'
 
 interface Props {
-  onOpenCamera: () => void
+  // slot을 넘기면 그 칸으로 바로 기록된다(아침 칸의 "+추가"를 눌렀는데 지금 시간이 밤이라
+  // 간식으로 저장되는 걸 막기 위함). 하단 촬영 버튼처럼 어느 칸인지 모를 때는 생략한다.
+  onOpenCamera: (slot?: MealSlot) => void
   // 방금 기록한 식사 (기록 직후 얼마나 더해졌는지 보여준다)
   recentMeal: Meal | null
   onDismissRecentMeal: () => void
@@ -111,7 +113,7 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
       <TodayMealsSection meals={todayMeals} onSelect={setSelectedMeal} onAdd={onOpenCamera} />
 
       <button
-        onClick={onOpenCamera}
+        onClick={() => onOpenCamera()}
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 font-semibold text-white shadow-lg shadow-slate-300 active:scale-[0.98]"
       >
         <Camera size={20} />
