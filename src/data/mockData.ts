@@ -28,7 +28,6 @@ export const DEMO_PROFILE: UserProfile = {
   mineralMass: 4.5,
   basalMetabolicRate: 1650,
   basalMetabolicRateEstimated: false,
-  mealFlexibility: 'flexible',
 }
 
 export const DEMO_NUTRITION_TARGET: NutritionTarget = {

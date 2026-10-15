@@ -68,8 +68,6 @@ export default function OnboardingFlow() {
       mineralMass: toNullableNumber(values.mineralMass),
       basalMetabolicRate,
       basalMetabolicRateEstimated: measuredBmr === null,
-      // 온보딩에서는 기본값(자유롭게 변경)으로 시작하고, 필요하면 마이 탭에서 바꾸게 한다.
-      mealFlexibility: 'flexible',
     }
     setProfile(nextProfile)
     setStep('workout')

@@ -13,13 +13,14 @@ import type { NutrientKey } from '../types'
  * 으로 바꿨다.
  *
  * 풀은 두 묶음으로 나뉜다:
- * - MEAL_COMBOS: "다음 식사" 추천용. CURATED_MEAL_COMBOS(재료 2~3가지를 사람이 직접 짝지은
- *   조합) + generateDishCombos()(foodDatabase.ts의 한식/중식/일식/양식/분식 "완성 요리"를
- *   1인분 칼로리(500kcal 기준)로 환산해 자동 변환한 것). 식단을 자유롭게 바꿀 수 있는
- *   사용자(UserProfile.mealFlexibility === 'flexible')에게 쓴다.
+ * - MEAL_COMBOS: CURATED_MEAL_COMBOS(재료 2~3가지를 사람이 직접 짝지은 조합) +
+ *   generateDishCombos()(foodDatabase.ts의 한식/중식/일식/양식/분식 "완성 요리"를 1인분
+ *   칼로리(500kcal 기준)로 환산해 자동 변환한 것). resolveMealCombo/computeGoalFit 같은
+ *   유틸리티 테스트용 데이터로 남아있고, 실제 "다음 식사" 추천(getRecommendedMeals)에는
+ *   더 이상 쓰이지 않는다 — 완성 요리는 사용자가 못 먹는 음식이거나 만들기 번거로울 수 있어서다.
  * - INGREDIENT_MEAL_COMBOS: "지금 식단에 더하기" 추천용. 재료/채소/과일 카테고리에서
- *   보충용 1회분(150kcal 기준)으로 자동 변환한 단일 재료 풀. 매번 비슷한 식단을 먹을 수밖에
- *   없는 사용자('fixed')에게 쓴다 — 완성 요리를 통째로 추천하면 지킬 수 없기 때문이다.
+ *   보충용 1회분(150kcal 기준)으로 자동 변환한 단일 재료 풀. getRecommendedMeals는 항상
+ *   이 풀에서만 추천한다.
  * 어느 쪽이든 primaryNutrient는 계산된 영양 비율로 자동 분류한다 — 손으로 고르는 방식보다
  * 풀이 훨씬 커지고, 식재료가 바뀌면 자동으로 따라간다.
  */
@@ -385,9 +386,9 @@ function generateDishCombos(): MealComboDef[] {
 export const MEAL_COMBOS: MealComboDef[] = [...CURATED_MEAL_COMBOS, ...generateDishCombos()]
 
 // ---------------------------------------------------------------------------
-// 재료 단위 추천(식단 유형 = "매번 비슷한 식단") — 완성된 한 끼가 아니라, 지금 먹는 식단에
-// "더하기만 하면 되는" 단일 재료를 추천한다. 식단을 자유롭게 바꿀 수 없는 사용자도 실행 가능한
-// 조언이 되도록, 재료/채소/과일 카테고리에서만 뽑는다(완성 요리는 제외 — 그건 위 generateDishCombos).
+// 재료 단위 추천 — 완성된 한 끼가 아니라, 지금 먹는 식단에 "더하기만 하면 되는" 단일 재료를
+// 추천한다. 완성 요리는 못 먹는 음식이거나 만들기 번거로울 수 있어 추천하지 않고, 누구나 실행
+// 가능한 조언이 되도록 재료/채소/과일 카테고리에서만 뽑는다(완성 요리는 위 generateDishCombos).
 // ---------------------------------------------------------------------------
 
 const INGREDIENT_CATEGORIES: FoodCategory[] = ['재료', '채소', '과일']

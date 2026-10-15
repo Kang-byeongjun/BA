@@ -28,16 +28,6 @@ export interface UserProfile {
   basalMetabolicRate: number // kcal — 실측값이 없으면 공식(estimateBasalMetabolicRate)으로 추정해 채운다
   // true면 basalMetabolicRate가 InBody 실측이 아니라 공식으로 추정한 값
   basalMetabolicRateEstimated: boolean
-  // 식단 추천 방식 — 'flexible': 실제 한 끼 조합으로 추천(기본). 'fixed': 매번 비슷한 식단을
-  // 먹을 수밖에 없는 사용자용 — 고정된 식사에 더하기만 하면 되는 재료 단위로 추천한다.
-  mealFlexibility: MealFlexibility
-}
-
-export type MealFlexibility = 'flexible' | 'fixed'
-
-export const MEAL_FLEXIBILITY_LABELS: Record<MealFlexibility, string> = {
-  flexible: '식단을 자유롭게 바꿀 수 있어요',
-  fixed: '매번 비슷한 식단을 먹어요',
 }
 
 // InBody 결과지에서 읽어온(또는 사용자가 확인·수정한) 체성분 측정값. null이면 값이 없는 항목.

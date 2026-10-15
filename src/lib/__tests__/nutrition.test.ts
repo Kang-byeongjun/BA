@@ -9,9 +9,7 @@ const healthCareProfile = {
   goal: 'health_care' as const,
   gender: 'male' as const,
   bodyFatPercentage: null,
-  mealFlexibility: 'flexible' as const,
 }
-const fixedDietProfile = { ...healthCareProfile, mealFlexibility: 'fixed' as const }
 
 describe('MEAL_COMBOS — 완성 요리 자동 생성 풀', () => {
   it('한식/중식/일식/양식/분식 완성 요리를 자동으로 조합 풀에 포함한다(수십 개 이상으로 확장)', () => {
@@ -97,11 +95,11 @@ describe('getRecommendedMeals', () => {
     expect(result.length).toBeGreaterThan(0)
   })
 
-  it('오늘 이미 먹은 재료로만 구성된 조합은 제외한다', () => {
+  it('오늘 이미 먹은 재료는 추천에서 제외한다', () => {
     const consumed = { calories: 500, protein: 10, carbohydrates: 200, fat: 60, fiber: 25 }
-    // combo-salmon-salad = 연어 + 그린샐러드. 둘 다 이미 먹었다면 그 조합은 추천하지 않는다.
-    const result = getRecommendedMeals(consumed, target, healthCareProfile, ['연어', '그린샐러드'])
-    expect(result.some((r) => r.id === 'combo-salmon-salad')).toBe(false)
+    // ingredient-salmon = 연어. 오늘 이미 먹었다면 그 재료는 추천하지 않는다.
+    const result = getRecommendedMeals(consumed, target, healthCareProfile, ['연어'])
+    expect(result.some((r) => r.id === 'ingredient-salmon')).toBe(false)
   })
 
   it('같은 입력이면 같은 날 안에서는 같은 추천을 반환한다(결정적 셔플)', () => {
@@ -133,14 +131,14 @@ describe('getRecommendedMeals', () => {
     expect(result[0].primaryNutrient).toBe('carbohydrates')
   })
 
-  it('식단 유형이 "fixed"면 완성 조합 대신 재료 단위(INGREDIENT_MEAL_COMBOS)에서 추천한다', () => {
+  it('완성 요리가 아니라 재료 단위(INGREDIENT_MEAL_COMBOS)로만 추천한다 — 못 먹거나 만들기 번거로운 요리를 추천하지 않기 위함', () => {
     const consumed = { calories: 500, protein: 10, carbohydrates: 200, fat: 60, fiber: 25 }
-    const result = getRecommendedMeals(consumed, target, fixedDietProfile, [])
+    const result = getRecommendedMeals(consumed, target, healthCareProfile, [])
     expect(result.length).toBeGreaterThan(0)
     for (const meal of result) {
       expect(meal.ingredients).toHaveLength(1)
       expect(INGREDIENT_MEAL_COMBOS.some((c) => c.id === meal.id)).toBe(true)
-      expect(MEAL_COMBOS.some((c) => c.id === meal.id && c.ingredients.length > 1)).toBe(false)
+      expect(MEAL_COMBOS.some((c) => c.id === meal.id)).toBe(false)
     }
   })
 })

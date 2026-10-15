@@ -1,16 +1,7 @@
 import { getFoodById } from '../data/foodDatabase'
-import { INGREDIENT_MEAL_COMBOS, MEAL_COMBOS, type MealComboDef } from '../data/mealCombos'
+import { INGREDIENT_MEAL_COMBOS, type MealComboDef } from '../data/mealCombos'
 import { computeGoalFit, resolveMealCombo, type ResolvedMealCombo } from '../services/nutritionService'
-import type {
-  Gender,
-  Goal,
-  Meal,
-  MealFlexibility,
-  NutrientKey,
-  NutritionStatus,
-  NutritionTarget,
-  RecommendedMeal,
-} from '../types'
+import type { Gender, Goal, Meal, NutrientKey, NutritionStatus, NutritionTarget, RecommendedMeal } from '../types'
 
 export function sumMeals(meals: Meal[]) {
   return meals.reduce(
@@ -158,7 +149,6 @@ export interface RecommendationProfile {
   goal: Goal
   gender: Gender
   bodyFatPercentage: number | null
-  mealFlexibility: MealFlexibility
 }
 
 function priorityBias(profile: RecommendationProfile): Partial<Record<Exclude<NutrientKey, 'calories'>, number>> {
@@ -203,13 +193,11 @@ export function getRecommendedMeals(
   const eatenTodayNames = new Set(eatenTodayFoodNames)
   const daySeed = Math.floor(Date.now() / 86400000)
 
-  // 식단을 자유롭게 바꿀 수 없는 사용자('fixed')에게는 완성된 한 끼 조합을 추천해도 지킬 수 없다 —
-  // 지금 먹는 식단에 더하기만 하면 되는 재료 단위 풀을 쓴다.
-  const comboPool = profile.mealFlexibility === 'fixed' ? INGREDIENT_MEAL_COMBOS : MEAL_COMBOS
-
   const result: RecommendedMeal[] = []
   for (const nutrient of priorityNutrients) {
-    const pool = comboPool.filter((c) => c.primaryNutrient === nutrient)
+    // 완성된 한 끼 조합은 못 먹는 음식이거나 만들기 번거로울 수 있어 추천하지 않는다 —
+    // 지금 먹는 식단에 더하기만 하면 되는 재료 단위 풀에서만 추천한다.
+    const pool = INGREDIENT_MEAL_COMBOS.filter((c) => c.primaryNutrient === nutrient)
     const ranked = rankCombos(pool, profile.goal, daySeed + macros.indexOf(nutrient), eatenTodayNames)
     const percent = getPercentage(consumed[nutrient], target[nutrient])
     for (const { combo, resolved } of ranked) {

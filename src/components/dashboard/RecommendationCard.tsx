@@ -1,20 +1,11 @@
 import { Loader2, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { requestCoachMessage } from '../../services/coachService'
-import {
-  GOAL_LABELS,
-  NUTRIENT_LABELS,
-  NUTRIENT_UNITS,
-  type Goal,
-  type MealFlexibility,
-  type NutrientKey,
-  type RecommendedMeal,
-} from '../../types'
+import { GOAL_LABELS, NUTRIENT_LABELS, NUTRIENT_UNITS, type Goal, type NutrientKey, type RecommendedMeal } from '../../types'
 
 interface Props {
   meals: RecommendedMeal[]
   goal: Goal
-  mealFlexibility: MealFlexibility
 }
 
 interface NutrientGroup {
@@ -97,9 +88,8 @@ function MealCoach({ meal, goal }: { meal: RecommendedMeal; goal: Goal }) {
   )
 }
 
-export default function RecommendationCard({ meals, goal, mealFlexibility }: Props) {
-  const isFixed = mealFlexibility === 'fixed'
-  const title = isFixed ? '오늘 보충하면 좋은 재료' : '다음 식사 추천'
+export default function RecommendationCard({ meals, goal }: Props) {
+  const title = '오늘 보충하면 좋은 재료'
 
   if (meals.length === 0) {
     return (

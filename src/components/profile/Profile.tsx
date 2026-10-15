@@ -7,7 +7,6 @@ import { describeNutritionRationale, generateNutritionTarget } from '../../servi
 import {
   DEFAULT_WORKOUT_PROFILE,
   GOAL_LABELS,
-  MEAL_FLEXIBILITY_LABELS,
   NUTRIENT_LABELS,
   NUTRIENT_UNITS,
   PAIN_AREA_LABELS,
@@ -15,7 +14,6 @@ import {
   WORKOUT_GOAL_LABELS,
   type Goal,
   type InBodyMeasurements,
-  type MealFlexibility,
   type NutritionTarget,
 } from '../../types'
 import NutritionRationale from '../common/NutritionRationale'
@@ -103,11 +101,6 @@ export default function Profile() {
     dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: nextTarget })
     setDraftTarget(nextTarget)
     setNotice('관리 목적이 바뀌어 영양 목표를 다시 계산했어요. 필요하면 아래에서 직접 수정할 수 있어요.')
-  }
-
-  const handleMealFlexibilityChange = (mealFlexibility: MealFlexibility) => {
-    if (mealFlexibility === profile.mealFlexibility) return
-    dispatch({ type: 'UPDATE_PROFILE', profile: { ...profile, mealFlexibility } })
   }
 
   const target = draftTarget ?? nutritionTarget
@@ -235,29 +228,6 @@ export default function Profile() {
       </div>
 
       <InBodyTrend history={inBodyHistory} />
-
-      <div className="rounded-2xl border border-slate-100 bg-white p-4">
-        <p className="mb-1 text-sm font-semibold text-slate-800">식단 유형</p>
-        <p className="mb-3 text-xs text-slate-400">
-          식사 추천 방식이 달라져요. 매번 비슷한 식단을 드신다면 재료 단위로 보충할 것만 추천해드려요.
-        </p>
-        <div className="space-y-2">
-          {(Object.keys(MEAL_FLEXIBILITY_LABELS) as MealFlexibility[]).map((option) => {
-            const active = profile.mealFlexibility === option
-            return (
-              <button
-                key={option}
-                onClick={() => handleMealFlexibilityChange(option)}
-                className={`w-full rounded-xl border-2 px-4 py-2.5 text-left text-sm font-medium transition ${
-                  active ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-600'
-                }`}
-              >
-                {MEAL_FLEXIBILITY_LABELS[option]}
-              </button>
-            )
-          })}
-        </div>
-      </div>
 
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
