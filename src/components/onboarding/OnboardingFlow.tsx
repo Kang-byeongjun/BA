@@ -122,9 +122,11 @@ export default function OnboardingFlow() {
           onNext={handleWorkoutNext}
         />
       )}
-      {step === 'target' && target && (
+      {step === 'target' && target && profile && (
         <NutritionTargetReview
           initial={target}
+          profile={profile}
+          workoutProfile={workoutProfile}
           onBack={() => setStep('workout')}
           onConfirm={handleConfirm}
         />

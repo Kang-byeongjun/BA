@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
 import { BMI_CATEGORY_LABELS, calculateBmi, classifyBmi } from '../../lib/bmi'
-import { generateNutritionTarget } from '../../services/nutritionTargetService'
+import { describeNutritionRationale, generateNutritionTarget } from '../../services/nutritionTargetService'
 import {
   GOAL_LABELS,
   MEAL_FLEXIBILITY_LABELS,
@@ -17,6 +17,7 @@ import {
   type MealFlexibility,
   type NutritionTarget,
 } from '../../types'
+import NutritionRationale from '../common/NutritionRationale'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
 import WorkoutProfileInput from '../onboarding/WorkoutProfileInput'
 import InBodyTrend from './InBodyTrend'
@@ -327,6 +328,9 @@ export default function Profile() {
         >
           {saved ? '저장됨 ✓' : '목표 저장하기'}
         </button>
+        <div className="mt-3">
+          <NutritionRationale rationale={describeNutritionRationale(profile, workoutProfile)} />
+        </div>
       </div>
 
       <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">

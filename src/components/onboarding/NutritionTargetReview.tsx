@@ -1,16 +1,21 @@
 import { useState } from 'react'
-import { NUTRIENT_LABELS, NUTRIENT_UNITS, type NutritionTarget } from '../../types'
+import { describeNutritionRationale } from '../../services/nutritionTargetService'
+import { NUTRIENT_LABELS, NUTRIENT_UNITS, type NutritionTarget, type UserProfile, type WorkoutProfile } from '../../types'
+import NutritionRationale from '../common/NutritionRationale'
 
 interface Props {
   initial: NutritionTarget
+  profile: UserProfile
+  workoutProfile: WorkoutProfile
   onBack: () => void
   onConfirm: (target: NutritionTarget) => void
 }
 
 const KEYS: (keyof NutritionTarget)[] = ['calories', 'protein', 'carbohydrates', 'fat', 'fiber']
 
-export default function NutritionTargetReview({ initial, onBack, onConfirm }: Props) {
+export default function NutritionTargetReview({ initial, profile, workoutProfile, onBack, onConfirm }: Props) {
   const [target, setTarget] = useState<NutritionTarget>(initial)
+  const rationale = describeNutritionRationale(profile, workoutProfile)
 
   const update = (key: keyof NutritionTarget, value: string) => {
     const num = Number(value)
@@ -46,6 +51,8 @@ export default function NutritionTargetReview({ initial, onBack, onConfirm }: Pr
           </div>
         ))}
       </div>
+
+      <NutritionRationale rationale={rationale} />
 
       <div className="mt-4 flex gap-3">
         <button

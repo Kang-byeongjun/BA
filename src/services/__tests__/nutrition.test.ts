@@ -12,7 +12,7 @@ import {
   roundNutrients,
   sumNutrients,
 } from '../nutritionService'
-import { generateNutritionTarget, mergeInBodyMeasurements } from '../nutritionTargetService'
+import { describeNutritionRationale, generateNutritionTarget, mergeInBodyMeasurements } from '../nutritionTargetService'
 import { DEMO_PROFILE, DEMO_WORKOUT_PROFILE } from '../../data/mockData'
 import type { WorkoutProfile } from '../../types'
 
@@ -266,6 +266,15 @@ describe('generateNutritionTarget — 탄수화물/지방 산출 근거(ACSM 운
     const high = generateNutritionTarget(baseProfile, highWorkout)
     expect(none.carbohydrates).toBeLessThan(moderate.carbohydrates)
     expect(moderate.carbohydrates).toBeLessThan(high.carbohydrates)
+  })
+
+  it('describeNutritionRationale — 체지방감량·보통 체지방률이면 Helms et al. 출처와 실제 적용 계수(2.6g/kg)를 함께 보여준다', () => {
+    const rationale = describeNutritionRationale(DEMO_PROFILE, DEMO_WORKOUT_PROFILE)
+    expect(rationale.protein.summary).toContain('2.6g/kg')
+    expect(rationale.protein.citation).toContain('Helms')
+    expect(rationale.carbohydrates.citation).toContain('ACSM')
+    expect(rationale.fat.citation).toContain('IOM')
+    expect(rationale.fiber.citation).toContain('IOM')
   })
 
   it('운동량과 무관하게 지방은 항상 총열량의 20~35% 부근(IOM AMDR)에 머문다', () => {

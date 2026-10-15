@@ -100,6 +100,19 @@ function resolveTrainingVolume(workoutProfile: WorkoutProfile | null): TrainingV
   return 'very_high'
 }
 
+const TRAINING_VOLUME_LABEL: Record<TrainingVolume, string> = {
+  light: '가벼움',
+  moderate: '중간',
+  high: '높음',
+  very_high: '매우 높음',
+}
+
+const BODY_FAT_CATEGORY_LABEL: Record<'high' | 'normal' | 'low', string> = {
+  high: '높음',
+  normal: '보통',
+  low: '낮음',
+}
+
 // 지방 AMDR(IOM, 총열량의 20–35%) 안에서 탄수화물·지방을 나눈다.
 // 탄수화물은 운동량 기준 g/kg을 우선 반영하되, 그 결과로 지방이 AMDR 하한 아래로 내려가면 탄수화물을 줄이고,
 // 반대로 지방이 AMDR 상한을 넘기면(=운동량 대비 탄수화물 필요량이 적음) 남는 여유를 탄수화물로 돌린다.
@@ -178,6 +191,73 @@ export function generateNutritionTarget(profile: UserProfile, workoutProfile: Wo
     fat,
     fiber,
   }
+}
+
+export interface NutrientRationale {
+  /** 이 사용자에게 실제로 적용된 계수/구간을 담은 한 줄 설명 (예: "제지방량 61.5kg × 2.6g/kg") */
+  summary: string
+  /** 근거 문헌 */
+  citation: string
+}
+
+/**
+ * generateNutritionTarget이 각 영양소를 어떤 공식·문헌 근거로 계산했는지 사람이 읽을 수 있는 설명으로 돌려준다.
+ * 앱 UI에서 "이 숫자는 어떻게 나왔나요?" 같은 근거 노출에 쓰인다. (계산 자체는 하지 않고 같은 로직을 설명만 재구성)
+ */
+export function describeNutritionRationale(
+  profile: UserProfile,
+  workoutProfile: WorkoutProfile | null,
+): Record<keyof NutritionTarget, NutrientRationale> {
+  const { weight, bodyFatMass, bodyFatPercentage, gender, goal } = profile
+
+  let protein: NutrientRationale
+  if (bodyFatMass === null) {
+    protein = {
+      summary: `체성분(체지방량) 정보가 없어 체중 ${weight}kg × ${PROTEIN_PER_KG_WEIGHT[goal]}g/kg으로 추정했어요.`,
+      citation: 'ISSN Position Stand(Jäger et al., 2017), ACSM·AND·DC 공동성명(2016) — 운동하는 성인 1.2~2.0g/kg/일 권고',
+    }
+  } else {
+    const leanMass = Math.max(weight - bodyFatMass, weight * 0.5)
+    if (goal === 'fat_loss') {
+      const category = bodyFatCategory(gender, bodyFatPercentage)
+      const perKg = FAT_LOSS_PROTEIN_PER_KG_LEAN_MASS[category]
+      protein = {
+        summary: `제지방량 ${leanMass.toFixed(1)}kg × ${perKg}g/kg (체지방률 ${BODY_FAT_CATEGORY_LABEL[category]} 구간)`,
+        citation: 'Helms et al.(2014) 체계적 문헌고찰 — 칼로리 제한 중 저체지방·근력훈련자는 2.3~3.1g/kg 제지방량 필요(마를수록 상단)',
+      }
+    } else {
+      const perKg = PROTEIN_PER_KG_LEAN_MASS[goal]
+      protein = {
+        summary: `제지방량 ${leanMass.toFixed(1)}kg × ${perKg}g/kg`,
+        citation: 'ISSN Position Stand(Jäger et al., 2017), ACSM·AND·DC 공동성명(2016) — 1.2~2.0g/kg/일 권고 범위 안에서 목적별로 적용',
+      }
+    }
+  }
+
+  const volume = resolveTrainingVolume(workoutProfile)
+  const carbohydrates: NutrientRationale = {
+    summary: `체중 ${weight}kg × ${CARB_PER_KG_BY_TRAINING_VOLUME[volume]}g/kg (운동량: ${TRAINING_VOLUME_LABEL[volume]}${
+      workoutProfile ? '' : ' — 운동 프로필 없어 보수적으로 가정'
+    })`,
+    citation: 'ACSM·AND·DC 공동성명(2016) — 운동량별 탄수화물 권고 3~12g/kg/일 중 해당 구간',
+  }
+
+  const fat: NutrientRationale = {
+    summary: '단백질·탄수화물을 뺀 나머지 칼로리를, 총 열량의 20~35% 범위 안에서 맞췄어요.',
+    citation: 'IOM(현 NAM) Dietary Reference Intakes AMDR — 성인 지방 20~35%',
+  }
+
+  const fiber: NutrientRationale = {
+    summary: '하루 섭취 칼로리 1,000kcal당 14g을 적용했어요.',
+    citation: 'IOM Dietary Reference Intakes — 1,000kcal당 14g 권고',
+  }
+
+  const calories: NutrientRationale = {
+    summary: '기초대사량 × 활동계수(1.4)에서 목적·체지방률에 따른 보정폭(±하루 최대 750kcal)을 더하거나 뺐어요.',
+    citation: '체지방 1kg≈7,700kcal 환산 + 스포츠영양학에서 통상 안전 범위로 보는 주당 체중변화율(%) 관행치',
+  }
+
+  return { calories, protein, carbohydrates, fat, fiber }
 }
 
 /** InBody 측정값 중 값이 있는 항목만 프로필에 반영한다. (null은 기존 값을 유지) */
