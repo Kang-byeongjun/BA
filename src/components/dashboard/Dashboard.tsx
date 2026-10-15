@@ -1,7 +1,6 @@
 import { Camera, Sparkles, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import { useDevMode, useSecretTapCounter } from '../../lib/devMode'
 import MealDetailModal from '../meals/MealDetailModal'
 import { generateFeedback, getRecommendedMeals, sumMeals } from '../../lib/nutrition'
 import { isSameDay } from '../../lib/time'
@@ -23,9 +22,7 @@ interface Props {
 export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMeal }: Props) {
   const { meals, nutritionTarget, profile, dispatch } = useApp()
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null)
-  const [devMode, unlockDevMode] = useDevMode()
   const [updatesPanelOpen, setUpdatesPanelOpen] = useState(false)
-  const registerSecretTap = useSecretTapCounter(unlockDevMode)
 
   useEffect(() => {
     if (!recentMeal) return
@@ -56,21 +53,16 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
       <div className="flex items-center justify-between gap-2">
-        <p
-          className="touch-manipulation select-none py-2 text-sm text-slate-400"
-          onClick={registerSecretTap}
-        >
+        <p className="text-sm text-slate-400">
           안녕하세요{profile ? ',' : ''} 오늘도 목표를 향해 달려볼까요?
         </p>
-        {devMode && (
-          <button
-            onClick={() => setUpdatesPanelOpen(true)}
-            className="flex shrink-0 items-center gap-1 rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white"
-          >
-            <Sparkles size={12} />
-            업데이트 노트
-          </button>
-        )}
+        <button
+          onClick={() => setUpdatesPanelOpen(true)}
+          className="flex shrink-0 items-center gap-1 rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white"
+        >
+          <Sparkles size={12} />
+          업데이트 노트
+        </button>
       </div>
 
       {recentMeal && (
