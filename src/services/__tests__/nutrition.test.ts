@@ -80,6 +80,24 @@ describe('nutritionService: 이름 → 영양 DB 연결', () => {
     expect(localNutritionProvider.match('불고기피자')).toMatchObject({ matchType: 'exact', entry: { id: 'bulgogi-pizza' } })
     expect(localNutritionProvider.match('콤비네이션피자')).toMatchObject({ matchType: 'exact', entry: { id: 'combination-pizza' } })
   })
+
+  it('브랜드 공식 메뉴는 이름이 정확히 일치하면 연결되고, brand 필드로 어느 브랜드인지 알 수 있다', () => {
+    expect(localNutritionProvider.match('황금올리브치킨')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bbq-golden-olive-chicken', brand: 'BBQ' },
+    })
+    expect(localNutritionProvider.match('허니콤보')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'kyochon-honey-combo', brand: '교촌' },
+    })
+  })
+
+  it('"치킨"으로 검색하면 브랜드 메뉴(허니콤보 등 이름에 "치킨"이 없는 것)도 함께 나온다', () => {
+    const results = localNutritionProvider.search('치킨', 8)
+    const ids = results.map((r) => r.id)
+    expect(ids).toContain('bbq-golden-olive-chicken')
+    expect(ids).toContain('kyochon-honey-combo')
+  })
 })
 
 describe('nutritionService: 계산', () => {

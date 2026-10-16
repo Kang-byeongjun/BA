@@ -82,7 +82,8 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
 
   const suggestions = useMemo(() => {
     const row = rows.find((r) => r.key === openSuggestKey)
-    return row ? localNutritionProvider.search(row.name) : []
+    // 기본 한도(6개)보다 넉넉하게 — "치킨"처럼 흔한 검색어는 브랜드 메뉴까지 포함해 여러 개가 걸린다.
+    return row ? localNutritionProvider.search(row.name, 8) : []
   }, [rows, openSuggestKey])
 
   const updateRow = (key: string, patch: Partial<FoodRow>) => {
@@ -403,13 +404,16 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                           onClick={() => handleSelectSuggestion(row.key, entry)}
                           className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-emerald-50"
                         >
-                          <span className="flex items-center gap-1.5">
-                            <span className="font-medium text-slate-700">{entry.name}</span>
-                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
-                              {entry.category}
+                          <span className="min-w-0">
+                            <span className="flex items-center gap-1.5">
+                              <span className="font-medium text-slate-700">{entry.name}</span>
+                              <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500">
+                                {entry.category}
+                              </span>
                             </span>
+                            {entry.brand && <span className="mt-0.5 block text-[10px] text-emerald-600">{entry.brand}</span>}
                           </span>
-                          <span className="text-xs text-slate-400">100g당 {entry.caloriesPer100g}kcal</span>
+                          <span className="shrink-0 text-xs text-slate-400">100g당 {entry.caloriesPer100g}kcal</span>
                         </button>
                       ))}
                     </div>

@@ -16,6 +16,10 @@ export interface FoodDbEntry {
   carbsPer100g: number
   fatPer100g: number
   fiberPer100g: number
+  // 프랜차이즈 메뉴처럼 특정 브랜드 공식 수치로 넣은 항목에만 쓴다. 검색 결과 하단에 태그로 보여준다.
+  brand?: string
+  // name에 없는 검색어로도 찾을 수 있게 하는 보조어(예: "허니콤보"도 "치킨"으로 검색되게).
+  keywords?: string[]
 }
 
 export const FOOD_DATABASE: FoodDbEntry[] = [
@@ -170,6 +174,34 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'soy-garlic-chicken', name: '간장치킨', category: '한식', caloriesPer100g: 270, proteinPer100g: 19, carbsPer100g: 14, fatPer100g: 15, fiberPer100g: 0.3 },
   { id: 'half-half-chicken', name: '반반치킨', category: '한식', caloriesPer100g: 285, proteinPer100g: 19, carbsPer100g: 14, fatPer100g: 16, fiberPer100g: 0.4 },
   { id: 'boneless-chicken', name: '순살치킨', category: '한식', caloriesPer100g: 280, proteinPer100g: 19, carbsPer100g: 14, fatPer100g: 16, fiberPer100g: 0.4 },
+
+  // 브랜드 공식 수치 — 각 브랜드 공식 메뉴/영양정보 페이지의 100g당 열량·단백질(실측)을 기준으로,
+  // 탄수화물·지방은 그 공식 칼로리에 맞춰 역산했다(공식 페이지는 당류·포화지방만 공개하는
+  // 외식업 표시 방식이라 총 탄수화물·총 지방은 직접 나와 있지 않음).
+  {
+    id: 'bbq-golden-olive-chicken',
+    name: '황금올리브치킨',
+    category: '한식',
+    caloriesPer100g: 254,
+    proteinPer100g: 19,
+    carbsPer100g: 9,
+    fatPer100g: 16,
+    fiberPer100g: 0.3,
+    brand: 'BBQ',
+    keywords: ['치킨'],
+  },
+  {
+    id: 'kyochon-honey-combo',
+    name: '허니콤보',
+    category: '한식',
+    caloriesPer100g: 320,
+    proteinPer100g: 19,
+    carbsPer100g: 14,
+    fatPer100g: 21,
+    fiberPer100g: 0.3,
+    brand: '교촌',
+    keywords: ['치킨'],
+  },
 
   // 한식 추가 — 회식에서 자주 먹지만 빠져있던 안주류(곱창/막창/닭발 등).
   { id: 'gopchang-grilled', name: '곱창구이', category: '한식', caloriesPer100g: 190, proteinPer100g: 13, carbsPer100g: 2, fatPer100g: 14, fiberPer100g: 0 },
@@ -464,7 +496,9 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
 export function searchFoodDatabase(query: string, limit = 6): FoodDbEntry[] {
   const q = query.trim().toLowerCase()
   if (!q) return []
-  return FOOD_DATABASE.filter((f) => f.name.toLowerCase().includes(q)).slice(0, limit)
+  return FOOD_DATABASE.filter(
+    (f) => f.name.toLowerCase().includes(q) || f.keywords?.some((k) => k.toLowerCase().includes(q)),
+  ).slice(0, limit)
 }
 
 const BY_ID = new Map(FOOD_DATABASE.map((f) => [f.id, f]))
