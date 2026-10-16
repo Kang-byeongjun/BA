@@ -279,6 +279,55 @@ describe('nutritionService: 이름 → 영양 DB 연결', () => {
     expect(ids).toContain('dominos-pepperoni-pizza')
     expect(ids).toContain('dominos-bulgogi-pizza')
   })
+
+  it('새로 추가한 10개 브랜드(KFC·네네치킨·처갓집·한솥도시락·노브랜드버거·피자헛·이삭토스트·죠스떡볶이·던킨도너츠) 메뉴가 이름으로 바로 연결된다', () => {
+    expect(localNutritionProvider.match('오리지널치킨(KFC)')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'kfc-original-chicken', brand: 'KFC' },
+    })
+    expect(localNutritionProvider.match('쇼킹핫양념치킨')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'nene-shocking-hot-yangnyeom', brand: '네네치킨' },
+    })
+    expect(localNutritionProvider.match('후라이드치킨(처갓집)')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'cheogajip-fried-chicken', brand: '처갓집양념치킨' },
+    })
+    expect(localNutritionProvider.match('후라이드치킨')).toMatchObject({ matchType: 'exact', entry: { id: 'fried-chicken' } })
+    expect(localNutritionProvider.match('메가치킨마요')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'hansot-mega-chicken-mayo', brand: '한솥도시락' },
+    })
+    expect(localNutritionProvider.match('바베큐볼')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'nobrand-bbq-ball', brand: '노브랜드버거' },
+    })
+    expect(localNutritionProvider.match('토핑킹피자')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'pizzahut-topping-king', brand: '피자헛' },
+    })
+    expect(localNutritionProvider.match('햄치즈토스트')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'isaac-toast-ham-cheese', brand: '이삭토스트' },
+    })
+    expect(localNutritionProvider.match('떡볶이(죠스떡볶이)')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'jaws-tteokbokki', brand: '죠스떡볶이' },
+    })
+    expect(localNutritionProvider.match('떡볶이')).toMatchObject({ matchType: 'exact', entry: { id: 'tteokbokki' } })
+    expect(localNutritionProvider.match('허니후리터')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'dunkin-honey-fritter', brand: '던킨도너츠' },
+    })
+  })
+
+  it('"치킨"으로 검색하면 새로 추가한 브랜드 치킨 메뉴도 함께 나온다', () => {
+    const ids = localNutritionProvider.search('치킨', 60).map((r) => r.id)
+    expect(ids).toContain('kfc-original-chicken')
+    expect(ids).toContain('nene-shocking-hot-yangnyeom')
+    expect(ids).toContain('cheogajip-fried-chicken')
+    expect(ids).toContain('nobrand-bbq-ball')
+  })
 })
 
 describe('nutritionService: 계산', () => {
