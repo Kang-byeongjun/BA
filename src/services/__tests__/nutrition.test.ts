@@ -71,6 +71,15 @@ describe('nutritionService: 이름 → 영양 DB 연결', () => {
     expect(localNutritionProvider.match('양념치킨')).toMatchObject({ matchType: 'exact', entry: { id: 'yangnyeom-chicken' } })
     expect(localNutritionProvider.match('후라이드치킨')).toMatchObject({ matchType: 'exact', entry: { id: 'fried-chicken' } })
   })
+
+  it('회식에서 흔한 음식(곱창·피자·안주류)도 DB에서 바로 연결된다', () => {
+    expect(localNutritionProvider.match('곱창구이')).toMatchObject({ matchType: 'exact', entry: { id: 'gopchang-grilled' } })
+    expect(localNutritionProvider.match('막창구이')).toMatchObject({ matchType: 'exact', entry: { id: 'makchang-grilled' } })
+    expect(localNutritionProvider.match('닭발')).toMatchObject({ matchType: 'exact', entry: { id: 'dakbal' } })
+    expect(localNutritionProvider.match('고구마피자')).toMatchObject({ matchType: 'exact', entry: { id: 'sweet-potato-pizza' } })
+    expect(localNutritionProvider.match('불고기피자')).toMatchObject({ matchType: 'exact', entry: { id: 'bulgogi-pizza' } })
+    expect(localNutritionProvider.match('콤비네이션피자')).toMatchObject({ matchType: 'exact', entry: { id: 'combination-pizza' } })
+  })
 })
 
 describe('nutritionService: 계산', () => {

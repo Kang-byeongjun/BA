@@ -171,6 +171,15 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'half-half-chicken', name: '반반치킨', category: '한식', caloriesPer100g: 285, proteinPer100g: 19, carbsPer100g: 14, fatPer100g: 16, fiberPer100g: 0.4 },
   { id: 'boneless-chicken', name: '순살치킨', category: '한식', caloriesPer100g: 280, proteinPer100g: 19, carbsPer100g: 14, fatPer100g: 16, fiberPer100g: 0.4 },
 
+  // 한식 추가 — 회식에서 자주 먹지만 빠져있던 안주류(곱창/막창/닭발 등).
+  { id: 'gopchang-grilled', name: '곱창구이', category: '한식', caloriesPer100g: 190, proteinPer100g: 13, carbsPer100g: 2, fatPer100g: 14, fiberPer100g: 0 },
+  { id: 'makchang-grilled', name: '막창구이', category: '한식', caloriesPer100g: 230, proteinPer100g: 12, carbsPer100g: 1.5, fatPer100g: 19, fiberPer100g: 0 },
+  { id: 'dakbal', name: '닭발', category: '한식', caloriesPer100g: 220, proteinPer100g: 15, carbsPer100g: 12, fatPer100g: 12, fiberPer100g: 0.5 },
+  { id: 'golbaengi-somyeon', name: '골뱅이소면', category: '한식', caloriesPer100g: 140, proteinPer100g: 8, carbsPer100g: 22, fatPer100g: 2, fiberPer100g: 1.5 },
+  { id: 'duruchigi', name: '두루치기', category: '한식', caloriesPer100g: 200, proteinPer100g: 16, carbsPer100g: 10, fatPer100g: 11, fiberPer100g: 1 },
+  { id: 'odolppyeo', name: '오돌뼈', category: '한식', caloriesPer100g: 210, proteinPer100g: 16, carbsPer100g: 5, fatPer100g: 13, fiberPer100g: 0.3 },
+  { id: 'altang', name: '알탕', category: '한식', caloriesPer100g: 75, proteinPer100g: 9, carbsPer100g: 3, fatPer100g: 3, fiberPer100g: 0.5 },
+
   // ---------------------------------------------------------------------
   // 중식
   // ---------------------------------------------------------------------
@@ -261,6 +270,10 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'alfredo-pasta', name: '알프레도 파스타', category: '양식', caloriesPer100g: 220, proteinPer100g: 7, carbsPer100g: 24, fatPer100g: 11, fiberPer100g: 1 },
   { id: 'margherita-pizza', name: '마르게리타 피자', category: '양식', caloriesPer100g: 250, proteinPer100g: 10, carbsPer100g: 30, fatPer100g: 10, fiberPer100g: 2 },
   { id: 'pepperoni-pizza', name: '페퍼로니 피자', category: '양식', caloriesPer100g: 280, proteinPer100g: 12, carbsPer100g: 28, fatPer100g: 14, fiberPer100g: 1.8 },
+  { id: 'sweet-potato-pizza', name: '고구마피자', category: '양식', caloriesPer100g: 230, proteinPer100g: 7, carbsPer100g: 32, fatPer100g: 8, fiberPer100g: 2 },
+  { id: 'bulgogi-pizza', name: '불고기피자', category: '양식', caloriesPer100g: 255, proteinPer100g: 12, carbsPer100g: 28, fatPer100g: 10, fiberPer100g: 1.8 },
+  { id: 'combination-pizza', name: '콤비네이션피자', category: '양식', caloriesPer100g: 270, proteinPer100g: 12, carbsPer100g: 26, fatPer100g: 13, fiberPer100g: 1.8 },
+  { id: 'potato-pizza', name: '포테이토피자', category: '양식', caloriesPer100g: 250, proteinPer100g: 9, carbsPer100g: 30, fatPer100g: 10, fiberPer100g: 1.8 },
   { id: 'risotto', name: '리조또', category: '양식', caloriesPer100g: 170, proteinPer100g: 4, carbsPer100g: 26, fatPer100g: 5, fiberPer100g: 1 },
   { id: 'caesar-salad', name: '시저샐러드', category: '양식', caloriesPer100g: 150, proteinPer100g: 6, carbsPer100g: 8, fatPer100g: 11, fiberPer100g: 2 },
   { id: 'green-salad', name: '그린샐러드', category: '양식', caloriesPer100g: 40, proteinPer100g: 2, carbsPer100g: 5, fatPer100g: 1.5, fiberPer100g: 2 },
