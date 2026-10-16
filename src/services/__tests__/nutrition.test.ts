@@ -98,6 +98,53 @@ describe('nutritionService: 이름 → 영양 DB 연결', () => {
     expect(ids).toContain('bbq-golden-olive-chicken')
     expect(ids).toContain('kyochon-honey-combo')
   })
+
+  it('이번에 추가한 10개 브랜드 메뉴도 이름으로 바로 연결된다', () => {
+    expect(localNutritionProvider.match('뿌링클')).toMatchObject({ matchType: 'exact', entry: { id: 'bhc-ppuringkle', brand: 'bhc' } })
+    expect(localNutritionProvider.match('고추바사삭')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'goobne-spicy-chicken', brand: '굽네치킨' },
+    })
+    expect(localNutritionProvider.match('싸이버거')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'momstouch-sai-burger', brand: '맘스터치' },
+    })
+    expect(localNutritionProvider.match('와퍼')).toMatchObject({ matchType: 'exact', entry: { id: 'burgerking-whopper', brand: '버거킹' } })
+    expect(localNutritionProvider.match('빅맥')).toMatchObject({ matchType: 'exact', entry: { id: 'mcdonalds-bigmac', brand: '맥도날드' } })
+    expect(localNutritionProvider.match('이탈리안비엠티')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'subway-italian-bmt', brand: '서브웨이' },
+    })
+    expect(localNutritionProvider.match('단팥빵')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'parisbaguette-red-bean-bread', brand: '파리바게뜨' },
+    })
+    expect(localNutritionProvider.match('싱글레귤러')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'baskinrobbins-single-regular', brand: '배스킨라빈스' },
+    })
+  })
+
+  it('브랜드별 변형(롯데리아 불고기버거·도미노 포테이토피자)은 기존 일반 메뉴와 이름이 겹치지 않는다', () => {
+    expect(localNutritionProvider.match('불고기버거(롯데리아)')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'lotteria-bulgogi-burger', brand: '롯데리아' },
+    })
+    expect(localNutritionProvider.match('불고기버거')).toMatchObject({ matchType: 'exact', entry: { id: 'bulgogi-burger' } })
+    expect(localNutritionProvider.match('포테이토피자(도미노)')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'dominos-potato-pizza', brand: '도미노피자' },
+    })
+    expect(localNutritionProvider.match('포테이토피자')).toMatchObject({ matchType: 'exact', entry: { id: 'potato-pizza' } })
+  })
+
+  it('"버거"로 검색하면 브랜드 버거 4종이 모두 나온다', () => {
+    const ids = localNutritionProvider.search('버거', 10).map((r) => r.id)
+    expect(ids).toContain('momstouch-sai-burger')
+    expect(ids).toContain('burgerking-whopper')
+    expect(ids).toContain('mcdonalds-bigmac')
+    expect(ids).toContain('lotteria-bulgogi-burger')
+  })
 })
 
 describe('nutritionService: 계산', () => {
