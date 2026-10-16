@@ -145,6 +145,140 @@ describe('nutritionService: 이름 → 영양 DB 연결', () => {
     expect(ids).toContain('mcdonalds-bigmac')
     expect(ids).toContain('lotteria-bulgogi-burger')
   })
+
+  it('12개 브랜드를 5~8개 메뉴로 확장한 치킨 브랜드 메뉴가 이름으로 바로 연결된다', () => {
+    expect(localNutritionProvider.match('후라이드치킨(BBQ)')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bbq-fried-chicken', brand: 'BBQ' },
+    })
+    expect(localNutritionProvider.match('양념치킨(BBQ)')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bbq-yangnyeom-chicken', brand: 'BBQ' },
+    })
+    expect(localNutritionProvider.match('자메이카통다리구이')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bbq-jamaica-chicken-leg', brand: 'BBQ' },
+    })
+    expect(localNutritionProvider.match('황금올리브치킨순살')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bbq-golden-olive-boneless', brand: 'BBQ' },
+    })
+    expect(localNutritionProvider.match('교촌오리지날')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'kyochon-original', brand: '교촌' },
+    })
+    expect(localNutritionProvider.match('레드콤보')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'kyochon-red-combo', brand: '교촌' },
+    })
+    expect(localNutritionProvider.match('레드콤보윙')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'kyochon-red-combo-wing', brand: '교촌' },
+    })
+    expect(localNutritionProvider.match('반반콤보')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'kyochon-half-half-combo', brand: '교촌' },
+    })
+    expect(localNutritionProvider.match('맛초킹')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bhc-matchoking', brand: 'bhc' },
+    })
+    expect(localNutritionProvider.match('골드킹')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bhc-goldking', brand: 'bhc' },
+    })
+    expect(localNutritionProvider.match('볼케이노')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'goobne-volcano', brand: '굽네치킨' },
+    })
+    expect(localNutritionProvider.match('오리지널')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'goobne-original', brand: '굽네치킨' },
+    })
+    expect(localNutritionProvider.match('갈비천왕')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'goobne-galbi-king', brand: '굽네치킨' },
+    })
+  })
+
+  it('확장된 버거·피자·샌드위치 브랜드 메뉴가 이름으로 바로 연결된다', () => {
+    expect(localNutritionProvider.match('딥치즈버거')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'momstouch-deep-cheese-burger', brand: '맘스터치' },
+    })
+    expect(localNutritionProvider.match('치즈와퍼')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'burgerking-cheese-whopper', brand: '버거킹' },
+    })
+    expect(localNutritionProvider.match('불고기와퍼')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'burgerking-bulgogi-whopper', brand: '버거킹' },
+    })
+    expect(localNutritionProvider.match('통새우와퍼주니어')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'burgerking-shrimp-whopper-jr', brand: '버거킹' },
+    })
+    expect(localNutritionProvider.match('상하이스파이시치킨버거')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'mcdonalds-shanghai-spicy-chicken', brand: '맥도날드' },
+    })
+    expect(localNutritionProvider.match('한우불고기버거')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'lotteria-hanwoo-bulgogi-burger', brand: '롯데리아' },
+    })
+    expect(localNutritionProvider.match('리아새우')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'lotteria-ria-shrimp', brand: '롯데리아' },
+    })
+    expect(localNutritionProvider.match('페퍼로니피자(도미노)')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'dominos-pepperoni-pizza', brand: '도미노피자' },
+    })
+    expect(localNutritionProvider.match('불고기피자(도미노)')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'dominos-bulgogi-pizza', brand: '도미노피자' },
+    })
+    expect(localNutritionProvider.match('터키베이컨아보카도')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'subway-turkey-bacon-avocado', brand: '서브웨이' },
+    })
+  })
+
+  it('확장된 베이커리·아이스크림 브랜드 메뉴가 이름으로 바로 연결된다', () => {
+    expect(localNutritionProvider.match('크로와상')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'parisbaguette-croissant', brand: '파리바게뜨' },
+    })
+    expect(localNutritionProvider.match('소보로빵')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'parisbaguette-sobolo-bread', brand: '파리바게뜨' },
+    })
+    expect(localNutritionProvider.match('우유식빵')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'parisbaguette-milk-bread', brand: '파리바게뜨' },
+    })
+    expect(localNutritionProvider.match('아몬드봉봉')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'baskinrobbins-almond-bonbon', brand: '배스킨라빈스' },
+    })
+    expect(localNutritionProvider.match('체리쥬빌레')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'baskinrobbins-cherry-jubilee', brand: '배스킨라빈스' },
+    })
+  })
+
+  it('"치킨"으로 검색하면 확장된 브랜드 치킨 메뉴들도 함께 나온다', () => {
+    const ids = localNutritionProvider.search('치킨', 20).map((r) => r.id)
+    expect(ids).toContain('bbq-fried-chicken')
+    expect(ids).toContain('bbq-yangnyeom-chicken')
+    expect(ids).toContain('bbq-golden-olive-boneless')
+  })
+
+  it('"피자"로 검색하면 도미노 브랜드 피자 2종이 모두 나온다', () => {
+    const ids = localNutritionProvider.search('피자', 10).map((r) => r.id)
+    expect(ids).toContain('dominos-pepperoni-pizza')
+    expect(ids).toContain('dominos-bulgogi-pizza')
+  })
 })
 
 describe('nutritionService: 계산', () => {
