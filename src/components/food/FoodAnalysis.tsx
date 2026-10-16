@@ -62,6 +62,11 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
   const [slot, setSlot] = useState<MealSlot>(() => initialSlot ?? inferMealSlot(Date.now()))
   const [rows, setRows] = useState<FoodRow[]>(() => createRowsFromExtraction(extraction))
   const [openSuggestKey, setOpenSuggestKey] = useState<string | null>(null)
+  // DB에 없는 음식(예: 양념치킨)을 삭제하지 않고도 기록할 수 있게, 그 음식만 사용자가 직접
+  // 영양정보를 입력하는 경로. AI가 숫자를 추정하는 게 아니라 사용자가 직접 넣는 값이라
+  // "AI는 식별, 앱은 계산" 원칙은 그대로 유지된다.
+  const [manualEntryKey, setManualEntryKey] = useState<string | null>(null)
+  const [manualDraft, setManualDraft] = useState({ calories: '', protein: '', carbohydrates: '', fat: '', fiber: '' })
   const nameInputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
   const pendingFocusKey = useRef<string | null>(null)
 
@@ -99,6 +104,35 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
 
   const setGrams = (key: string, grams: number) => {
     updateRow(key, { grams: Number.isFinite(grams) ? Math.min(5000, Math.max(0, grams)) : 0 })
+  }
+
+  const openManualEntry = (key: string) => {
+    setManualEntryKey(key)
+    setManualDraft({ calories: '', protein: '', carbohydrates: '', fat: '', fiber: '' })
+    setOpenSuggestKey(null)
+  }
+
+  const applyManualEntry = (row: FoodRow) => {
+    const grams = row.grams > 0 ? row.grams : 100
+    // 입력값은 "지금 이 양(grams) 기준 총량"으로 받는다 — 사용자가 100g 기준으로 환산해서
+    // 입력하게 하는 대신, 먹은 만큼 그대로 적게 하는 게 더 직관적이다. DB 저장 단위(100g당)에
+    // 맞추기 위해 여기서만 역산한다.
+    const per100 = (totalStr: string) => {
+      const total = Number(totalStr)
+      return Number.isFinite(total) && total >= 0 ? (total / grams) * 100 : 0
+    }
+    const entry: FoodDbEntry = {
+      id: `custom-${row.key}`,
+      name: row.name.trim() || '직접 입력한 음식',
+      category: '한식',
+      caloriesPer100g: per100(manualDraft.calories),
+      proteinPer100g: per100(manualDraft.protein),
+      carbsPer100g: per100(manualDraft.carbohydrates),
+      fatPer100g: per100(manualDraft.fat),
+      fiberPer100g: per100(manualDraft.fiber),
+    }
+    updateRow(row.key, { entry, matchType: 'exact' })
+    setManualEntryKey(null)
   }
 
   const removeRow = (key: string) => {
@@ -301,10 +335,63 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                       )}
                     </p>
                   )}
-                  {unresolved && (
-                    <p className="mt-2 text-[11px] font-medium text-amber-700">
-                      영양 정보를 찾지 못했어요. 이름을 검색해 목록에서 선택하거나 삭제해주세요.
-                    </p>
+                  {unresolved && manualEntryKey !== row.key && (
+                    <div className="mt-2">
+                      <p className="text-[11px] font-medium text-amber-700">
+                        영양 정보를 찾지 못했어요. 이름을 검색해 목록에서 선택하거나, 직접 입력해서 계산에 포함시킬 수 있어요.
+                      </p>
+                      <button
+                        onClick={() => openManualEntry(row.key)}
+                        className="mt-1.5 rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-amber-700"
+                      >
+                        영양정보 직접 입력
+                      </button>
+                    </div>
+                  )}
+
+                  {manualEntryKey === row.key && (
+                    <div className="mt-2 rounded-lg border border-amber-200 bg-white p-2.5">
+                      <p className="mb-2 text-[11px] text-slate-500">
+                        지금 중량({row.grams}g) 기준으로, 먹은 만큼의 영양소 총량을 입력해주세요.
+                      </p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {(
+                          [
+                            ['calories', '칼로리(kcal)'],
+                            ['protein', '단백질(g)'],
+                            ['carbohydrates', '탄수화물(g)'],
+                            ['fat', '지방(g)'],
+                            ['fiber', '식이섬유(g)'],
+                          ] as const
+                        ).map(([field, label]) => (
+                          <label key={field} className="text-[10px] text-slate-400">
+                            {label}
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              value={manualDraft[field]}
+                              onChange={(e) => setManualDraft((prev) => ({ ...prev, [field]: e.target.value }))}
+                              className="mt-0.5 w-full rounded-md border border-slate-200 px-2 py-1 text-sm outline-none focus:border-emerald-400"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          onClick={() => setManualEntryKey(null)}
+                          className="flex-1 rounded-lg border border-slate-200 py-1.5 text-xs font-medium text-slate-500"
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={() => applyManualEntry(row)}
+                          disabled={!manualDraft.calories}
+                          className="flex-1 rounded-lg bg-emerald-500 py-1.5 text-xs font-semibold text-white disabled:bg-slate-200 disabled:text-slate-400"
+                        >
+                          적용
+                        </button>
+                      </div>
+                    </div>
                   )}
 
                   {openSuggestKey === row.key && suggestions.length > 0 && (

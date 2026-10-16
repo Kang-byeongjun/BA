@@ -66,6 +66,11 @@ describe('nutritionService: 이름 → 영양 DB 연결', () => {
     expect(localNutritionProvider.match('아보카도토스트')).toMatchObject({ matchType: 'exact', entry: { id: 'avocado-toast' } })
     expect(localNutritionProvider.match('북어국')).toMatchObject({ matchType: 'exact', entry: { id: 'bugeo-guk' } }) // 별칭
   })
+
+  it('한국식 치킨(배달 치킨)도 DB에서 바로 연결된다', () => {
+    expect(localNutritionProvider.match('양념치킨')).toMatchObject({ matchType: 'exact', entry: { id: 'yangnyeom-chicken' } })
+    expect(localNutritionProvider.match('후라이드치킨')).toMatchObject({ matchType: 'exact', entry: { id: 'fried-chicken' } })
+  })
 })
 
 describe('nutritionService: 계산', () => {

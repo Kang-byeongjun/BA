@@ -142,6 +142,41 @@ describe('음식 사진 흐름 (Test B)', () => {
     expect((screen.getByText('식사 기록하기') as HTMLButtonElement).disabled).toBe(false)
   })
 
+  it('DB에 없는 음식은 삭제하지 않고 영양정보를 직접 입력해서 저장할 수 있다', async () => {
+    fetchMock.mockResolvedValue(
+      ok({
+        isFood: true,
+        mealName: '정체불명 음식',
+        foods: [{ name: '정체불명 특별 메뉴', estimatedGrams: 300, cookingMethod: null, confidence: 0.7 }],
+        overallConfidence: 0.7,
+        warnings: [],
+      }),
+    )
+    const onDone = vi.fn()
+    render(
+      <AppProvider>
+        <FoodCaptureFlow onDone={onDone} />
+      </AppProvider>,
+    )
+    uploadPhoto()
+    await screen.findByText('AI 음식 분석', undefined, wait)
+
+    expect((screen.getByText('식사 기록하기') as HTMLButtonElement).disabled).toBe(true)
+
+    fireEvent.click(screen.getByText('영양정보 직접 입력'))
+    fireEvent.change(screen.getByLabelText('칼로리(kcal)'), { target: { value: '900' } })
+    fireEvent.change(screen.getByLabelText('단백질(g)'), { target: { value: '60' } })
+    fireEvent.click(screen.getByText('적용'))
+
+    const save = screen.getByText('식사 기록하기') as HTMLButtonElement
+    expect(save.disabled).toBe(false)
+    fireEvent.click(save)
+
+    const meal = onDone.mock.calls[0][0]
+    expect(meal.calories).toBe(900)
+    expect(meal.protein).toBe(60)
+  })
+
   it('음식 추가하기 → 이름 입력 → 목록에서 선택하면 영양소가 합산된다', async () => {
     fetchMock.mockResolvedValue(ok(food))
     render(

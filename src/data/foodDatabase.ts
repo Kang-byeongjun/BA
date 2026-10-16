@@ -164,6 +164,13 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'curry-rice', name: '카레라이스', category: '한식', caloriesPer100g: 150, proteinPer100g: 4, carbsPer100g: 24, fatPer100g: 4, fiberPer100g: 1.5 },
   { id: 'omurice', name: '오므라이스', category: '한식', caloriesPer100g: 190, proteinPer100g: 7, carbsPer100g: 26, fatPer100g: 6, fiberPer100g: 1 },
 
+  // 한식 추가 — 한국식 치킨(배달 치킨)이 통째로 빠져있었다. 가장 흔한 변형들을 넣는다.
+  { id: 'yangnyeom-chicken', name: '양념치킨', category: '한식', caloriesPer100g: 280, proteinPer100g: 18, carbsPer100g: 18, fatPer100g: 15, fiberPer100g: 0.5 },
+  { id: 'fried-chicken', name: '후라이드치킨', category: '한식', caloriesPer100g: 290, proteinPer100g: 20, carbsPer100g: 10, fatPer100g: 18, fiberPer100g: 0.3 },
+  { id: 'soy-garlic-chicken', name: '간장치킨', category: '한식', caloriesPer100g: 270, proteinPer100g: 19, carbsPer100g: 14, fatPer100g: 15, fiberPer100g: 0.3 },
+  { id: 'half-half-chicken', name: '반반치킨', category: '한식', caloriesPer100g: 285, proteinPer100g: 19, carbsPer100g: 14, fatPer100g: 16, fiberPer100g: 0.4 },
+  { id: 'boneless-chicken', name: '순살치킨', category: '한식', caloriesPer100g: 280, proteinPer100g: 19, carbsPer100g: 14, fatPer100g: 16, fiberPer100g: 0.4 },
+
   // ---------------------------------------------------------------------
   // 중식
   // ---------------------------------------------------------------------
