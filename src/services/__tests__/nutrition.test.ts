@@ -328,6 +328,122 @@ describe('nutritionService: 이름 → 영양 DB 연결', () => {
     expect(ids).toContain('cheogajip-fried-chicken')
     expect(ids).toContain('nobrand-bbq-ball')
   })
+
+  it('브랜드당 메뉴를 추가로 늘린 13개 신규 항목이 이름으로 바로 연결된다', () => {
+    expect(localNutritionProvider.match('콘소메안심치킨')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bbq-consomme-ansim-chicken', brand: 'BBQ' },
+    })
+    expect(localNutritionProvider.match('황금올리브속안심')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bbq-golden-olive-ansim', brand: 'BBQ' },
+    })
+    expect(localNutritionProvider.match('교촌신화')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'kyochon-shinhwa', brand: '교촌' },
+    })
+    expect(localNutritionProvider.match('뿌링클콤보')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bhc-ppuringkle-combo', brand: 'bhc' },
+    })
+    expect(localNutritionProvider.match('커링클')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bhc-curlingkle', brand: 'bhc' },
+    })
+    expect(localNutritionProvider.match('뿌링감자')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'bhc-ppuring-potato', brand: 'bhc' },
+    })
+    expect(localNutritionProvider.match('오븐바사삭')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'goobne-oven-basasak', brand: '굽네치킨' },
+    })
+    expect(localNutritionProvider.match('남해마늘바사삭')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'goobne-namhae-garlic-basasak', brand: '굽네치킨' },
+    })
+    expect(localNutritionProvider.match('바질&토마토피자')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'goobne-basil-tomato-pizza', brand: '굽네치킨' },
+    })
+    expect(localNutritionProvider.match('통다리살치킨')).toMatchObject({
+      matchType: 'exact',
+      entry: { id: 'nene-thigh-chicken', brand: '네네치킨' },
+    })
+  })
+})
+
+describe('브랜드 공식 사이트(영양정보표)에서 가져온 추가 메뉴 29개가 DB에 정확히 들어있다', () => {
+  const expectedIds = [
+    'subway-rotisserie-bbq-chicken',
+    'subway-chicken-teriyaki',
+    'subway-tuna',
+    'subway-steak-cheese',
+    'momstouch-nashville-hot-chicken-burger',
+    'momstouch-arrabbiata-cheese-burger',
+    'momstouch-sai-flex-burger',
+    'momstouch-bul-sai-burger',
+    'lotteria-hot-crispy-chicken-burger',
+    'lotteria-miracle-burger',
+    'lotteria-classic-cheese-burger',
+    'lotteria-hawaiian-mozzarella-burger',
+    'burgerking-long-chicken-burger',
+    'burgerking-cheeseburger',
+    'burgerking-nugget-king-10',
+    'burgerking-cheese-fries',
+    'parisbaguette-milk-calcium-cake',
+    'parisbaguette-pave-chocolate-cake',
+    'parisbaguette-basque-cheesecake',
+    'parisbaguette-shine-muscat-rare-cheesecake',
+    'baskinrobbins-monster-crunch-cookie',
+    'baskinrobbins-chocolate',
+    'baskinrobbins-mint-chocolate-chip',
+    'baskinrobbins-ny-cheesecake',
+    'mcdonalds-mcchicken',
+    'mcdonalds-bulgogi-burger',
+    'mcdonalds-quarter-pounder-cheese',
+    'mcdonalds-double-quarter-pounder-cheese',
+    'kfc-hot-crispy-chicken',
+    'kfc-got-yangnyeom-chicken',
+    'kfc-got-soy-chicken',
+    'kfc-zinger-burger',
+  ]
+
+  it('모든 id가 FOOD_DATABASE에 정확히 하나씩 존재하고 brand가 지정돼 있다', () => {
+    for (const id of expectedIds) {
+      const matches = FOOD_DATABASE.filter((f) => f.id === id)
+      expect(matches, `id "${id}"가 정확히 1개 있어야 함`).toHaveLength(1)
+      expect(matches[0].brand, `id "${id}"는 brand가 있어야 함`).toBeTruthy()
+    }
+  })
+
+  it('모든 항목이 단백질×4+탄수화물×4+지방×9 ≈ 열량(10% 이내)을 만족한다', () => {
+    for (const id of expectedIds) {
+      const entry = FOOD_DATABASE.find((f) => f.id === id)!
+      const estimated = entry.proteinPer100g * 4 + entry.carbsPer100g * 4 + entry.fatPer100g * 9
+      const diffRatio = Math.abs(estimated - entry.caloriesPer100g) / entry.caloriesPer100g
+      expect(diffRatio, `id "${id}": 추정 ${estimated}kcal vs 표기 ${entry.caloriesPer100g}kcal`).toBeLessThan(0.1)
+    }
+  })
+
+  it('이름으로 검색하면 브랜드 태그와 함께 뜬다 (대표 샘플)', () => {
+    expect(localNutritionProvider.match('참치(서브웨이)')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '서브웨이' },
+    })
+    expect(localNutritionProvider.match('징거')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: 'KFC' },
+    })
+    expect(localNutritionProvider.match('클래식치즈버거')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '롯데리아' },
+    })
+    expect(localNutritionProvider.match('뉴욕치즈케이크')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '배스킨라빈스' },
+    })
+  })
 })
 
 describe('nutritionService: 계산', () => {
