@@ -446,6 +446,111 @@ describe('브랜드 공식 사이트(영양정보표)에서 가져온 추가 메
   })
 })
 
+describe('새 브랜드 9곳(스타벅스·뚜레쥬르·크리스피크림도넛·엽기떡볶이·신전떡볶이·투썸플레이스·메가MGC커피·아웃백·설빙) 대표 메뉴 5개씩', () => {
+  const expectedIds = [
+    'yupddeok-rose-tteokbokki',
+    'yupddeok-original',
+    'yupddeok-dakbokkeumtang',
+    'yupddeok-crispy-cheese-mandu',
+    'yupddeok-mala-tteokbokki',
+    'sinjeon-tteokbokki',
+    'sinjeon-cheese-tteokbokki',
+    'sinjeon-cheese-gimbap',
+    'sinjeon-spicy-chicken',
+    'sinjeon-fried-fishcake',
+    'outback-bushman-bread',
+    'outback-jim-boomba-steak',
+    'outback-mushroom-soup',
+    'outback-garden-salad',
+    'outback-toowoomba-pasta',
+    'tlj-rice-cake',
+    'tlj-soboro-bread',
+    'tlj-mocha-bread',
+    'tlj-red-bean-bread',
+    'tlj-strawberry-paradise',
+    'kkd-original-glazed',
+    'kkd-choco-maximum',
+    'kkd-caramel-pretzel',
+    'kkd-hwangchijeu-please',
+    'kkd-berry-much',
+    'sulbing-mini-bungeoppang',
+    'sulbing-choco-chip-icecream',
+    'sulbing-injeolmi-pint',
+    'sulbing-black-sesame-latte',
+    'sulbing-mango-ade',
+    'twosome-brown-rice-nurungji-chip',
+    'twosome-white-butter-cookie',
+    'twosome-apple-mint-tea',
+    'twosome-citrus-bouquet',
+    'twosome-belt-sandwich',
+    'mega-cheesecake',
+    'mega-red-bean-gelato',
+    'mega-blue-lemon-ade',
+    'mega-mint-frappe',
+    'mega-espresso',
+    'starbucks-americano',
+    'starbucks-cafe-latte',
+    'starbucks-caramel-macchiato',
+    'starbucks-vanilla-latte',
+    'starbucks-cafe-mocha',
+  ]
+
+  it('9개 브랜드 각각 정확히 5개씩, id 45개 전부 FOOD_DATABASE에 brand와 함께 존재한다', () => {
+    expect(expectedIds).toHaveLength(45)
+    const byBrand = new Map<string, number>()
+    for (const id of expectedIds) {
+      const matches = FOOD_DATABASE.filter((f) => f.id === id)
+      expect(matches, `id "${id}"가 정확히 1개 있어야 함`).toHaveLength(1)
+      const brand = matches[0].brand
+      expect(brand, `id "${id}"는 brand가 있어야 함`).toBeTruthy()
+      byBrand.set(brand!, (byBrand.get(brand!) ?? 0) + 1)
+    }
+    for (const [brand, count] of byBrand) {
+      expect(count, `브랜드 "${brand}"는 5개여야 함`).toBe(5)
+    }
+    expect(byBrand.size).toBe(9)
+  })
+
+  it('모든 항목이 단백질×4+탄수화물×4+지방×9 ≈ 열량(16% 이내)을 만족한다', () => {
+    for (const id of expectedIds) {
+      const entry = FOOD_DATABASE.find((f) => f.id === id)!
+      const estimated = entry.proteinPer100g * 4 + entry.carbsPer100g * 4 + entry.fatPer100g * 9
+      const diffRatio = Math.abs(estimated - entry.caloriesPer100g) / entry.caloriesPer100g
+      expect(diffRatio, `id "${id}": 추정 ${estimated}kcal vs 표기 ${entry.caloriesPer100g}kcal`).toBeLessThan(0.16)
+    }
+  })
+
+  it('이름으로 검색하면 브랜드 태그와 함께 뜬다 (대표 샘플)', () => {
+    expect(localNutritionProvider.match('카페라떼(스타벅스)')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '스타벅스' },
+    })
+    expect(localNutritionProvider.match('로제떡볶이(엽기떡볶이)')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '엽기떡볶이' },
+    })
+    expect(localNutritionProvider.match('떡볶이(신전떡볶이)')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '신전떡볶이' },
+    })
+    expect(localNutritionProvider.match('오리지널 글레이즈드')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '크리스피크림도넛' },
+    })
+    expect(localNutritionProvider.match('부쉬맨브레드')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '아웃백' },
+    })
+  })
+
+  it('"떡볶이"로 검색하면 엽기떡볶이·신전떡볶이·죠스떡볶이 브랜드 메뉴가 모두 뜬다', () => {
+    const ids = localNutritionProvider.search('떡볶이', 30).map((r) => r.id)
+    expect(ids).toContain('yupddeok-rose-tteokbokki')
+    expect(ids).toContain('sinjeon-tteokbokki')
+    expect(ids).toContain('jaws-tteokbokki')
+  })
+})
+
 describe('nutritionService: 계산', () => {
   it('100g당 영양소 × 중량으로 계산한다', () => {
     const chicken = FOOD_DATABASE.find((f) => f.id === 'chicken-breast')!
