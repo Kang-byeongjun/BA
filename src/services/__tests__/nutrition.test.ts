@@ -617,6 +617,90 @@ describe('편의점·고기구이 전문점 4곳(CU·GS25·하남돼지집) 대�
   })
 })
 
+describe('기존 브랜드 5곳(이삭토스트·노브랜드버거·죠스떡볶이·네네치킨·처갓집양념치킨) 메뉴 보강', () => {
+  const newIdsByBrand: Record<string, string[]> = {
+    이삭토스트: [
+      'isaac-toast-ham-special',
+      'isaac-toast-potato-pop',
+      'isaac-toast-bacon-potato-pizza',
+      'isaac-toast-potato',
+      'isaac-toast-french-ham-cheese',
+    ],
+    노브랜드버거: [
+      'nobrand-burger-original',
+      'nobrand-burger-cheeseburger',
+      'nobrand-burger-shrimp',
+      'nobrand-burger-chipotle-hot-chicken',
+    ],
+    죠스떡볶이: [
+      'jaws-chapssal-sundae',
+      'jaws-nude-chal-sundae',
+      'jaws-spicy-crispy-eomuk-snack',
+      'jaws-spicy-sauce-chal-sundae',
+    ],
+    네네치킨: ['nene-boneless-fried', 'nene-kkodak-red-mayo-breast', 'nene-kkodak-galbi-breast'],
+    처갓집양념치킨: ['cheogajip-supreme-yangnyeom', 'cheogajip-warak-chicken'],
+  }
+  const allNewIds = Object.values(newIdsByBrand).flat()
+
+  it('새로 추가한 18개 id 전부 FOOD_DATABASE에 올바른 brand와 함께 존재한다', () => {
+    expect(allNewIds).toHaveLength(18)
+    for (const [brand, ids] of Object.entries(newIdsByBrand)) {
+      for (const id of ids) {
+        const matches = FOOD_DATABASE.filter((f) => f.id === id)
+        expect(matches, `id "${id}"가 정확히 1개 있어야 함`).toHaveLength(1)
+        expect(matches[0].brand, `id "${id}"는 brand가 "${brand}"여야 함`).toBe(brand)
+      }
+    }
+  })
+
+  it('5개 브랜드가 각각 최종적으로 몇 개 메뉴를 갖는지 확인한다 (이삭토스트는 6개, 노브랜드버거·죠스떡볶이·네네치킨은 5개, 처갓집양념치킨은 자료 부족으로 3개)', () => {
+    const countByBrand = new Map<string, number>()
+    for (const f of FOOD_DATABASE) {
+      if (f.brand && f.brand in newIdsByBrand) {
+        countByBrand.set(f.brand, (countByBrand.get(f.brand) ?? 0) + 1)
+      }
+    }
+    expect(countByBrand.get('이삭토스트')).toBe(6)
+    expect(countByBrand.get('노브랜드버거')).toBe(5)
+    expect(countByBrand.get('죠스떡볶이')).toBe(5)
+    expect(countByBrand.get('네네치킨')).toBe(5)
+    expect(countByBrand.get('처갓집양념치킨')).toBe(3)
+  })
+
+  it('모든 항목이 단백질×4+탄수화물×4+지방×9 ≈ 열량(10% 이내)을 만족한다', () => {
+    for (const id of allNewIds) {
+      const entry = FOOD_DATABASE.find((f) => f.id === id)!
+      const estimated = entry.proteinPer100g * 4 + entry.carbsPer100g * 4 + entry.fatPer100g * 9
+      const diffRatio = Math.abs(estimated - entry.caloriesPer100g) / entry.caloriesPer100g
+      expect(diffRatio, `id "${id}": 추정 ${estimated}kcal vs 표기 ${entry.caloriesPer100g}kcal`).toBeLessThan(0.1)
+    }
+  })
+
+  it('이름으로 검색하면 브랜드 태그와 함께 뜬다 (대표 샘플)', () => {
+    expect(localNutritionProvider.match('포테이토팝')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '이삭토스트' },
+    })
+    expect(localNutritionProvider.match('치즈버거(노브랜드버거)')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '노브랜드버거' },
+    })
+    expect(localNutritionProvider.match('찹쌀순대')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '죠스떡볶이' },
+    })
+    expect(localNutritionProvider.match('순살후라이드')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '네네치킨' },
+    })
+    expect(localNutritionProvider.match('와락치킨')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '처갓집양념치킨' },
+    })
+  })
+})
+
 describe('nutritionService: 계산', () => {
   it('100g당 영양소 × 중량으로 계산한다', () => {
     const chicken = FOOD_DATABASE.find((f) => f.id === 'chicken-breast')!
