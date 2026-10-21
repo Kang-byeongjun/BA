@@ -551,6 +551,72 @@ describe('새 브랜드 9곳(스타벅스·뚜레쥬르·크리스피크림도�
   })
 })
 
+describe('편의점·고기구이 전문점 4곳(CU·GS25·하남돼지집) 대표 메뉴 5개씩', () => {
+  const expectedIds = [
+    'cu-tuna-mayo-rice-ball',
+    'cu-kimchi-pork-rice-ball',
+    'cu-crispy-bulgogi-rice-ball',
+    'cu-baekjongwon-bul-ori-rice-ball',
+    'cu-spicy-soy-fishcake-rice-ball',
+    'gs25-spicy-tuna-rice-ball',
+    'gs25-jeonju-bibim-rice-ball',
+    'gs25-spam-egg-fried-rice-ball',
+    'gs25-cheongyang-tuna-mayo-rice-ball',
+    'gs25-bibim-tuna-rice-ball',
+    'hanam-pork-house-sizzling-pork-fried-rice',
+    'hanam-pork-house-handon-kimchi-jjim',
+    'hanam-pork-house-pork-rice-soup',
+    'hanam-pork-house-grill-kimchi-fried-rice',
+    'hanam-pork-house-beef-brisket-doenjang-jjigae',
+  ]
+
+  it('3개 브랜드 각각 정확히 5개씩, id 15개 전부 FOOD_DATABASE에 brand와 함께 존재한다', () => {
+    expect(expectedIds).toHaveLength(15)
+    const byBrand = new Map<string, number>()
+    for (const id of expectedIds) {
+      const matches = FOOD_DATABASE.filter((f) => f.id === id)
+      expect(matches, `id "${id}"가 정확히 1개 있어야 함`).toHaveLength(1)
+      const brand = matches[0].brand
+      expect(brand, `id "${id}"는 brand가 있어야 함`).toBeTruthy()
+      byBrand.set(brand!, (byBrand.get(brand!) ?? 0) + 1)
+    }
+    for (const [brand, count] of byBrand) {
+      expect(count, `브랜드 "${brand}"는 5개여야 함`).toBe(5)
+    }
+    expect(byBrand.size).toBe(3)
+  })
+
+  it('모든 항목이 단백질×4+탄수화물×4+지방×9 ≈ 열량(10% 이내)을 만족한다 (식약처 K-FIND·공식 자료 기준이라 오차가 작다)', () => {
+    for (const id of expectedIds) {
+      const entry = FOOD_DATABASE.find((f) => f.id === id)!
+      const estimated = entry.proteinPer100g * 4 + entry.carbsPer100g * 4 + entry.fatPer100g * 9
+      const diffRatio = Math.abs(estimated - entry.caloriesPer100g) / entry.caloriesPer100g
+      expect(diffRatio, `id "${id}": 추정 ${estimated}kcal vs 표기 ${entry.caloriesPer100g}kcal`).toBeLessThan(0.1)
+    }
+  })
+
+  it('이름으로 검색하면 브랜드 태그와 함께 뜬다 (대표 샘플)', () => {
+    expect(localNutritionProvider.match('참치마요삼각김밥')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: 'CU' },
+    })
+    expect(localNutritionProvider.match('매콤참치삼각김밥')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: 'GS25' },
+    })
+    expect(localNutritionProvider.match('차돌 된장찌개')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '하남돼지집' },
+    })
+  })
+
+  it('"삼각김밥"으로 검색하면 CU·GS25 브랜드 메뉴가 모두 뜬다', () => {
+    const ids = localNutritionProvider.search('삼각김밥', 30).map((r) => r.id)
+    expect(ids).toContain('cu-tuna-mayo-rice-ball')
+    expect(ids).toContain('gs25-spicy-tuna-rice-ball')
+  })
+})
+
 describe('nutritionService: 계산', () => {
   it('100g당 영양소 × 중량으로 계산한다', () => {
     const chicken = FOOD_DATABASE.find((f) => f.id === 'chicken-breast')!
