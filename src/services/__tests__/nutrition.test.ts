@@ -701,6 +701,73 @@ describe('기존 브랜드 5곳(이삭토스트·노브랜드버거·죠스떡�
   })
 })
 
+describe('도미노피자·피자헛·한솥도시락·던킨도너츠 메뉴 보강 (이전엔 공식/FatSecret 자료를 못 찾았지만 브랜드 슬러그를 바꿔 재검색해서 찾음)', () => {
+  const newIdsByBrand: Record<string, string[]> = {
+    도미노피자: ['dominos-real-bbq', 'dominos-potato-thin'],
+    피자헛: ['pizzahut-sohot-chicken', 'pizzahut-ultimate-cheese-pocket'],
+    한솥도시락: [
+      'hansot-chicken-mayo-rice-bowl',
+      'hansot-kimchi-budae-jjigae',
+      'hansot-spam-kimchi-fried-rice',
+      'hansot-tuna-vegetable-gochujang',
+    ],
+    던킨도너츠: ['dunkin-glazed', 'dunkin-boston-cream', 'dunkin-barbarian-filled', 'dunkin-choco-glazed'],
+  }
+  const allNewIds = Object.values(newIdsByBrand).flat()
+
+  it('새로 추가한 12개 id 전부 FOOD_DATABASE에 올바른 brand와 함께 존재한다', () => {
+    expect(allNewIds).toHaveLength(12)
+    for (const [brand, ids] of Object.entries(newIdsByBrand)) {
+      for (const id of ids) {
+        const matches = FOOD_DATABASE.filter((f) => f.id === id)
+        expect(matches, `id "${id}"가 정확히 1개 있어야 함`).toHaveLength(1)
+        expect(matches[0].brand, `id "${id}"는 brand가 "${brand}"여야 함`).toBe(brand)
+      }
+    }
+  })
+
+  it('4개 브랜드가 각각 최종적으로 몇 개 메뉴를 갖는지 확인한다 (도미노피자·한솥도시락·던킨도너츠는 5개, 피자헛은 자료 부족으로 3개)', () => {
+    const countByBrand = new Map<string, number>()
+    for (const f of FOOD_DATABASE) {
+      if (f.brand && f.brand in newIdsByBrand) {
+        countByBrand.set(f.brand, (countByBrand.get(f.brand) ?? 0) + 1)
+      }
+    }
+    expect(countByBrand.get('도미노피자')).toBe(5)
+    expect(countByBrand.get('피자헛')).toBe(3)
+    expect(countByBrand.get('한솥도시락')).toBe(5)
+    expect(countByBrand.get('던킨도너츠')).toBe(5)
+  })
+
+  it('모든 항목이 단백질×4+탄수화물×4+지방×9 ≈ 열량(10% 이내)을 만족한다', () => {
+    for (const id of allNewIds) {
+      const entry = FOOD_DATABASE.find((f) => f.id === id)!
+      const estimated = entry.proteinPer100g * 4 + entry.carbsPer100g * 4 + entry.fatPer100g * 9
+      const diffRatio = Math.abs(estimated - entry.caloriesPer100g) / entry.caloriesPer100g
+      expect(diffRatio, `id "${id}": 추정 ${estimated}kcal vs 표기 ${entry.caloriesPer100g}kcal`).toBeLessThan(0.1)
+    }
+  })
+
+  it('이름으로 검색하면 브랜드 태그와 함께 뜬다 (대표 샘플)', () => {
+    expect(localNutritionProvider.match('포테이토씬')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '도미노피자' },
+    })
+    expect(localNutritionProvider.match('쏘핫치킨피자')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '피자헛' },
+    })
+    expect(localNutritionProvider.match('치킨마요덮밥')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '한솥도시락' },
+    })
+    expect(localNutritionProvider.match('던킨 글레이즈드')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '던킨도너츠' },
+    })
+  })
+})
+
 describe('nutritionService: 계산', () => {
   it('100g당 영양소 × 중량으로 계산한다', () => {
     const chicken = FOOD_DATABASE.find((f) => f.id === 'chicken-breast')!
