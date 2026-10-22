@@ -322,7 +322,7 @@ describe('nutritionService: 이름 → 영양 DB 연결', () => {
   })
 
   it('"치킨"으로 검색하면 새로 추가한 브랜드 치킨 메뉴도 함께 나온다', () => {
-    const ids = localNutritionProvider.search('치킨', 60).map((r) => r.id)
+    const ids = localNutritionProvider.search('치킨', 90).map((r) => r.id)
     expect(ids).toContain('kfc-original-chicken')
     expect(ids).toContain('nene-shocking-hot-yangnyeom')
     expect(ids).toContain('cheogajip-fried-chicken')
@@ -765,6 +765,105 @@ describe('도미노피자·피자헛·한솥도시락·던킨도너츠 메뉴 �
       matchType: 'exact',
       entry: { brand: '던킨도너츠' },
     })
+  })
+})
+
+describe('신규 브랜드 5곳(60계치킨·호식이두마리치킨·페리카나·세븐일레븐·이마트24) 신규 추가', () => {
+  const newIdsByBrand: Record<string, string[]> = {
+    '60계치킨': ['60gye-gaji-chicken', '60gye-jiran-wingbong', '60gye-jjondog', '60gye-corn-mayo-sauce', '60gye-hot-kkk-sauce'],
+    호식이두마리치킨: [
+      'hosigi-soy-garlic-chicken',
+      'hosigi-fried-chicken',
+      'hosigi-spicy-soy-garlic-chicken',
+      'hosigi-taco-mayo-chicken',
+      'hosigi-bul-jjamppong-chicken',
+    ],
+    페리카나: [
+      'pelicana-yangnyeom-chicken',
+      'pelicana-fried-chicken',
+      'pelicana-spicy-yangnyeom-chicken',
+      'pelicana-spicy-seasoning',
+    ],
+    세븐일레븐: [
+      'seven-eleven-tuna-mayo-rice-ball',
+      'seven-eleven-jeonju-bibim-rice-ball',
+      'seven-eleven-inari-sushi',
+      'seven-eleven-good-chicken-breast',
+      'seven-eleven-pork-belly-kimchi-fried-rice',
+    ],
+    이마트24: [
+      'emart24-big-tuna-mayo-rice-ball',
+      'emart24-sokcho-sweet-spicy-chicken',
+      'emart24-takoyaki',
+      'emart24-egg-roll-gimbap',
+      'emart24-crispy-ham-veggie-sandwich',
+    ],
+  }
+  const allNewIds = Object.values(newIdsByBrand).flat()
+
+  it('새로 추가한 24개 id 전부 FOOD_DATABASE에 올바른 brand와 함께 존재한다', () => {
+    expect(allNewIds).toHaveLength(24)
+    for (const [brand, ids] of Object.entries(newIdsByBrand)) {
+      for (const id of ids) {
+        const matches = FOOD_DATABASE.filter((f) => f.id === id)
+        expect(matches, `id "${id}"가 정확히 1개 있어야 함`).toHaveLength(1)
+        expect(matches[0].brand, `id "${id}"는 brand가 "${brand}"여야 함`).toBe(brand)
+      }
+    }
+  })
+
+  it('5개 브랜드가 각각 몇 개 메뉴를 갖는지 확인한다 (페리카나는 자료 부족으로 4개, 나머지는 5개)', () => {
+    const countByBrand = new Map<string, number>()
+    for (const f of FOOD_DATABASE) {
+      if (f.brand && f.brand in newIdsByBrand) {
+        countByBrand.set(f.brand, (countByBrand.get(f.brand) ?? 0) + 1)
+      }
+    }
+    expect(countByBrand.get('60계치킨')).toBe(5)
+    expect(countByBrand.get('호식이두마리치킨')).toBe(5)
+    expect(countByBrand.get('페리카나')).toBe(4)
+    expect(countByBrand.get('세븐일레븐')).toBe(5)
+    expect(countByBrand.get('이마트24')).toBe(5)
+  })
+
+  it('모든 항목이 단백질×4+탄수화물×4+지방×9 ≈ 열량(10% 이내)을 만족한다', () => {
+    for (const id of allNewIds) {
+      const entry = FOOD_DATABASE.find((f) => f.id === id)!
+      const estimated = entry.proteinPer100g * 4 + entry.carbsPer100g * 4 + entry.fatPer100g * 9
+      const diffRatio = Math.abs(estimated - entry.caloriesPer100g) / entry.caloriesPer100g
+      expect(diffRatio, `id "${id}": 추정 ${estimated}kcal vs 표기 ${entry.caloriesPer100g}kcal`).toBeLessThan(0.1)
+    }
+  })
+
+  it('이름으로 검색하면 브랜드 태그와 함께 뜬다 (대표 샘플)', () => {
+    expect(localNutritionProvider.match('쯔란윙봉')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '60계치킨' },
+    })
+    expect(localNutritionProvider.match('매운간장치킨')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '호식이두마리치킨' },
+    })
+    expect(localNutritionProvider.match('매콤양념')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '페리카나' },
+    })
+    expect(localNutritionProvider.match('착한 닭가슴살')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '세븐일레븐' },
+    })
+    expect(localNutritionProvider.match('타코야끼')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '이마트24' },
+    })
+  })
+
+  it('"삼각김밥"으로 검색하면 CU·GS25·세븐일레븐·이마트24 브랜드 메뉴가 모두 뜬다', () => {
+    const ids = localNutritionProvider.search('삼각김밥', 40).map((r) => r.id)
+    expect(ids).toContain('cu-tuna-mayo-rice-ball')
+    expect(ids).toContain('gs25-spicy-tuna-rice-ball')
+    expect(ids).toContain('seven-eleven-tuna-mayo-rice-ball')
+    expect(ids).toContain('emart24-big-tuna-mayo-rice-ball')
   })
 })
 
