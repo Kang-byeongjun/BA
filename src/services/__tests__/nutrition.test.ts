@@ -867,6 +867,117 @@ describe('신규 브랜드 5곳(60계치킨·호식이두마리치킨·페리카
   })
 })
 
+describe('저가 피자·김밥/떡볶이 전문점·치킨 브랜드 7곳 신규 추가', () => {
+  const newIdsByBrand: Record<string, string[]> = {
+    피자알볼로: [
+      'allovolo-margherita-pizza',
+      'allovolo-mozzarella-cheddar-pizza',
+      'allovolo-rose-shrimp-pizza',
+      'allovolo-cube-potato-pizza',
+    ],
+    반올림피자샵: ['banollim-cheese-oven-spaghetti', 'banollim-potato-pizza'],
+    바르다김선생: [
+      'barudakim-garak-tteokbokki',
+      'barudakim-beef-bulgogi-rice-ball',
+      'barudakim-kimchi-cheese-rice-ball',
+      'barudakim-jeyuk-ssam-gimbap',
+      'barudakim-jeyuk-ssam-rice-ball',
+    ],
+    청년다방: [
+      'cheongnyeon-butter-garlic-fries',
+      'cheongnyeon-rose-tteokbokki',
+      'cheongnyeon-chadol-tteokbokki',
+      'cheongnyeon-perilla-pepper-fritter',
+      'cheongnyeon-ojjang-tteokbokki',
+    ],
+    멕시카나: [
+      'mexicana-yangnyeom-chicken',
+      'mexicana-fried-chicken',
+      'mexicana-sweet-spicy-dakgangjeong',
+      'mexicana-honey-butter-chicken',
+      'mexicana-gold-soy-chicken',
+    ],
+    푸라닭: [
+      'puradak-toowoomba',
+      'puradak-ilpum-kkanpung',
+      'puradak-thigh-steak',
+      'puradak-sweet-boneless-gangjeong',
+      'puradak-whole-grilled-thigh',
+    ],
+    노랑통닭: [
+      'norang-boneless-3set',
+      'norang-spicy-garlic-chicken',
+      'norang-nurungji-chicken',
+      'norang-pa-songsong-tteokbokki',
+      'norang-new-sauce',
+    ],
+  }
+  const allNewIds = Object.values(newIdsByBrand).flat()
+
+  it('새로 추가한 31개 id 전부 FOOD_DATABASE에 올바른 brand와 함께 존재한다', () => {
+    expect(allNewIds).toHaveLength(31)
+    for (const [brand, ids] of Object.entries(newIdsByBrand)) {
+      for (const id of ids) {
+        const matches = FOOD_DATABASE.filter((f) => f.id === id)
+        expect(matches, `id "${id}"가 정확히 1개 있어야 함`).toHaveLength(1)
+        expect(matches[0].brand, `id "${id}"는 brand가 "${brand}"여야 함`).toBe(brand)
+      }
+    }
+  })
+
+  it('7개 브랜드가 각각 몇 개 메뉴를 갖는지 확인한다 (반올림피자샵은 자료 부족으로 2개, 피자알볼로는 4개, 나머지는 5개)', () => {
+    const countByBrand = new Map<string, number>()
+    for (const f of FOOD_DATABASE) {
+      if (f.brand && f.brand in newIdsByBrand) {
+        countByBrand.set(f.brand, (countByBrand.get(f.brand) ?? 0) + 1)
+      }
+    }
+    expect(countByBrand.get('피자알볼로')).toBe(4)
+    expect(countByBrand.get('반올림피자샵')).toBe(2)
+    expect(countByBrand.get('바르다김선생')).toBe(5)
+    expect(countByBrand.get('청년다방')).toBe(5)
+    expect(countByBrand.get('멕시카나')).toBe(5)
+    expect(countByBrand.get('푸라닭')).toBe(5)
+    expect(countByBrand.get('노랑통닭')).toBe(5)
+  })
+
+  it('모든 항목이 단백질×4+탄수화물×4+지방×9 ≈ 열량(10% 이내)을 만족한다', () => {
+    for (const id of allNewIds) {
+      const entry = FOOD_DATABASE.find((f) => f.id === id)!
+      const estimated = entry.proteinPer100g * 4 + entry.carbsPer100g * 4 + entry.fatPer100g * 9
+      const diffRatio = Math.abs(estimated - entry.caloriesPer100g) / entry.caloriesPer100g
+      expect(diffRatio, `id "${id}": 추정 ${estimated}kcal vs 표기 ${entry.caloriesPer100g}kcal`).toBeLessThan(0.1)
+    }
+  })
+
+  it('이름으로 검색하면 브랜드 태그와 함께 뜬다 (대표 샘플)', () => {
+    expect(localNutritionProvider.match('큐브 포테이토 피자')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '피자알볼로' },
+    })
+    expect(localNutritionProvider.match('가락떡볶이')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '바르다김선생' },
+    })
+    expect(localNutritionProvider.match('차돌떡볶이')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '청년다방' },
+    })
+    expect(localNutritionProvider.match('골드간장치킨')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '멕시카나' },
+    })
+    expect(localNutritionProvider.match('투움바')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '푸라닭' },
+    })
+    expect(localNutritionProvider.match('누룽지치킨')).toMatchObject({
+      matchType: 'exact',
+      entry: { brand: '노랑통닭' },
+    })
+  })
+})
+
 describe('nutritionService: 계산', () => {
   it('100g당 영양소 × 중량으로 계산한다', () => {
     const chicken = FOOD_DATABASE.find((f) => f.id === 'chicken-breast')!
