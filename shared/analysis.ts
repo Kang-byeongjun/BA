@@ -71,6 +71,29 @@ export interface CoachMessage {
   message: string
 }
 
+// ---------- 영양정보 추정 (DB·검색으로 못 찾은 음식) ----------
+// 음식 이름만으로 Claude의 일반 지식을 바탕으로 100g당 영양소를 추정한다.
+// 실제 영양성분표가 아니라 "대략적인 추정치"이므로, 클라이언트는 반드시 DB 공식값과
+// 구분해서 보여줘야 한다(나머지 영양 계산 흐름은 DB 매칭 항목과 동일하게 재사용한다).
+
+export interface NutritionEstimateRequestBody {
+  foodName: string
+  cookingMethod?: string | null
+}
+
+export interface NutritionEstimateResult {
+  // 이름만으로 어떤 음식인지 알아볼 수 있었는지. false면 추정치를 만들지 않는다(숫자 임의 생성 금지).
+  isRecognized: boolean
+  caloriesPer100g: number
+  proteinPer100g: number
+  carbsPer100g: number
+  fatPer100g: number
+  fiberPer100g: number
+  // 0~1, 추정 신뢰도
+  confidence: number
+  warnings: string[]
+}
+
 // ---------- 공통 응답 ----------
 
 export interface ApiSuccess<T> {

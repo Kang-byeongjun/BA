@@ -20,7 +20,7 @@ export interface NutrientTotals {
   fiber: number
 }
 
-export type MatchType = 'exact' | 'partial' | 'none'
+export type MatchType = 'exact' | 'partial' | 'none' | 'ai_estimate'
 
 export interface FoodMatch {
   entry: FoodDbEntry | null

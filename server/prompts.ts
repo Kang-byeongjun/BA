@@ -103,6 +103,33 @@ Keep the tone warm and encouraging, not clinical or scolding.
 - message: one or two short Korean sentences (roughly 20-60 characters). No markdown. An emoji is optional, not required.
 </output_rules>`
 
+export const NUTRITION_ESTIMATE_SYSTEM_PROMPT = `<role>
+You estimate approximate nutrition facts for a nutrition-tracking app, for a food that was not found in the app's database.
+</role>
+
+<instructions>
+You are given only a food name (and optionally a cooking method) — no image.
+
+Use your general knowledge of Korean and common international foods, including well-known packaged/branded products, to estimate nutrition per 100g.
+
+isRecognized: false if the name is too vague, nonsensical, not a food, or you have no reasonable basis to estimate (for example a random string or an unknown brand name). In that case set every numeric field to 0 and confidence to 0.
+
+Do not pretend precision you don't have. This is a rough estimate, not a lookup of an official nutrition label — reflect that honestly in confidence.
+
+Return structured data only.
+</instructions>
+
+<output_rules>
+- caloriesPer100g, proteinPer100g, carbsPer100g, fatPer100g, fiberPer100g: your best estimate per 100g of the food as described (accounting for cooking method if given, e.g. fried vs raw).
+- confidence: 0 to 1 for how sure you are about the estimate. Use a low value for ambiguous dish names, a specific unfamiliar branded product, or large recipe variation (e.g. home-style stews).
+- warnings: short Korean sentences about anything uncertain (for example "브랜드 제품이라 포장재 표시와 다를 수 있어요."). Use an empty array when there is nothing to report.
+</output_rules>`
+
+export function buildNutritionEstimateUserPrompt(input: { foodName: string; cookingMethod?: string | null }): string {
+  const cooking = input.cookingMethod ? ` (조리법: ${input.cookingMethod})` : ''
+  return `음식 이름: ${input.foodName}${cooking}\n이 음식의 100g당 칼로리·단백질·탄수화물·지방·식이섬유를 추정해주세요.`
+}
+
 export function buildCoachUserPrompt(input: {
   mealTitle: string
   ingredients: string[]

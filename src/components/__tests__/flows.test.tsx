@@ -179,6 +179,60 @@ describe('음식 사진 흐름 (Test B)', () => {
     expect(meal.protein).toBe(60)
   })
 
+  it('DB에 없는 음식은 AI로 영양정보를 추정해서 저장할 수 있고, 추정 이후에도 그램 수 선택이 그대로 된다', async () => {
+    fetchMock.mockImplementation(async (url: unknown) => {
+      if (url === '/api/analyze-food') {
+        return ok({
+          isFood: true,
+          mealName: '정체불명 음식',
+          foods: [{ name: '정체불명 특별 메뉴', estimatedGrams: 200, cookingMethod: null, confidence: 0.7 }],
+          overallConfidence: 0.7,
+          warnings: [],
+        })
+      }
+      if (url === '/api/estimate-nutrition') {
+        return ok({
+          isRecognized: true,
+          caloriesPer100g: 250,
+          proteinPer100g: 10,
+          carbsPer100g: 30,
+          fatPer100g: 8,
+          fiberPer100g: 2,
+          confidence: 0.5,
+          warnings: [],
+        })
+      }
+      throw new Error(`unexpected fetch: ${String(url)}`)
+    })
+    const onDone = vi.fn()
+    render(
+      <AppProvider>
+        <FoodCaptureFlow onDone={onDone} />
+      </AppProvider>,
+    )
+    uploadPhoto()
+    await screen.findByText('AI 음식 분석', undefined, wait)
+
+    expect((screen.getByText('식사 기록하기') as HTMLButtonElement).disabled).toBe(true)
+
+    fireEvent.click(screen.getByText('AI로 추정하기'))
+    await screen.findByText(/AI가 추정한 수치예요/, undefined, wait)
+
+    // 200g 기준 250kcal/100g = 500kcal
+    expect(screen.getByText(/총 500/)).toBeTruthy()
+
+    // AI 추정 이후에도 크기 버튼(적게/보통/많이/아주 많이)으로 그램 수를 그대로 바꿀 수 있다
+    // 많이(×1.3): 200g → 260g → 260/100*250 = 650kcal
+    fireEvent.click(screen.getByText('많이'))
+    expect(screen.getByText(/총 650/)).toBeTruthy()
+
+    const save = screen.getByText('식사 기록하기') as HTMLButtonElement
+    expect(save.disabled).toBe(false)
+    fireEvent.click(save)
+    expect(onDone).toHaveBeenCalledTimes(1)
+    expect(onDone.mock.calls[0][0].calories).toBe(650)
+  })
+
   it('음식 추가하기 → 이름 입력 → 목록에서 선택하면 영양소가 합산된다', async () => {
     fetchMock.mockResolvedValue(ok(food))
     render(

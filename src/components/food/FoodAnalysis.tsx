@@ -1,6 +1,7 @@
-import { AlertTriangle, Minus, Plus, Trash2, X } from 'lucide-react'
+import { AlertTriangle, Loader2, Minus, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FoodExtraction } from '../../../shared/analysis'
+import { AnalysisError } from '../../../shared/errors'
 import type { FoodDbEntry } from '../../data/foodDatabase'
 import { inferMealSlot } from '../../lib/time'
 import {
@@ -13,6 +14,7 @@ import {
   type FoodRow,
 } from '../../services/mealService'
 import { localNutritionProvider, roundNutrients } from '../../services/nutritionService'
+import { requestNutritionEstimate } from '../../services/nutritionEstimateService'
 import type { AnalysisMode } from '../../services/foodVisionService'
 import type { MealSlot } from '../../types'
 
@@ -67,6 +69,9 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
   // "AI는 식별, 앱은 계산" 원칙은 그대로 유지된다.
   const [manualEntryKey, setManualEntryKey] = useState<string | null>(null)
   const [manualDraft, setManualDraft] = useState({ calories: '', protein: '', carbohydrates: '', fat: '', fiber: '' })
+  // DB·검색으로 못 찾은 음식에 "AI로 추정하기"를 눌렀을 때의 진행/실패 상태. 여러 행에서 동시에 쓸 수 있다.
+  const [estimatingKeys, setEstimatingKeys] = useState<Set<string>>(new Set())
+  const [estimateErrors, setEstimateErrors] = useState<Record<string, string>>({})
   const nameInputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
   const pendingFocusKey = useRef<string | null>(null)
 
@@ -134,6 +139,41 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
     }
     updateRow(row.key, { entry, matchType: 'exact' })
     setManualEntryKey(null)
+  }
+
+  // 영양 정보를 찾지 못한 음식의 100g당 영양소를 AI에게 추정해달라고 요청한다(실제 영양성분표 조회가
+  // 아니라 추정치라서, entry 자체가 아니라 matchType으로 "AI 추정치"임을 표시해 DB 공식값과 구분한다).
+  const handleAiEstimate = async (row: FoodRow) => {
+    setEstimatingKeys((prev) => new Set(prev).add(row.key))
+    setEstimateErrors((prev) => {
+      if (!(row.key in prev)) return prev
+      const next = { ...prev }
+      delete next[row.key]
+      return next
+    })
+    try {
+      const result = await requestNutritionEstimate({ foodName: row.name, cookingMethod: row.cookingMethod })
+      const entry: FoodDbEntry = {
+        id: `ai-${row.key}`,
+        name: row.name.trim() || 'AI 추정 음식',
+        category: '한식',
+        caloriesPer100g: result.caloriesPer100g,
+        proteinPer100g: result.proteinPer100g,
+        carbsPer100g: result.carbsPer100g,
+        fatPer100g: result.fatPer100g,
+        fiberPer100g: result.fiberPer100g,
+      }
+      updateRow(row.key, { entry, matchType: 'ai_estimate' })
+    } catch (err) {
+      const message = err instanceof AnalysisError ? err.message : '추정에 실패했어요. 잠시 후 다시 시도해주세요.'
+      setEstimateErrors((prev) => ({ ...prev, [row.key]: message }))
+    } finally {
+      setEstimatingKeys((prev) => {
+        const next = new Set(prev)
+        next.delete(row.key)
+        return next
+      })
+    }
   }
 
   const removeRow = (key: string) => {
@@ -334,19 +374,42 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                       {row.entry && row.matchType === 'partial' && (
                         <span className="ml-1 text-amber-600">({row.entry.name} 기준으로 계산했어요)</span>
                       )}
+                      {row.entry && row.matchType === 'ai_estimate' && (
+                        <span className="ml-1 text-sky-600">(AI가 추정한 수치예요, 정확한 영양정보가 아닐 수 있어요)</span>
+                      )}
                     </p>
                   )}
                   {unresolved && manualEntryKey !== row.key && (
                     <div className="mt-2">
                       <p className="text-[11px] font-medium text-amber-700">
-                        영양 정보를 찾지 못했어요. 이름을 검색해 목록에서 선택하거나, 직접 입력해서 계산에 포함시킬 수 있어요.
+                        영양 정보를 찾지 못했어요. AI로 추정하거나, 이름을 검색해 선택하거나, 직접 입력할 수 있어요.
                       </p>
-                      <button
-                        onClick={() => openManualEntry(row.key)}
-                        className="mt-1.5 rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-amber-700"
-                      >
-                        영양정보 직접 입력
-                      </button>
+                      <div className="mt-1.5 flex gap-1.5">
+                        <button
+                          onClick={() => void handleAiEstimate(row)}
+                          disabled={estimatingKeys.has(row.key)}
+                          className="flex items-center gap-1 rounded-lg border border-sky-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-sky-700 disabled:cursor-not-allowed disabled:text-sky-300"
+                        >
+                          {estimatingKeys.has(row.key) ? (
+                            <>
+                              <Loader2 size={12} className="animate-spin" />
+                              추정 중...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={12} />
+                              AI로 추정하기
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => openManualEntry(row.key)}
+                          className="rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-amber-700"
+                        >
+                          영양정보 직접 입력
+                        </button>
+                      </div>
+                      {estimateErrors[row.key] && <p className="mt-1 text-[11px] text-rose-600">{estimateErrors[row.key]}</p>}
                     </div>
                   )}
 

@@ -1,4 +1,4 @@
-import type { FoodExtraction, InBodyExtraction } from '../shared/analysis.js'
+import type { FoodExtraction, InBodyExtraction, NutritionEstimateResult } from '../shared/analysis.js'
 import { AnalysisError } from '../shared/errors.js'
 
 /**
@@ -117,6 +117,46 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     confidence: clamp01(raw.confidence),
     warnings: cleanWarnings(warnings),
   }
+}
+
+type NutritionEstimateKey = 'caloriesPer100g' | 'proteinPer100g' | 'carbsPer100g' | 'fatPer100g' | 'fiberPer100g'
+
+// InBody 값과 달리 여기서는 범위를 벗어나도 null로 버리지 않고 범위 안으로 눌러 담는다 —
+// 이 기능 자체가 "정밀한 실측"이 아니라 "대략적인 AI 추정"이라고 밝히고 쓰는 값이기 때문이다.
+const NUTRITION_ESTIMATE_RANGES: Record<NutritionEstimateKey, { min: number; max: number; label: string }> = {
+  caloriesPer100g: { min: 0, max: 900, label: '칼로리' },
+  proteinPer100g: { min: 0, max: 100, label: '단백질' },
+  carbsPer100g: { min: 0, max: 100, label: '탄수화물' },
+  fatPer100g: { min: 0, max: 100, label: '지방' },
+  fiberPer100g: { min: 0, max: 50, label: '식이섬유' },
+}
+
+export function normalizeNutritionEstimate(raw: NutritionEstimateResult): NutritionEstimateResult {
+  if (!raw.isRecognized) throw new AnalysisError('UNREADABLE', 'nutrition')
+
+  const warnings = cleanWarnings(raw.warnings)
+  const values: Record<NutritionEstimateKey, number> = {
+    caloriesPer100g: raw.caloriesPer100g,
+    proteinPer100g: raw.proteinPer100g,
+    carbsPer100g: raw.carbsPer100g,
+    fatPer100g: raw.fatPer100g,
+    fiberPer100g: raw.fiberPer100g,
+  }
+
+  for (const key of Object.keys(NUTRITION_ESTIMATE_RANGES) as NutritionEstimateKey[]) {
+    const { min, max, label } = NUTRITION_ESTIMATE_RANGES[key]
+    const value = values[key]
+    if (!Number.isFinite(value)) {
+      values[key] = min
+      continue
+    }
+    if (value < min || value > max) {
+      warnings.push(`${label} 추정값이 비정상적이라 범위 안으로 조정했어요.`)
+      values[key] = Math.min(max, Math.max(min, value))
+    }
+  }
+
+  return { ...values, isRecognized: true, confidence: clamp01(raw.confidence), warnings: cleanWarnings(warnings) }
 }
 
 const MAX_FOODS = 12

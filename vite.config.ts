@@ -15,6 +15,10 @@ interface HandlersModule {
     body: unknown,
     deps: { env: Record<string, string | undefined> },
   ): Promise<{ status: number; body: unknown }>
+  handleNutritionEstimate(
+    body: unknown,
+    deps: { env: Record<string, string | undefined> },
+  ): Promise<{ status: number; body: unknown }>
 }
 
 const ROUTES: Record<string, AnalysisKind> = {
@@ -22,6 +26,7 @@ const ROUTES: Record<string, AnalysisKind> = {
   '/analyze-food': 'food',
 }
 const COACH_ROUTE = '/coach-meal'
+const NUTRITION_ESTIMATE_ROUTE = '/estimate-nutrition'
 
 // Vercel Function 요청 본문 한도(4.5MB)보다 조금 넉넉하게, 그 이상은 로컬에서도 거부한다.
 const MAX_BODY_BYTES = 6 * 1024 * 1024
@@ -60,7 +65,8 @@ function localAnalysisApi(mode: string): Plugin {
         const path = (req.url ?? '').split('?')[0]
         const kind = ROUTES[path]
         const isCoach = path === COACH_ROUTE
-        if (!kind && !isCoach) return next()
+        const isNutritionEstimate = path === NUTRITION_ESTIMATE_ROUTE
+        if (!kind && !isCoach && !isNutritionEstimate) return next()
 
         const send = (status: number, body: unknown) => {
           res.statusCode = status
@@ -82,7 +88,9 @@ function localAnalysisApi(mode: string): Plugin {
             const handlers = (await server.ssrLoadModule('/server/handlers.ts')) as unknown as HandlersModule
             const result = isCoach
               ? await handlers.handleCoachMeal(raw, { env })
-              : await handlers.handleAnalysis(kind, raw, { env })
+              : isNutritionEstimate
+                ? await handlers.handleNutritionEstimate(raw, { env })
+                : await handlers.handleAnalysis(kind, raw, { env })
             send(result.status, result.body)
           } catch {
             send(500, { ok: false, error: { code: 'INTERNAL', message: '분석 중 문제가 생겼어요. 잠시 후 다시 시도해주세요.' } })

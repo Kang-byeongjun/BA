@@ -3,7 +3,7 @@
  * 서버(api/, server/)와 클라이언트(src/)가 함께 사용한다. (런타임 의존성 없음)
  */
 
-export type AnalysisKind = 'inbody' | 'food' | 'coach'
+export type AnalysisKind = 'inbody' | 'food' | 'coach' | 'nutrition'
 
 export type AnalysisErrorCode =
   | 'MISSING_API_KEY'
@@ -87,6 +87,7 @@ export function describeError(code: AnalysisErrorCode, kind: AnalysisKind): stri
     case 'UNREADABLE':
       if (kind === 'inbody') return '사진에서 InBody 수치를 정확히 읽지 못했어요. 결과지가 전체 화면에 나오도록 다시 촬영해주세요.'
       if (kind === 'coach') return 'AI 코치 문구를 만들지 못했어요.'
+      if (kind === 'nutrition') return '이 음식은 AI가 추정하지 못했어요. 이름을 검색해 선택하거나 직접 입력해주세요.'
       return '음식을 정확하게 구분하기 어려워요. 음식 전체가 보이도록 위에서 촬영해주세요.'
     case 'PARSE_FAILED':
       return 'AI 응답을 해석하지 못했어요. 잠시 후 다시 시도해주세요.'

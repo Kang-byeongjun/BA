@@ -113,8 +113,8 @@ export default function RecommendationCard({ meals, goal }: Props) {
             </p>
             <div className="space-y-2">
               {group.items.map((meal) => {
-                // 재료 추천(1개 재료, 이름이 제목과 같음)은 재료 목록 줄이 제목과 중복되니 생략한다.
-                const showIngredients = meal.ingredients.length > 1 || meal.ingredients[0]?.name !== meal.title
+                // 재료 추천(1개 재료, 이름이 제목과 같음)은 이름만 중복이라 빼고, 양은 그대로 보여준다.
+                const singleRedundantName = meal.ingredients.length === 1 && meal.ingredients[0]?.name === meal.title
                 return (
                   <div key={meal.id} className="rounded-xl bg-slate-50 p-3">
                     <div className="flex items-start gap-3">
@@ -127,11 +127,11 @@ export default function RecommendationCard({ meals, goal }: Props) {
                             {NUTRIENT_UNITS[meal.primaryNutrient]}
                           </span>
                         </div>
-                        {showIngredients && (
-                          <p className="mt-1 text-xs text-slate-500">
-                            {meal.ingredients.map((i) => `${i.name} ${i.amount}`).join(' · ')}
-                          </p>
-                        )}
+                        <p className="mt-1 text-xs text-slate-500">
+                          {singleRedundantName
+                            ? meal.ingredients[0].amount
+                            : meal.ingredients.map((i) => `${i.name} ${i.amount}`).join(' · ')}
+                        </p>
                         <MealCoach meal={meal} goal={goal} />
                       </div>
                     </div>

@@ -4,10 +4,11 @@ import { AnalysisError, type AnalysisErrorCode, type AnalysisKind } from '../../
 /**
  * 서버(api/analyze-*)로 이미지를 보내 분석 결과를 받아오는 클라이언트.
  * Anthropic API는 절대 브라우저에서 직접 호출하지 않는다 — API Key는 서버 환경변수에만 있다.
- * (코칭 문구(coach)는 이미지가 없는 별도 엔드포인트라 services/coachService.ts에서 다룬다)
+ * (코칭 문구(coach)와 영양 추정(nutrition)은 이미지가 없는 별도 엔드포인트라
+ * services/coachService.ts, services/nutritionEstimateService.ts에서 각각 다룬다)
  */
 
-export type ImageAnalysisKind = Exclude<AnalysisKind, 'coach'>
+export type ImageAnalysisKind = Exclude<AnalysisKind, 'coach' | 'nutrition'>
 
 const ENDPOINTS: Record<ImageAnalysisKind, string> = {
   inbody: '/api/analyze-inbody',

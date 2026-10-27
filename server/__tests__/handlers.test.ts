@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CoachMealRequestBody, FoodExtraction, InBodyExtraction } from '../../shared/analysis.js'
-import { handleAnalysis, handleCoachMeal } from '../handlers.js'
+import { handleAnalysis, handleCoachMeal, handleNutritionEstimate } from '../handlers.js'
 import type { VisionClient } from '../vision.js'
 
 // 실제 Anthropic API를 호출하지 않고, 서버 로직(요청 검증·응답 검증·에러 매핑)을 검증한다.
@@ -331,6 +331,65 @@ describe('추천 식사 코칭 문구 (handleCoachMeal)', () => {
   it('모델이 거절하면 REFUSED', async () => {
     const { client } = fakeClient({ stop_reason: 'refusal', parsed_output: null })
     const res = await handleCoachMeal(goodCoachRequest, { env, client })
+    expect(res.body).toMatchObject({ ok: false, error: { code: 'REFUSED' } })
+  })
+})
+
+describe('영양 DB에 없는 음식의 AI 추정 (handleNutritionEstimate)', () => {
+  const goodEstimate = {
+    isRecognized: true,
+    caloriesPer100g: 250,
+    proteinPer100g: 8,
+    carbsPer100g: 30,
+    fatPer100g: 10,
+    fiberPer100g: 1.5,
+    confidence: 0.6,
+    warnings: [],
+  }
+
+  it('이미지 없이 음식 이름만으로 100g당 추정 영양소를 반환한다', async () => {
+    const { client, parse } = fakeClient(okReply(goodEstimate))
+    const res = await handleNutritionEstimate({ foodName: '불닭볶음면' }, { env, client })
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({ ok: true, data: { caloriesPer100g: 250, proteinPer100g: 8 } })
+    // 이미지 블록 없이 순수 텍스트로만 요청해야 한다
+    const params = (parse.mock.calls[0] as unknown as [Record<string, any>])[0]
+    expect(typeof params.messages[0].content).toBe('string')
+  })
+
+  it('요청 본문이 스키마에 맞지 않으면 INVALID_REQUEST', async () => {
+    const { client } = fakeClient(okReply(goodEstimate))
+    const res = await handleNutritionEstimate({ foodName: '' }, { env, client })
+    expect(res.status).toBe(400)
+    expect(res.body).toMatchObject({ ok: false, error: { code: 'INVALID_REQUEST' } })
+  })
+
+  it('API Key가 없으면 MISSING_API_KEY를 반환한다', async () => {
+    const res = await handleNutritionEstimate({ foodName: '불닭볶음면' }, { env: {} })
+    expect(res.status).toBe(500)
+    expect(res.body).toMatchObject({ ok: false, error: { code: 'MISSING_API_KEY' } })
+  })
+
+  it('AI가 못 알아보는 이름이면 숫자를 만들지 않고 UNREADABLE을 반환한다', async () => {
+    const { client } = fakeClient(okReply({ ...goodEstimate, isRecognized: false, caloriesPer100g: 0 }))
+    const res = await handleNutritionEstimate({ foodName: 'ㅁㄴㅇㄹ' }, { env, client })
+    expect(res.body).toMatchObject({ ok: false, error: { code: 'UNREADABLE' } })
+  })
+
+  it('비현실적인 값은 버리지 않고 범위 안으로 조정한다(InBody와 달리 null로 버리지 않음)', async () => {
+    const { client } = fakeClient(okReply({ ...goodEstimate, caloriesPer100g: 5000, proteinPer100g: -5 }))
+    const res = await handleNutritionEstimate({ foodName: '불닭볶음면' }, { env, client })
+    expect(res.status).toBe(200)
+    if (!res.body.ok) throw new Error('expected success')
+    const data = res.body.data as { caloriesPer100g: number; proteinPer100g: number; warnings: string[] }
+    expect(data.caloriesPer100g).toBe(900)
+    expect(data.proteinPer100g).toBe(0)
+    expect(data.warnings.length).toBeGreaterThan(0)
+  })
+
+  it('모델이 거절하면 REFUSED', async () => {
+    const { client } = fakeClient({ stop_reason: 'refusal', parsed_output: null })
+    const res = await handleNutritionEstimate({ foodName: '불닭볶음면' }, { env, client })
     expect(res.body).toMatchObject({ ok: false, error: { code: 'REFUSED' } })
   })
 })

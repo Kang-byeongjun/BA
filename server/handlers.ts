@@ -1,12 +1,19 @@
-import type { ApiResponse, CoachMealRequestBody } from '../shared/analysis.js'
+import type { ApiResponse, CoachMealRequestBody, NutritionEstimateRequestBody } from '../shared/analysis.js'
 import { AnalysisError } from '../shared/errors.js'
 import type { AnalysisKind } from '../shared/errors.js'
-import { analyzeRequestSchema, coachMealRequestSchema, foodExtractionSchema, inBodyExtractionSchema } from '../shared/schemas.js'
+import {
+  analyzeRequestSchema,
+  coachMealRequestSchema,
+  foodExtractionSchema,
+  inBodyExtractionSchema,
+  nutritionEstimateRequestSchema,
+} from '../shared/schemas.js'
 import { generateCoachMessage } from './coach.js'
 import type { Env } from './config.js'
 import { validateImage } from './image.js'
-import { normalizeFood, normalizeInBody } from './normalize.js'
+import { normalizeFood, normalizeInBody, normalizeNutritionEstimate } from './normalize.js'
 import { FOOD_SYSTEM_PROMPT, FOOD_USER_PROMPT, INBODY_SYSTEM_PROMPT, INBODY_USER_PROMPT } from './prompts.js'
+import { generateNutritionEstimate } from './nutritionEstimate.js'
 import { createVisionClient, describeCause, extractStructured, mapVisionError, type VisionClient } from './vision.js'
 
 export interface HandlerDeps {
@@ -111,6 +118,40 @@ export async function handleCoachMeal(rawBody: unknown, deps: HandlerDeps = {}):
   } catch (err) {
     const error = mapVisionError(err, 'coach')
     console.error(`[coach-meal] ${error.code} (${describeCause(err)})`)
+    return { status: error.status, body: { ok: false, error: { code: error.code, message: error.message } } }
+  }
+}
+
+function parseNutritionEstimateRequestBody(raw: unknown): NutritionEstimateRequestBody {
+  let value: unknown = raw
+  if (Buffer.isBuffer(value)) value = value.toString('utf8')
+  if (typeof value === 'string') {
+    try {
+      value = JSON.parse(value)
+    } catch {
+      throw new AnalysisError('INVALID_REQUEST', 'nutrition')
+    }
+  }
+  const parsed = nutritionEstimateRequestSchema.safeParse(value)
+  if (!parsed.success) throw new AnalysisError('INVALID_REQUEST', 'nutrition')
+  return parsed.data
+}
+
+/**
+ * 영양 DB·검색으로 못 찾은 음식의 100g당 영양소를 Claude의 일반 지식으로 추정한다(이미지 없음).
+ * 실제 영양성분표 조회가 아니라 추정치이므로, 클라이언트가 DB 공식값과 구분해서 보여줘야 한다.
+ */
+export async function handleNutritionEstimate(rawBody: unknown, deps: HandlerDeps = {}): Promise<HandlerResult> {
+  const env: Env = deps.env ?? process.env
+
+  try {
+    const client = deps.client ?? createVisionClient(env, 'nutrition')
+    const input = parseNutritionEstimateRequestBody(rawBody)
+    const raw = await generateNutritionEstimate(client, env, input)
+    return { status: 200, body: { ok: true, data: normalizeNutritionEstimate(raw) } }
+  } catch (err) {
+    const error = mapVisionError(err, 'nutrition')
+    console.error(`[estimate-nutrition] ${error.code} (${describeCause(err)})`)
     return { status: error.status, body: { ok: false, error: { code: error.code, message: error.message } } }
   }
 }
