@@ -104,6 +104,14 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'granola', name: '그래놀라', category: '재료', caloriesPer100g: 450, proteinPer100g: 10, carbsPer100g: 65, fatPer100g: 16, fiberPer100g: 7, servingUnit: { label: '컵', grams: 50 } },
   { id: 'chia-seed', name: '치아씨드', category: '재료', caloriesPer100g: 490, proteinPer100g: 17, carbsPer100g: 42, fatPer100g: 31, fiberPer100g: 34, servingUnit: { label: '숟갈', grams: 12 } },
 
+  // 재료 추가 — 면류(삶은 기준 100g당 수치). 밥류와 같은 이유로 영양 비율이 비슷해도
+  // 서로 대체재가 아니라 각자 고를 수 있어야 하는 주식이라 staple로 표시한다.
+  { id: 'wheat-noodle', name: '소면', category: '재료', caloriesPer100g: 127, proteinPer100g: 4.5, carbsPer100g: 26, fatPer100g: 0.5, fiberPer100g: 1.2, servingUnit: { label: '인분', grams: 200 }, staple: true },
+  { id: 'spaghetti', name: '스파게티', category: '재료', caloriesPer100g: 158, proteinPer100g: 5.8, carbsPer100g: 31, fatPer100g: 0.9, fiberPer100g: 1.8, servingUnit: { label: '인분', grams: 200 }, staple: true },
+  { id: 'buckwheat-noodle', name: '메밀면', category: '재료', caloriesPer100g: 114, proteinPer100g: 4.3, carbsPer100g: 24, fatPer100g: 0.6, fiberPer100g: 1.9, servingUnit: { label: '인분', grams: 200 }, staple: true },
+  { id: 'glass-noodle', name: '당면', category: '재료', caloriesPer100g: 106, proteinPer100g: 0.1, carbsPer100g: 26, fatPer100g: 0.1, fiberPer100g: 0.4, servingUnit: { label: '인분', grams: 150 }, staple: true },
+  { id: 'rice-noodle', name: '쌀국수', category: '재료', caloriesPer100g: 109, proteinPer100g: 2, carbsPer100g: 25, fatPer100g: 0.2, fiberPer100g: 0.9, servingUnit: { label: '인분', grams: 200 }, staple: true },
+
   // ---------------------------------------------------------------------
   // 한식
   // ---------------------------------------------------------------------
