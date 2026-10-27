@@ -23,6 +23,9 @@ export interface FoodDbEntry {
   // "재료 추천" 카드에서 그램 수만으로는 양을 가늠하기 어려운 재료에 자연스러운 단위를 덧붙이기 위한 기준값
   // (예: 우유 200g = "1잔"). label은 "개/잔/장" 같은 단위 명사, grams는 그 단위 1개의 기준 중량.
   servingUnit?: { label: string; grams: number }
+  // 밥류·면류처럼 영양 비율이 비슷해도 실제로는 서로 대체재가 아닌 주식류 표시.
+  // true면 "영양 비율이 거의 같은 재료는 1개만 추천" 중복 제거 대상에서 빠지고 항상 따로 보여진다.
+  staple?: boolean
 }
 
 export const FOOD_DATABASE: FoodDbEntry[] = [
@@ -31,9 +34,9 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   // ---------------------------------------------------------------------
   { id: 'chicken-breast', name: '닭가슴살', category: '재료', caloriesPer100g: 165, proteinPer100g: 31, carbsPer100g: 0, fatPer100g: 3.6, fiberPer100g: 0, servingUnit: { label: '조각', grams: 100 } },
   { id: 'chicken-thigh', name: '닭다리살', category: '재료', caloriesPer100g: 200, proteinPer100g: 26, carbsPer100g: 0, fatPer100g: 10.9, fiberPer100g: 0, servingUnit: { label: '조각', grams: 100 } },
-  { id: 'brown-rice', name: '현미밥', category: '재료', caloriesPer100g: 152, proteinPer100g: 3.2, carbsPer100g: 32, fatPer100g: 1.2, fiberPer100g: 1.9, servingUnit: { label: '공기', grams: 210 } },
-  { id: 'white-rice', name: '흰쌀밥', category: '재료', caloriesPer100g: 143, proteinPer100g: 2.5, carbsPer100g: 31, fatPer100g: 0.3, fiberPer100g: 0.4, servingUnit: { label: '공기', grams: 210 } },
-  { id: 'multigrain-rice', name: '잡곡밥', category: '재료', caloriesPer100g: 140, proteinPer100g: 3, carbsPer100g: 30, fatPer100g: 1, fiberPer100g: 2.2, servingUnit: { label: '공기', grams: 210 } },
+  { id: 'brown-rice', name: '현미밥', category: '재료', caloriesPer100g: 152, proteinPer100g: 3.2, carbsPer100g: 32, fatPer100g: 1.2, fiberPer100g: 1.9, servingUnit: { label: '공기', grams: 210 }, staple: true },
+  { id: 'white-rice', name: '흰쌀밥', category: '재료', caloriesPer100g: 143, proteinPer100g: 2.5, carbsPer100g: 31, fatPer100g: 0.3, fiberPer100g: 0.4, servingUnit: { label: '공기', grams: 210 }, staple: true },
+  { id: 'multigrain-rice', name: '잡곡밥', category: '재료', caloriesPer100g: 140, proteinPer100g: 3, carbsPer100g: 30, fatPer100g: 1, fiberPer100g: 2.2, servingUnit: { label: '공기', grams: 210 }, staple: true },
   { id: 'salmon', name: '연어', category: '재료', caloriesPer100g: 208, proteinPer100g: 20, carbsPer100g: 0, fatPer100g: 13, fiberPer100g: 0, servingUnit: { label: '조각', grams: 100 } },
   { id: 'avocado', name: '아보카도', category: '재료', caloriesPer100g: 160, proteinPer100g: 2, carbsPer100g: 9, fatPer100g: 15, fiberPer100g: 7, servingUnit: { label: '개', grams: 200 } },
   { id: 'tofu', name: '두부', category: '재료', caloriesPer100g: 76, proteinPer100g: 8, carbsPer100g: 1.9, fatPer100g: 4.8, fiberPer100g: 0.3, servingUnit: { label: '모', grams: 300 } },
@@ -90,7 +93,7 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'butter', name: '버터', category: '재료', caloriesPer100g: 717, proteinPer100g: 0.9, carbsPer100g: 0.1, fatPer100g: 81, fiberPer100g: 0, servingUnit: { label: '숟갈', grams: 14 } },
   { id: 'sesame-oil', name: '참기름', category: '재료', caloriesPer100g: 884, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 100, fiberPer100g: 0, servingUnit: { label: '숟갈', grams: 13 } },
   { id: 'quinoa', name: '퀴노아', category: '재료', caloriesPer100g: 120, proteinPer100g: 4.4, carbsPer100g: 21, fatPer100g: 1.9, fiberPer100g: 2.8, servingUnit: { label: '인분', grams: 100 } },
-  { id: 'barley-rice', name: '보리밥', category: '재료', caloriesPer100g: 121, proteinPer100g: 2.3, carbsPer100g: 28, fatPer100g: 0.4, fiberPer100g: 3.8, servingUnit: { label: '공기', grams: 210 } },
+  { id: 'barley-rice', name: '보리밥', category: '재료', caloriesPer100g: 121, proteinPer100g: 2.3, carbsPer100g: 28, fatPer100g: 0.4, fiberPer100g: 3.8, servingUnit: { label: '공기', grams: 210 }, staple: true },
   { id: 'whole-wheat-bread', name: '통밀빵', category: '재료', caloriesPer100g: 247, proteinPer100g: 13, carbsPer100g: 41, fatPer100g: 3.4, fiberPer100g: 6, servingUnit: { label: '장', grams: 35 } },
   { id: 'rice-cake', name: '떡', category: '재료', caloriesPer100g: 234, proteinPer100g: 4, carbsPer100g: 51, fatPer100g: 0.3, fiberPer100g: 0.8, servingUnit: { label: '조각', grams: 30 } },
   { id: 'corn', name: '옥수수', category: '재료', caloriesPer100g: 86, proteinPer100g: 3.2, carbsPer100g: 19, fatPer100g: 1.2, fiberPer100g: 2.7, servingUnit: { label: '자루', grams: 150 } },

@@ -148,6 +148,17 @@ describe('getRecommendedMeals', () => {
     expect(new Set(beanNames).size).toBeLessThanOrEqual(1)
   })
 
+  it('밥류·면류(staple)는 영양 비율이 비슷해도 중복 제거하지 않고 각자 보여준다', () => {
+    // 탄수화물만 부족 → 탄수화물 풀(흰쌀밥·저지방우유·무지방우유·떡)에서만 추천/대체가 나온다.
+    // 흰쌀밥과 떡은 영양 비율이 거의 같지만, 둘 다 밥류 중복 제거 예외(staple)라 같이 보여야 한다.
+    const consumed = { calories: 1200, protein: 100, carbohydrates: 50, fat: 60, fiber: 30 }
+    const carbOnlyTarget: NutritionTarget = { calories: 2000, protein: 100, carbohydrates: 250, fat: 60, fiber: 30 }
+    const result = getRecommendedMeals(consumed, carbOnlyTarget, healthCareProfile, [])
+    const allNames = result.flatMap((r) => [r.title, ...r.alternatives.map((a) => a.name)])
+    expect(allNames).toContain('흰쌀밥')
+    expect(allNames).toContain('떡')
+  })
+
   it('체지방률이 높고 목적이 체지방감량이면 지방보다 단백질 조합을 우선한다', () => {
     // 탄수화물(80%)·지방(85.7%)보다 단백질(91.7%)이 수치상으로는 덜 부족하지만,
     // 체지방률이 높은 체지방감량 목적이면 단백질을 저탄고단 쪽으로 우선시켜야 한다.

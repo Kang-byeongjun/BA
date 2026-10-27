@@ -131,7 +131,12 @@ interface RankedCombo {
 // 독점하지 않도록, 단백질·탄수화물·지방 칼로리 비율(10% 단위)과 식이섬유 밀도(100kcal당 2g 단위)가
 // 같은 재료는 "같은 프로필"로 보고 하나만 남긴다. 이 비율은 그램 수를 어떻게 잡아도 변하지
 // 않으므로(스케일 불변) 실제 재료 종류 차이만 반영한다.
-function macroProfileKey(nutrients: ResolvedMealCombo['nutrients']): string {
+// 단, 밥류·면류(FoodDbEntry.staple)는 영양 비율이 비슷해도 실제 식사에서는 서로 대체재가 아니라
+// 각자 고를 수 있어야 하는 주식이라 이 중복 제거 대상에서 뺀다(항상 자기 자신만의 키를 가진다).
+function macroProfileKey(combo: MealComboDef, nutrients: ResolvedMealCombo['nutrients']): string {
+  const isStaple = combo.ingredients.length === 1 && getFoodById(combo.ingredients[0].foodId).staple
+  if (isStaple) return `staple:${combo.id}`
+
   const totalKcal = nutrients.calories
   if (totalKcal <= 0) return 'zero'
   const proteinRatio = Math.round(((nutrients.protein * 4) / totalKcal) * 10) / 10
@@ -145,7 +150,7 @@ function dedupeByMacroProfile(items: RankedCombo[]): RankedCombo[] {
   const seen = new Set<string>()
   const result: RankedCombo[] = []
   for (const item of items) {
-    const key = macroProfileKey(item.resolved.nutrients)
+    const key = macroProfileKey(item.combo, item.resolved.nutrients)
     if (seen.has(key)) continue
     seen.add(key)
     result.push(item)
