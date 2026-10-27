@@ -127,6 +127,32 @@ interface RankedCombo {
   resolved: ResolvedMealCombo
 }
 
+// 콩 4종(렌틸콩·병아리콩·검은콩·강낭콩)처럼 영양 비율이 거의 같은 재료가 추천/대체 목록을
+// 독점하지 않도록, 단백질·탄수화물·지방 칼로리 비율(10% 단위)과 식이섬유 밀도(100kcal당 2g 단위)가
+// 같은 재료는 "같은 프로필"로 보고 하나만 남긴다. 이 비율은 그램 수를 어떻게 잡아도 변하지
+// 않으므로(스케일 불변) 실제 재료 종류 차이만 반영한다.
+function macroProfileKey(nutrients: ResolvedMealCombo['nutrients']): string {
+  const totalKcal = nutrients.calories
+  if (totalKcal <= 0) return 'zero'
+  const proteinRatio = Math.round(((nutrients.protein * 4) / totalKcal) * 10) / 10
+  const carbRatio = Math.round(((nutrients.carbohydrates * 4) / totalKcal) * 10) / 10
+  const fatRatio = Math.round(((nutrients.fat * 9) / totalKcal) * 10) / 10
+  const fiberDensity = Math.round(((nutrients.fiber / totalKcal) * 100) / 2) * 2
+  return `${proteinRatio}|${carbRatio}|${fatRatio}|${fiberDensity}`
+}
+
+function dedupeByMacroProfile(items: RankedCombo[]): RankedCombo[] {
+  const seen = new Set<string>()
+  const result: RankedCombo[] = []
+  for (const item of items) {
+    const key = macroProfileKey(item.resolved.nutrients)
+    if (seen.has(key)) continue
+    seen.add(key)
+    result.push(item)
+  }
+  return result
+}
+
 /**
  * 오늘 이미 먹은 재료로만 구성된 조합은 뒤로 미룬다(완전히 겹칠 때만 제외 — 재료 하나가 겹친다고
  * 막으면 풀이 과도하게 줄어든다). 사용자의 식단 목적(goal)과 맞는 조합을 그다음으로 우선한다 —
@@ -140,7 +166,7 @@ function rankCombos(pool: MealComboDef[], goal: Goal, seed: number, eatenTodayNa
     return !ingredientNames.every((name) => eatenTodayNames.has(name))
   })
   const candidates = notFullyEaten.length > 0 ? notFullyEaten : pool
-  const resolvedCandidates: RankedCombo[] = candidates.map((combo) => ({ combo, resolved: resolveMealCombo(combo) }))
+  const resolvedCandidates: RankedCombo[] = dedupeByMacroProfile(candidates.map((combo) => ({ combo, resolved: resolveMealCombo(combo) })))
 
   const shuffled = shuffleWithSeed(resolvedCandidates, seed)
   const goalMatched = shuffled.filter((c) => computeGoalFit(c.resolved.nutrients).includes(goal))

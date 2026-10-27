@@ -137,6 +137,17 @@ describe('getRecommendedMeals', () => {
     }
   })
 
+  it('영양 비율이 거의 같은 재료(콩 4종 등)는 추천/대체 목록에 1개만 남긴다', () => {
+    // 단백질·탄수화물·지방은 목표를 채웠고 식이섬유만 부족 → 추천이 전부 식이섬유 풀에서 나온다.
+    const consumed = { calories: 1200, protein: 100, carbohydrates: 200, fat: 60, fiber: 5 }
+    const fiberOnlyTarget: NutritionTarget = { calories: 2000, protein: 100, carbohydrates: 200, fat: 60, fiber: 30 }
+    const result = getRecommendedMeals(consumed, fiberOnlyTarget, healthCareProfile, [])
+    const allNames = result.flatMap((r) => [r.title, ...r.alternatives.map((a) => a.name)])
+    // 렌틸콩·검은콩·강낭콩은 단백질/탄수화물/지방 비율과 식이섬유 밀도가 거의 같은 "같은 프로필" 재료다.
+    const beanNames = allNames.filter((n) => ['렌틸콩', '검은콩', '강낭콩'].includes(n))
+    expect(new Set(beanNames).size).toBeLessThanOrEqual(1)
+  })
+
   it('체지방률이 높고 목적이 체지방감량이면 지방보다 단백질 조합을 우선한다', () => {
     // 탄수화물(80%)·지방(85.7%)보다 단백질(91.7%)이 수치상으로는 덜 부족하지만,
     // 체지방률이 높은 체지방감량 목적이면 단백질을 저탄고단 쪽으로 우선시켜야 한다.
