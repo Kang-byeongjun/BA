@@ -28,6 +28,8 @@ function cleanWarnings(warnings: string[]): string[] {
 
 type InBodyValueKey =
   | 'weightKg'
+  | 'ageYears'
+  | 'heightCm'
   | 'skeletalMuscleMassKg'
   | 'bodyFatMassKg'
   | 'bodyFatPercentage'
@@ -39,6 +41,8 @@ type InBodyValueKey =
 
 const IN_BODY_RANGES: Record<InBodyValueKey, { min: number; max: number; label: string; decimals: number }> = {
   weightKg: { min: 20, max: 300, label: '체중', decimals: 1 },
+  ageYears: { min: 5, max: 120, label: '나이', decimals: 0 },
+  heightCm: { min: 100, max: 250, label: '키', decimals: 1 },
   skeletalMuscleMassKg: { min: 5, max: 100, label: '골격근량', decimals: 1 },
   bodyFatMassKg: { min: 1, max: 200, label: '체지방량', decimals: 1 },
   bodyFatPercentage: { min: 1, max: 75, label: '체지방률', decimals: 1 },
@@ -60,6 +64,8 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
   const warnings = cleanWarnings(raw.warnings)
   const values: Record<InBodyValueKey, number | null> = {
     weightKg: null,
+    ageYears: null,
+    heightCm: null,
     skeletalMuscleMassKg: null,
     bodyFatMassKg: null,
     bodyFatPercentage: null,

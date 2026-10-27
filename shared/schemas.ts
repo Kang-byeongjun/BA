@@ -10,6 +10,8 @@ import type { CoachMealRequestBody, CoachMessage, FoodExtraction, InBodyExtracti
 export const inBodyExtractionSchema = z.object({
   isInBodyReport: z.boolean(),
   weightKg: z.number().nullable(),
+  ageYears: z.number().nullable(),
+  heightCm: z.number().nullable(),
   skeletalMuscleMassKg: z.number().nullable(),
   bodyFatMassKg: z.number().nullable(),
   bodyFatPercentage: z.number().nullable(),

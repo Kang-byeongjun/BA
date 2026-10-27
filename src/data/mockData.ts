@@ -143,6 +143,8 @@ export const INBODY_ANALYSIS_MOCKS: InBodyExtraction[] = [
   {
     isInBodyReport: true,
     weightKg: 72,
+    ageYears: 29,
+    heightCm: 175.0,
     skeletalMuscleMassKg: 33.2,
     bodyFatMassKg: 14.5,
     bodyFatPercentage: 17.8,
@@ -157,6 +159,8 @@ export const INBODY_ANALYSIS_MOCKS: InBodyExtraction[] = [
   {
     isInBodyReport: true,
     weightKg: 56,
+    ageYears: 34,
+    heightCm: 162.0,
     skeletalMuscleMassKg: 22.4,
     bodyFatMassKg: 14.1,
     bodyFatPercentage: 24.6,
@@ -171,6 +175,8 @@ export const INBODY_ANALYSIS_MOCKS: InBodyExtraction[] = [
   {
     isInBodyReport: true,
     weightKg: 85,
+    ageYears: 41,
+    heightCm: 180.0,
     skeletalMuscleMassKg: 38.9,
     bodyFatMassKg: 20.2,
     bodyFatPercentage: 22.1,

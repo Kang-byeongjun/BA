@@ -33,6 +33,9 @@ export interface UserProfile {
 // InBody 결과지에서 읽어온(또는 사용자가 확인·수정한) 체성분 측정값. null이면 값이 없는 항목.
 export interface InBodyMeasurements {
   weight: number | null
+  // 나이·키는 체성분 측정값은 아니지만 결과지에 함께 찍혀 있어 스캔으로 같이 읽는다.
+  age: number | null
+  height: number | null
   skeletalMuscleMass: number | null
   bodyFatMass: number | null
   bodyFatPercentage: number | null

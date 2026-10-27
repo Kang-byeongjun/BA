@@ -1081,6 +1081,8 @@ describe('nutritionTargetService', () => {
   it('InBody 측정값 중 값이 있는 항목만 프로필에 반영한다', () => {
     const merged = mergeInBodyMeasurements(DEMO_PROFILE, {
       weight: 80,
+      age: null,
+      height: null,
       skeletalMuscleMass: null,
       bodyFatMass: null,
       bodyFatPercentage: 20.5,

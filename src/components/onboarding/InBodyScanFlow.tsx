@@ -23,6 +23,8 @@ type FieldKey = keyof InBodyMeasurements
 
 const FIELDS: { key: FieldKey; label: string; unit: string }[] = [
   { key: 'weight', label: '체중', unit: 'kg' },
+  { key: 'age', label: '나이', unit: '세' },
+  { key: 'height', label: '키', unit: 'cm' },
   { key: 'skeletalMuscleMass', label: '골격근량', unit: 'kg' },
   { key: 'bodyFatMass', label: '체지방량', unit: 'kg' },
   { key: 'bodyFatPercentage', label: '체지방률', unit: '%' },
@@ -55,6 +57,8 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
   const [values, setValues] = useState<Record<FieldKey, string>>(() =>
     toInputValues({
       weight: null,
+      age: null,
+      height: null,
       skeletalMuscleMass: null,
       bodyFatMass: null,
       bodyFatPercentage: null,
@@ -266,7 +270,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
           )}
 
           <p className="px-1 text-xs text-slate-400">
-            성별·나이·키는 결과지에서 가져오지 않아요. 적용 후 다음 화면에서 직접 확인해주세요.
+            성별은 결과지에서 가져오지 않아요. 적용 후 다음 화면에서 직접 확인해주세요.
           </p>
         </div>
 

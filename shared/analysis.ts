@@ -19,6 +19,8 @@ export interface InBodyExtraction {
   // 업로드한 이미지가 InBody/체성분 결과지인지
   isInBodyReport: boolean
   weightKg: number | null
+  ageYears: number | null
+  heightCm: number | null
   skeletalMuscleMassKg: number | null
   bodyFatMassKg: number | null
   bodyFatPercentage: number | null

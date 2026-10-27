@@ -71,6 +71,8 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
           setValues((prev) => ({
             ...prev,
             ...(scanned.weight !== null && { weight: String(scanned.weight) }),
+            ...(scanned.age !== null && { age: String(scanned.age) }),
+            ...(scanned.height !== null && { height: String(scanned.height) }),
             ...(scanned.skeletalMuscleMass !== null && { skeletalMuscleMass: String(scanned.skeletalMuscleMass) }),
             ...(scanned.bodyFatMass !== null && { bodyFatMass: String(scanned.bodyFatMass) }),
             ...(scanned.bodyFatPercentage !== null && { bodyFatPercentage: String(scanned.bodyFatPercentage) }),
@@ -132,7 +134,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
           </div>
           <div>
             <p className="text-sm font-semibold text-emerald-700">InBody 결과지 사진으로 자동 입력</p>
-            <p className="text-xs text-emerald-600/80">AI가 결과지의 체중·골격근량·체지방·기초대사량을 읽어 채워줘요</p>
+            <p className="text-xs text-emerald-600/80">AI가 결과지의 나이·키·체중·골격근량·체지방·기초대사량을 읽어 채워줘요</p>
           </div>
         </button>
       )}

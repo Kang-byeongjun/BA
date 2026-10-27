@@ -26,6 +26,8 @@ Return structured data only.
 <field_guide>
 Read the CURRENT measurement of each item. Labels may appear in Korean or English:
 - weightKg: 체중 / Weight (kg)
+- ageYears: 나이 / Age. Usually printed near the personal info at the top of the report (만 나이, years). Not a body-composition measurement, but still only read it if it is visibly printed — do not infer it from anything else.
+- heightCm: 키 / Height (cm). Also printed near the personal info at the top of the report.
 - skeletalMuscleMassKg: 골격근량 / Skeletal Muscle Mass, SMM (kg). Do not confuse with 제지방량 / Lean Body Mass or 근육량 / Soft Lean Mass.
 - bodyFatMassKg: 체지방량 / Body Fat Mass, BFM (kg)
 - bodyFatPercentage: 체지방률 / Percent Body Fat, PBF (%)

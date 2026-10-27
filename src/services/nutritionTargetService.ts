@@ -291,6 +291,8 @@ export function mergeInBodyMeasurements(profile: UserProfile, measurements: InBo
   return {
     ...profile,
     weight: measurements.weight ?? profile.weight,
+    age: measurements.age ?? profile.age,
+    height: measurements.height ?? profile.height,
     skeletalMuscleMass: measurements.skeletalMuscleMass ?? profile.skeletalMuscleMass,
     bodyFatMass: measurements.bodyFatMass ?? profile.bodyFatMass,
     bodyFatPercentage: measurements.bodyFatPercentage ?? profile.bodyFatPercentage,

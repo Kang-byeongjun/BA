@@ -30,6 +30,8 @@ const food: FoodExtraction = {
 const inbody: InBodyExtraction = {
   isInBodyReport: true,
   weightKg: 75.2,
+  ageYears: 30,
+  heightCm: 175.0,
   skeletalMuscleMassKg: 34.1,
   bodyFatMassKg: null,
   bodyFatPercentage: 18.4,
@@ -309,6 +311,8 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
     fireEvent.click(screen.getByText('확인하고 적용'))
     expect(onApply).toHaveBeenCalledWith({
       weight: 75,
+      age: 30,
+      height: 175,
       skeletalMuscleMass: 34.1,
       bodyFatMass: 13.8,
       bodyFatPercentage: 18.4,

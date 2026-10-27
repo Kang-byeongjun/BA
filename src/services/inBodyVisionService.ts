@@ -30,6 +30,8 @@ export async function analyzeInBodyImage(image: PreparedImage, { mode, signal }:
 export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements {
   return {
     weight: extraction.weightKg,
+    age: extraction.ageYears,
+    height: extraction.heightCm,
     skeletalMuscleMass: extraction.skeletalMuscleMassKg,
     bodyFatMass: extraction.bodyFatMassKg,
     bodyFatPercentage: extraction.bodyFatPercentage,

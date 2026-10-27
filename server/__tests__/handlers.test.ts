@@ -12,6 +12,8 @@ const validImage = Buffer.concat([Buffer.from(PNG_HEADER), Buffer.alloc(600, 1)]
 const goodInBody: InBodyExtraction = {
   isInBodyReport: true,
   weightKg: 75.2,
+  ageYears: 30,
+  heightCm: 175.0,
   skeletalMuscleMassKg: 34.1,
   bodyFatMassKg: 13.8,
   bodyFatPercentage: 18.4,
@@ -151,6 +153,8 @@ describe('InBody 분석 결과 검증', () => {
     const empty: InBodyExtraction = {
       ...goodInBody,
       weightKg: null,
+      ageYears: null,
+      heightCm: null,
       skeletalMuscleMassKg: null,
       bodyFatMassKg: null,
       bodyFatPercentage: null,
