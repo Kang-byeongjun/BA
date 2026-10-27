@@ -410,7 +410,10 @@ function generateIngredientCombos(): MealComboDef[] {
   return FOOD_DATABASE.filter((entry) => INGREDIENT_CATEGORIES.includes(entry.category)).map((entry) => {
     const grams = computeServingGrams(entry, TARGET_INGREDIENT_CALORIES, MIN_INGREDIENT_GRAMS, MAX_INGREDIENT_GRAMS)
     const nutrients = estimateNutrients(entry, grams)
-    const primaryNutrient = determinePrimaryNutrient(nutrients)
+    // 밥류·면류(staple)는 식이섬유 비중이 기준을 넘어도 사용자에게는 "탄수화물 보충용"으로
+    // 느껴지므로 항상 탄수화물로 분류한다. 식이섬유 버킷(채소·과일·콩류 등 70여 개)에 섞이면
+    // 영양소 우선순위 라운드로빈에서 차례가 오기도 전에 슬롯이 다 차버려 거의 추천되지 않는다.
+    const primaryNutrient = entry.staple ? 'carbohydrates' : determinePrimaryNutrient(nutrients)
     return {
       id: `ingredient-${entry.id}`,
       title: entry.name,

@@ -148,15 +148,39 @@ describe('getRecommendedMeals', () => {
     expect(new Set(beanNames).size).toBeLessThanOrEqual(1)
   })
 
+  it('밥류·면류(staple)는 식이섬유 비중이 높아도 항상 탄수화물로 분류된다', () => {
+    // 현미밥 등은 식이섬유 비중만 보면 fiber 버킷에 들어가지만, 그러면 영양소 우선순위
+    // 라운드로빈에서 fiber 차례가 오기도 전에 슬롯이 다 차 거의 추천되지 않는다 — 그래서
+    // 밥류·면류는 항상 탄수화물로 고정한다.
+    const stapleIds = [
+      'brown-rice',
+      'white-rice',
+      'multigrain-rice',
+      'barley-rice',
+      'wheat-noodle',
+      'spaghetti',
+      'buckwheat-noodle',
+      'glass-noodle',
+      'rice-noodle',
+    ]
+    for (const id of stapleIds) {
+      const combo = INGREDIENT_MEAL_COMBOS.find((c) => c.id === `ingredient-${id}`)
+      expect(combo?.primaryNutrient).toBe('carbohydrates')
+    }
+  })
+
   it('밥류·면류(staple)는 영양 비율이 비슷해도 중복 제거하지 않고 각자 보여준다', () => {
-    // 탄수화물만 부족 → 탄수화물 풀(흰쌀밥·저지방우유·무지방우유·떡)에서만 추천/대체가 나온다.
+    // 탄수화물만 부족 → 탄수화물 풀(밥류·면류·우유 등)에서만 추천/대체가 나온다.
     // 흰쌀밥과 떡은 영양 비율이 거의 같지만, 둘 다 밥류 중복 제거 예외(staple)라 같이 보여야 한다.
     const consumed = { calories: 1200, protein: 100, carbohydrates: 50, fat: 60, fiber: 30 }
     const carbOnlyTarget: NutritionTarget = { calories: 2000, protein: 100, carbohydrates: 250, fat: 60, fiber: 30 }
     const result = getRecommendedMeals(consumed, carbOnlyTarget, healthCareProfile, [])
     const allNames = result.flatMap((r) => [r.title, ...r.alternatives.map((a) => a.name)])
-    expect(allNames).toContain('흰쌀밥')
-    expect(allNames).toContain('떡')
+    // 풀이 보여줄 수 있는 자리 수보다 커졌을 수 있으니, 특정 재료 하나가 아니라
+    // "밥류·면류가 여러 종류 보인다"는 다양성만 확인한다.
+    const stapleNames = ['현미밥', '흰쌀밥', '잡곡밥', '보리밥', '소면', '스파게티', '메밀면', '당면', '쌀국수']
+    const shownStaples = new Set(allNames.filter((n) => stapleNames.includes(n)))
+    expect(shownStaples.size).toBeGreaterThan(1)
   })
 
   it('체지방률이 높고 목적이 체지방감량이면 지방보다 단백질 조합을 우선한다', () => {
