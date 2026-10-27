@@ -204,6 +204,8 @@ export interface RecommendedMeal {
   primaryNutrient: Exclude<NutrientKey, 'calories'>
   // 추천 시점의 primaryNutrient 달성률(%). AI 코칭 문구 요청에 그대로 전달한다.
   deficiencyPercent: number
+  // 추천 재료가 집에 없을 때 대신 쓸 수 있는, 같은 영양소를 채우는 DB 내 다른 재료 목록.
+  alternatives: MealComboIngredientDisplay[]
 }
 
 // ---------- 운동 ----------

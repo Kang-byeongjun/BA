@@ -126,6 +126,17 @@ describe('getRecommendedMeals', () => {
     expect(result[0].deficiencyPercent).toBe(Math.round((10 / 120) * 100))
   })
 
+  it('추천 재료가 집에 없을 때 쓸 대체 재료 목록(alternatives)을 같이 준다', () => {
+    const consumed = { calories: 500, protein: 10, carbohydrates: 200, fat: 60, fiber: 25 }
+    const result = getRecommendedMeals(consumed, target, healthCareProfile, [])
+    const shownTitles = new Set(result.map((r) => r.title))
+    for (const meal of result) {
+      expect(meal.alternatives.length).toBeGreaterThan(0)
+      // 대체 재료는 이미 카드로 나온 재료(자기 자신 포함)와 중복되면 안 된다.
+      expect(meal.alternatives.every((alt) => !shownTitles.has(alt.name))).toBe(true)
+    }
+  })
+
   it('체지방률이 높고 목적이 체지방감량이면 지방보다 단백질 조합을 우선한다', () => {
     // 탄수화물(80%)·지방(85.7%)보다 단백질(91.7%)이 수치상으로는 덜 부족하지만,
     // 체지방률이 높은 체지방감량 목적이면 단백질을 저탄고단 쪽으로 우선시켜야 한다.

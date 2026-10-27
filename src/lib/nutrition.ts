@@ -1,7 +1,16 @@
 import { getFoodById } from '../data/foodDatabase'
 import { INGREDIENT_MEAL_COMBOS, type MealComboDef } from '../data/mealCombos'
 import { computeGoalFit, resolveMealCombo, type ResolvedMealCombo } from '../services/nutritionService'
-import type { Gender, Goal, Meal, NutrientKey, NutritionStatus, NutritionTarget, RecommendedMeal } from '../types'
+import type {
+  Gender,
+  Goal,
+  Meal,
+  MealComboIngredientDisplay,
+  NutrientKey,
+  NutritionStatus,
+  NutritionTarget,
+  RecommendedMeal,
+} from '../types'
 
 export function sumMeals(meals: Meal[]) {
   return meals.reduce(
@@ -158,7 +167,12 @@ function priorityBias(profile: RecommendationProfile): Partial<Record<Exclude<Nu
   return { protein: -PRIORITY_BIAS, fat: PRIORITY_BIAS }
 }
 
-function buildRecommendedMeal(combo: MealComboDef, resolved: ResolvedMealCombo, deficiencyPercent: number): RecommendedMeal {
+function buildRecommendedMeal(
+  combo: MealComboDef,
+  resolved: ResolvedMealCombo,
+  deficiencyPercent: number,
+  alternatives: MealComboIngredientDisplay[],
+): RecommendedMeal {
   return {
     id: combo.id,
     title: combo.title,
@@ -167,8 +181,12 @@ function buildRecommendedMeal(combo: MealComboDef, resolved: ResolvedMealCombo, 
     nutrients: resolved.nutrients,
     primaryNutrient: combo.primaryNutrient,
     deficiencyPercent,
+    alternatives,
   }
 }
+
+// 대체 재료는 한눈에 훑어볼 정도로만 보여준다(너무 많으면 "오늘 보충하면 좋은 재료" 카드가 길어진다).
+const ALTERNATIVE_LIMIT = 6
 
 /**
  * 가장 부족한(달성률이 낮은) 영양소를 기준으로 "다음 식사" 조합을 추천하는 규칙 기반 로직.
@@ -199,28 +217,41 @@ export function getRecommendedMeals(
     const pool = INGREDIENT_MEAL_COMBOS.filter((c) => c.primaryNutrient === nutrient)
     const ranked = rankCombos(pool, profile.goal, daySeed + macros.indexOf(nutrient), eatenTodayNames)
     const percent = getPercentage(consumed[nutrient], target[nutrient])
-    return { ranked, percent, cursor: 0 }
+    return { nutrient, ranked, percent, cursor: 0 }
   })
 
   // 부족한 영양소가 여러 개면 한 영양소에서 자리를 다 채우지 않고, 한 바퀴 돌며 영양소마다
   // 한 자리씩 먼저 채운다(라운드로빈) — 그래야 "단백질만 3개" 대신 부족한 영양소가 고르게 보인다.
   // 자리가 남으면(부족한 영양소가 적을 때) 다음 순위 재료로 마저 채운다.
-  const result: RecommendedMeal[] = []
+  const chosen: { combo: MealComboDef; resolved: ResolvedMealCombo; nutrient: Exclude<NutrientKey, 'calories'>; percent: number }[] = []
   let addedInPass = true
-  while (result.length < MAX_RECOMMENDATIONS && addedInPass) {
+  while (chosen.length < MAX_RECOMMENDATIONS && addedInPass) {
     addedInPass = false
     for (const candidate of candidatesByNutrient) {
-      if (result.length >= MAX_RECOMMENDATIONS) break
+      if (chosen.length >= MAX_RECOMMENDATIONS) break
       while (candidate.cursor < candidate.ranked.length) {
         const { combo, resolved } = candidate.ranked[candidate.cursor]
         candidate.cursor += 1
-        if (result.some((r) => r.id === combo.id)) continue
-        result.push(buildRecommendedMeal(combo, resolved, candidate.percent))
+        if (chosen.some((c) => c.combo.id === combo.id)) continue
+        chosen.push({ combo, resolved, nutrient: candidate.nutrient, percent: candidate.percent })
         addedInPass = true
         break
       }
     }
   }
+
+  // 추천한 재료가 집에 없을 때를 위해, 같은 영양소를 채우는 다른 재료도 몇 개 같이 들려보낸다.
+  // 이미 카드로 나온 재료는 대체 목록에서 또 안 보이게 뺀다.
+  const chosenIds = new Set(chosen.map((c) => c.combo.id))
+  const result = chosen.map((c) => {
+    const candidate = candidatesByNutrient.find((cand) => cand.nutrient === c.nutrient)
+    const alternatives = (candidate?.ranked ?? [])
+      .filter((entry) => !chosenIds.has(entry.combo.id))
+      .slice(0, ALTERNATIVE_LIMIT)
+      .map((entry) => entry.resolved.ingredients[0])
+      .filter((ingredient): ingredient is MealComboIngredientDisplay => ingredient !== undefined)
+    return buildRecommendedMeal(c.combo, c.resolved, c.percent, alternatives)
+  })
 
   return result.slice(0, MAX_RECOMMENDATIONS)
 }

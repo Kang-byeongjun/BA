@@ -1,4 +1,4 @@
-import { Loader2, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, Loader2, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { requestCoachMessage } from '../../services/coachService'
 import { GOAL_LABELS, NUTRIENT_LABELS, NUTRIENT_UNITS, type Goal, type NutrientKey, type RecommendedMeal } from '../../types'
@@ -88,6 +88,30 @@ function MealCoach({ meal, goal }: { meal: RecommendedMeal; goal: Goal }) {
   )
 }
 
+// 추천 재료가 집에 없을 때 쓸 대체 재료 목록 — 기본은 접혀 있고, 눌러야 펼쳐진다.
+function AlternativesToggle({ meal }: { meal: RecommendedMeal }) {
+  const [open, setOpen] = useState(false)
+  if (meal.alternatives.length === 0) return null
+
+  return (
+    <div className="mt-2">
+      <button onClick={() => setOpen((v) => !v)} className="flex items-center gap-1 text-xs font-medium text-slate-500">
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        {meal.title}이 집에 없다면? 다른 재료 보기
+      </button>
+      {open && (
+        <ul className="mt-1.5 flex flex-wrap gap-1.5">
+          {meal.alternatives.map((alt) => (
+            <li key={alt.name} className="rounded-full bg-white px-2.5 py-1 text-[11px] text-slate-600 ring-1 ring-slate-200">
+              {alt.name} <span className="text-slate-400">{alt.amount}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 export default function RecommendationCard({ meals, goal }: Props) {
   const title = '오늘 보충하면 좋은 재료'
 
@@ -133,6 +157,7 @@ export default function RecommendationCard({ meals, goal }: Props) {
                             : meal.ingredients.map((i) => `${i.name} ${i.amount}`).join(' · ')}
                         </p>
                         <MealCoach meal={meal} goal={goal} />
+                        <AlternativesToggle meal={meal} />
                       </div>
                     </div>
                   </div>
