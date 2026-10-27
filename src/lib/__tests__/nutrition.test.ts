@@ -73,9 +73,9 @@ describe('resolveMealCombo', () => {
     // 닭가슴살 120g(37.2) + 현미밥 150g(4.8) + 브로콜리 80g(2.24) = 44.24 → 44
     expect(resolved.nutrients.protein).toBe(44)
     expect(resolved.ingredients).toEqual([
-      { name: '닭가슴살', amount: '120g' },
-      { name: '현미밥', amount: '150g' },
-      { name: '브로콜리', amount: '80g' },
+      { name: '닭가슴살', amount: '120g (약 1조각)' },
+      { name: '현미밥', amount: '150g (약 0.5공기)' },
+      { name: '브로콜리', amount: '80g (약 0.5송이)' },
     ])
   })
 })

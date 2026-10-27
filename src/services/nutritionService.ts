@@ -174,11 +174,24 @@ export interface ResolvedMealCombo {
   nutrients: NutrientTotals
 }
 
+/**
+ * 그램 수만으로는 양을 가늠하기 어려우니 "150g(약 1개)"처럼 자연스러운 단위를 덧붙인다.
+ * 0.5 단위로 반올림하고(예: 1.5잔), servingUnit이 없는 재료는 그램만 보여준다.
+ */
+function formatServingAmount(entry: FoodDbEntry, grams: number): string {
+  if (!entry.servingUnit) return `${grams}g`
+  const { label, grams: unitGrams } = entry.servingUnit
+  const count = Math.round((grams / unitGrams) * 2) / 2
+  if (count <= 0) return `${grams}g`
+  const countLabel = Number.isInteger(count) ? `${count}` : count.toFixed(1)
+  return `${grams}g (약 ${countLabel}${label})`
+}
+
 /** 추천 식사 조합(mealCombos.ts)의 재료 id+중량을 실제 영양 수치로 계산한다. */
 export function resolveMealCombo(combo: MealComboDef): ResolvedMealCombo {
   const resolved = combo.ingredients.map((ing) => {
     const entry = getFoodById(ing.foodId)
-    return { name: entry.name, amount: `${ing.grams}g`, nutrients: calculateNutrients(entry, ing.grams) }
+    return { name: entry.name, amount: formatServingAmount(entry, ing.grams), nutrients: calculateNutrients(entry, ing.grams) }
   })
   return {
     ingredients: resolved.map((r) => ({ name: r.name, amount: r.amount })),
