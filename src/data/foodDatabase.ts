@@ -52,7 +52,7 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   { id: 'soy-milk', name: '두유', category: '재료', caloriesPer100g: 54, proteinPer100g: 3.3, carbsPer100g: 5, fatPer100g: 2, fiberPer100g: 0.6, servingUnit: { label: '팩', grams: 190 } },
   { id: 'bread', name: '식빵', category: '재료', caloriesPer100g: 265, proteinPer100g: 9, carbsPer100g: 49, fatPer100g: 3.2, fiberPer100g: 2.7, servingUnit: { label: '장', grams: 35 } },
   { id: 'shrimp', name: '새우', category: '재료', caloriesPer100g: 99, proteinPer100g: 24, carbsPer100g: 0.2, fatPer100g: 0.3, fiberPer100g: 0, servingUnit: { label: '마리', grams: 15 } },
-  { id: 'tuna-can', name: '참치캔', category: '재료', caloriesPer100g: 132, proteinPer100g: 28, carbsPer100g: 0, fatPer100g: 1, fiberPer100g: 0, servingUnit: { label: '캔', grams: 100 } },
+  { id: 'tuna-can', name: '참치캔', category: '재료', caloriesPer100g: 203, proteinPer100g: 19.3, carbsPer100g: 0, fatPer100g: 14, fiberPer100g: 0, servingUnit: { label: '캔', grams: 150 } },
   { id: 'mixed-nuts', name: '견과류믹스', category: '재료', caloriesPer100g: 600, proteinPer100g: 20, carbsPer100g: 20, fatPer100g: 50, fiberPer100g: 8, servingUnit: { label: '줌', grams: 28 } },
   { id: 'pork-tenderloin', name: '돼지고기 안심', category: '재료', caloriesPer100g: 143, proteinPer100g: 21, carbsPer100g: 0, fatPer100g: 6, fiberPer100g: 0, servingUnit: { label: '인분', grams: 150 } },
   { id: 'duck-smoked', name: '훈제오리', category: '재료', caloriesPer100g: 250, proteinPer100g: 18, carbsPer100g: 1, fatPer100g: 19, fiberPer100g: 0, servingUnit: { label: '인분', grams: 100 } },
