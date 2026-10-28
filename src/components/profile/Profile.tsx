@@ -59,7 +59,8 @@ export default function Profile() {
 
   const bmi = calculateBmi(profile.height, profile.weight)
 
-  if (scanOpen) {
+  // 결과지 OCR은 일반 사용자에게는 노출하지 않고, 데모(개발자 확인용) 모드에서만 접근 가능하게 둔다.
+  if (scanOpen && isDemo) {
     return (
       <InBodyScanFlow
         mode={resolveAnalysisMode(isDemo, aiMode)}
@@ -173,10 +174,12 @@ export default function Profile() {
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-800">InBody 정보</p>
-          <button onClick={() => setScanOpen(true)} className="flex items-center gap-1 text-xs font-medium text-emerald-600">
-            <Sparkles size={14} />
-            결과지 사진으로 업데이트
-          </button>
+          {isDemo && (
+            <button onClick={() => setScanOpen(true)} className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+              <Sparkles size={14} />
+              결과지 사진으로 업데이트 (개발자용)
+            </button>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
@@ -222,7 +225,7 @@ export default function Profile() {
         </div>
         {profile.skeletalMuscleMass === null && (
           <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
-            아직 InBody 결과가 없어요. 결과지 사진을 올리면 체성분 항목이 채워지고 기초대사량도 더 정확해져요.
+            아직 InBody 결과가 없어요. InBody를 측정하면 체성분 항목이 채워지고 기초대사량도 더 정확해져요.
           </p>
         )}
       </div>
