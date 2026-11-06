@@ -120,7 +120,10 @@ function shuffleWithSeed<T>(items: T[], seed: number): T[] {
   return result
 }
 
-const MAX_RECOMMENDATIONS = 3
+// 영양소 섹션은 최대 이만큼만 보여준다(결핍 영양소가 많아도 카드가 끝없이 길어지지 않게).
+const MAX_NUTRIENT_SECTIONS = 3
+// 섹션 하나당 카드로 보여줄 재료 수(기본 추천 + 대체재 2개를 같은 무게로 보여준다).
+const ITEMS_PER_NUTRIENT = 3
 
 interface RankedCombo {
   combo: MealComboDef
@@ -216,13 +219,14 @@ function buildRecommendedMeal(
   }
 }
 
-// 대체 재료는 한눈에 훑어볼 정도로만 보여준다(너무 많으면 "오늘 보충하면 좋은 재료" 카드가 길어진다).
+// "다른 재료 보기"로 더 보여줄 대체 재료는 한눈에 훑어볼 정도로만(너무 많으면 카드가 길어진다).
 const ALTERNATIVE_LIMIT = 6
 
 /**
  * 가장 부족한(달성률이 낮은) 영양소를 기준으로 "다음 식사" 조합을 추천하는 규칙 기반 로직.
  * 결정(무엇을 추천할지)은 전부 여기서 계산한다 — AI는 이 결과를 설명하는 코칭 문구만 덧붙인다
- * (src/services/coachService.ts).
+ * (src/services/coachService.ts). 영양소 섹션마다 카드 ITEMS_PER_NUTRIENT개를 보여주고, 그
+ * 다음 순위 재료들은 "다른 재료 보기"에서 이름만 나오는 대체 목록으로 들려보낸다.
  */
 export function getRecommendedMeals(
   consumed: Record<NutrientKey, number>,
@@ -238,51 +242,29 @@ export function getRecommendedMeals(
     .filter((m) => m.percent < 100)
     .sort((a, b) => a.percent - b.percent)
 
-  const priorityNutrients = deficiency.length > 0 ? deficiency.map((d) => d.nutrient) : macros
+  const priorityNutrients = (deficiency.length > 0 ? deficiency.map((d) => d.nutrient) : macros).slice(0, MAX_NUTRIENT_SECTIONS)
   const eatenTodayNames = new Set(eatenTodayFoodNames)
   const daySeed = Math.floor(Date.now() / 86400000)
 
   // 완성된 한 끼 조합은 못 먹는 음식이거나 만들기 번거로울 수 있어 추천하지 않는다 —
   // 지금 먹는 식단에 더하기만 하면 되는 재료 단위 풀에서만 추천한다.
-  const candidatesByNutrient = priorityNutrients.map((nutrient) => {
+  const result: RecommendedMeal[] = []
+  for (const nutrient of priorityNutrients) {
     const pool = INGREDIENT_MEAL_COMBOS.filter((c) => c.primaryNutrient === nutrient)
     const ranked = rankCombos(pool, profile.goal, daySeed + macros.indexOf(nutrient), eatenTodayNames)
     const percent = getPercentage(consumed[nutrient], target[nutrient])
-    return { nutrient, ranked, percent, cursor: 0 }
-  })
 
-  // 부족한 영양소가 여러 개면 한 영양소에서 자리를 다 채우지 않고, 한 바퀴 돌며 영양소마다
-  // 한 자리씩 먼저 채운다(라운드로빈) — 그래야 "단백질만 3개" 대신 부족한 영양소가 고르게 보인다.
-  // 자리가 남으면(부족한 영양소가 적을 때) 다음 순위 재료로 마저 채운다.
-  const chosen: { combo: MealComboDef; resolved: ResolvedMealCombo; nutrient: Exclude<NutrientKey, 'calories'>; percent: number }[] = []
-  let addedInPass = true
-  while (chosen.length < MAX_RECOMMENDATIONS && addedInPass) {
-    addedInPass = false
-    for (const candidate of candidatesByNutrient) {
-      if (chosen.length >= MAX_RECOMMENDATIONS) break
-      while (candidate.cursor < candidate.ranked.length) {
-        const { combo, resolved } = candidate.ranked[candidate.cursor]
-        candidate.cursor += 1
-        if (chosen.some((c) => c.combo.id === combo.id)) continue
-        chosen.push({ combo, resolved, nutrient: candidate.nutrient, percent: candidate.percent })
-        addedInPass = true
-        break
-      }
+    const top = ranked.slice(0, ITEMS_PER_NUTRIENT)
+    // 카드로 이미 보여준 재료 다음 순위부터 "다른 재료 보기" 목록으로 들려보낸다.
+    const alternatives = ranked
+      .slice(ITEMS_PER_NUTRIENT, ITEMS_PER_NUTRIENT + ALTERNATIVE_LIMIT)
+      .map((entry) => entry.resolved.ingredients[0])
+      .filter((ingredient): ingredient is MealComboIngredientDisplay => ingredient !== undefined)
+
+    for (const { combo, resolved } of top) {
+      result.push(buildRecommendedMeal(combo, resolved, percent, alternatives))
     }
   }
 
-  // 추천한 재료가 집에 없을 때를 위해, 같은 영양소를 채우는 다른 재료도 몇 개 같이 들려보낸다.
-  // 이미 카드로 나온 재료는 대체 목록에서 또 안 보이게 뺀다.
-  const chosenIds = new Set(chosen.map((c) => c.combo.id))
-  const result = chosen.map((c) => {
-    const candidate = candidatesByNutrient.find((cand) => cand.nutrient === c.nutrient)
-    const alternatives = (candidate?.ranked ?? [])
-      .filter((entry) => !chosenIds.has(entry.combo.id))
-      .slice(0, ALTERNATIVE_LIMIT)
-      .map((entry) => entry.resolved.ingredients[0])
-      .filter((ingredient): ingredient is MealComboIngredientDisplay => ingredient !== undefined)
-    return buildRecommendedMeal(c.combo, c.resolved, c.percent, alternatives)
-  })
-
-  return result.slice(0, MAX_RECOMMENDATIONS)
+  return result
 }

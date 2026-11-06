@@ -81,12 +81,21 @@ describe('resolveMealCombo', () => {
 })
 
 describe('getRecommendedMeals', () => {
-  it('가장 부족한 영양소를 기준으로 추천하고, 최대 3개를 반환한다', () => {
+  it('가장 부족한 영양소를 기준으로 추천하고, 영양소 섹션당 최대 3개씩 최대 9개를 반환한다', () => {
     const consumed = { calories: 500, protein: 10, carbohydrates: 200, fat: 60, fiber: 25 }
     const result = getRecommendedMeals(consumed, target, healthCareProfile, [])
     expect(result.length).toBeGreaterThan(0)
-    expect(result.length).toBeLessThanOrEqual(3)
+    expect(result.length).toBeLessThanOrEqual(9)
     expect(result[0].primaryNutrient).toBe('protein')
+  })
+
+  it('영양소 하나만 부족하면 그 영양소에서 재료 3개를 추천한다(대체 재료 2개 포함)', () => {
+    // 단백질만 부족 → 단백질 풀에서만 3개를 뽑고, 서로 다른 재료여야 한다.
+    const consumed = { calories: 500, protein: 10, carbohydrates: 250, fat: 70, fiber: 30 }
+    const result = getRecommendedMeals(consumed, target, healthCareProfile, [])
+    expect(result).toHaveLength(3)
+    expect(result.every((r) => r.primaryNutrient === 'protein')).toBe(true)
+    expect(new Set(result.map((r) => r.id)).size).toBe(3)
   })
 
   it('모든 영양소를 채웠으면 네 매크로 전체에서 추천한다', () => {
@@ -95,9 +104,8 @@ describe('getRecommendedMeals', () => {
     expect(result.length).toBeGreaterThan(0)
   })
 
-  it('부족한 영양소가 여러 개면 한 영양소로 자리를 다 채우지 않고 라운드로빈으로 고르게 섞는다', () => {
-    // 탄수화물(38%)·식이섬유(32%) 둘 다 부족한 상황 — 식이섬유 쪽 재료 풀이 3개 이상 있어도
-    // 식이섬유만 3개 채우지 않고 탄수화물도 최소 1개는 포함돼야 한다.
+  it('부족한 영양소가 여러 개면 영양소마다 각자의 섹션(최대 3개)을 받는다', () => {
+    // 탄수화물(38%)·식이섬유(32%) 둘 다 부족한 상황 — 두 영양소 모두 자기 몫의 섹션을 받아야 한다.
     const consumed = { calories: 1686, protein: 109, carbohydrates: 139, fat: 73, fiber: 12 }
     const biggerTarget: NutritionTarget = { calories: 2720, protein: 148, carbohydrates: 362, fat: 75, fiber: 38 }
     const result = getRecommendedMeals(consumed, biggerTarget, healthCareProfile, [])
