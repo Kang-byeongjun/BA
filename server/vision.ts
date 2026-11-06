@@ -1,54 +1,29 @@
-import Anthropic from '@anthropic-ai/sdk'
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod'
 import type { ZodType } from 'zod'
 import { AnalysisError } from '../shared/errors.js'
-import type { AnalysisErrorCode, AnalysisKind } from '../shared/errors.js'
-import {
-  MAX_OUTPUT_TOKENS,
-  MAX_RETRIES,
-  REQUEST_TIMEOUT_MS,
-  resolveEffort,
-  resolveModel,
-  type Env,
-} from './config.js'
+import type { AnalysisKind } from '../shared/errors.js'
+import { createAiClient, describeCause as describeAiCause, type AiClient } from './aiClient.js'
+import { MAX_OUTPUT_TOKENS, type Env } from './config.js'
 import type { ValidatedImage } from './image.js'
 
-// 테스트에서 가짜 클라이언트를 주입할 수 있도록 messages API만 요구한다.
-export type VisionClient = Pick<Anthropic, 'messages'>
+/**
+ * vision.ts — handlers.ts/coach.ts/nutritionEstimate.ts가 쓰는 얇은 호환 레이어.
+ * 실제 Claude/OpenAI 전환 로직은 aiClient.ts에 있다 — 이 파일은 "이미지 분석"이라는
+ * 기존 이름(VisionClient 등)을 그대로 유지해서 호출하는 쪽 코드를 바꾸지 않아도 되게 한다.
+ */
+export type VisionClient = AiClient
 
-/** API Key는 서버 환경변수에서만 읽는다. 브라우저 번들에는 절대 포함되지 않는다. */
-export function createVisionClient(env: Env, kind: AnalysisKind): Anthropic {
-  const apiKey = env.ANTHROPIC_API_KEY?.trim()
-  if (!apiKey) throw new AnalysisError('MISSING_API_KEY', kind)
-  return new Anthropic({ apiKey, timeout: REQUEST_TIMEOUT_MS, maxRetries: MAX_RETRIES })
+export function createVisionClient(env: Env, kind: AnalysisKind): VisionClient {
+  return createAiClient(env, kind)
 }
 
-/** Anthropic SDK 에러를 사용자에게 보여줄 수 있는 AnalysisError로 변환한다. */
+// aiClient.ts의 각 어댑터가 SDK 에러를 이미 AnalysisError로 변환해서 던지므로, 여기 도착하는
+// 시점엔 대부분 이미 AnalysisError다. 혹시 모를 예상 밖의 에러만 INTERNAL로 감싼다.
 export function mapVisionError(err: unknown, kind: AnalysisKind): AnalysisError {
   if (err instanceof AnalysisError) return err
-  const wrap = (code: AnalysisErrorCode) => new AnalysisError(code, kind, undefined, err)
-  // 타임아웃은 연결 에러의 하위 클래스이므로 먼저 검사한다.
-  if (err instanceof Anthropic.APIConnectionTimeoutError) return wrap('TIMEOUT')
-  if (err instanceof Anthropic.APIConnectionError) return wrap('UPSTREAM_ERROR')
-  if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
-    return wrap('AUTH_FAILED')
-  }
-  if (err instanceof Anthropic.NotFoundError) return wrap('MODEL_UNAVAILABLE')
-  if (err instanceof Anthropic.RateLimitError) return wrap('RATE_LIMITED')
-  if (err instanceof Anthropic.BadRequestError) return wrap(kind === 'coach' || kind === 'nutrition' ? 'INVALID_REQUEST' : 'INVALID_IMAGE')
-  if (err instanceof Anthropic.APIError) return wrap('UPSTREAM_ERROR')
-  if (err instanceof Anthropic.AnthropicError) return wrap('PARSE_FAILED')
-  if (err instanceof SyntaxError || (err instanceof Error && err.name === 'ZodError')) return wrap('PARSE_FAILED')
-  return wrap('INTERNAL')
+  return new AnalysisError('INTERNAL', kind, undefined, err)
 }
 
-/** 로그용 원인 요약. 요청 내용(이미지 등)이나 API Key는 포함하지 않는다. */
-export function describeCause(error: unknown): string {
-  const err = error instanceof AnalysisError && error.cause !== undefined ? error.cause : error
-  if (err instanceof Anthropic.APIError) return `${err.name} ${err.status ?? ''} ${err.message.slice(0, 160)}`.trim()
-  if (err instanceof Error) return err.name
-  return typeof err
-}
+export const describeCause = describeAiCause
 
 interface ExtractArgs<T> {
   client: VisionClient
@@ -60,36 +35,7 @@ interface ExtractArgs<T> {
   image: ValidatedImage
 }
 
-/**
- * 이미지 1장 + 프롬프트를 Claude에 보내고, 스키마에 맞는 구조화 JSON을 받아온다.
- * 스키마에 맞지 않거나 거절/잘림이 발생하면 에러를 던진다(임의의 기본값으로 대체하지 않는다).
- */
-export async function extractStructured<T>({ client, env, kind, schema, system, prompt, image }: ExtractArgs<T>): Promise<T> {
-  const model = resolveModel(env)
-  const effort = resolveEffort(env, model)
-
-  try {
-    const response = await client.messages.parse({
-      model,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      system,
-      output_config: { format: zodOutputFormat(schema), ...(effort ? { effort } : {}) },
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: image.mediaType, data: image.base64 } },
-            { type: 'text', text: prompt },
-          ],
-        },
-      ],
-    })
-
-    if (response.stop_reason === 'refusal') throw new AnalysisError('REFUSED', kind)
-    if (response.stop_reason === 'max_tokens') throw new AnalysisError('PARSE_FAILED', kind)
-    if (!response.parsed_output) throw new AnalysisError('PARSE_FAILED', kind)
-    return response.parsed_output
-  } catch (err) {
-    throw mapVisionError(err, kind)
-  }
+/** 이미지 1장 + 프롬프트를 보내고, 스키마에 맞는 구조화 JSON을 받아온다. */
+export async function extractStructured<T>({ client, schema, system, prompt, image }: ExtractArgs<T>): Promise<T> {
+  return client.parseStructured({ schema, system, prompt, image, maxTokens: MAX_OUTPUT_TOKENS })
 }

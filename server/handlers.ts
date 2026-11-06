@@ -113,7 +113,7 @@ export async function handleCoachMeal(rawBody: unknown, deps: HandlerDeps = {}):
   try {
     const client = deps.client ?? createVisionClient(env, 'coach')
     const input = parseCoachRequestBody(rawBody)
-    const data = await generateCoachMessage(client, env, input)
+    const data = await generateCoachMessage(client, input)
     return { status: 200, body: { ok: true, data } }
   } catch (err) {
     const error = mapVisionError(err, 'coach')
@@ -147,7 +147,7 @@ export async function handleNutritionEstimate(rawBody: unknown, deps: HandlerDep
   try {
     const client = deps.client ?? createVisionClient(env, 'nutrition')
     const input = parseNutritionEstimateRequestBody(rawBody)
-    const raw = await generateNutritionEstimate(client, env, input)
+    const raw = await generateNutritionEstimate(client, input)
     return { status: 200, body: { ok: true, data: normalizeNutritionEstimate(raw) } }
   } catch (err) {
     const error = mapVisionError(err, 'nutrition')
