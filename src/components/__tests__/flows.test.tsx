@@ -123,6 +123,67 @@ describe('음식 사진 흐름 (Test B)', () => {
     expect(JSON.stringify(stored)).not.toContain('PREVIEW')
   })
 
+  it('AI가 자신 없어한 양을 그대로 저장하려 하면 확인 모달이 뜨고, 그램을 고치면 뜨지 않는다', async () => {
+    const lowConfidenceFood: FoodExtraction = {
+      ...food,
+      foods: [
+        { name: '닭가슴살', estimatedGrams: 120, cookingMethod: 'grilled', confidence: 0.91 },
+        { name: '현미밥', estimatedGrams: 180, cookingMethod: null, confidence: 0.45 },
+      ],
+    }
+    fetchMock.mockResolvedValue(ok(lowConfidenceFood))
+    const onDone = vi.fn()
+    render(
+      <AppProvider>
+        <FoodCaptureFlow onDone={onDone} />
+      </AppProvider>,
+    )
+    uploadPhoto()
+    expect(await screen.findByText('AI 음식 분석', undefined, wait)).toBeTruthy()
+
+    // 손대지 않은 채로 저장하면 모달이 뜨고 아직 저장되지 않는다
+    fireEvent.click(screen.getByText('식사 기록하기'))
+    expect(screen.getByText('양을 확인해주세요')).toBeTruthy()
+    expect(screen.getByText('현미밥 · 180g')).toBeTruthy()
+    expect(onDone).not.toHaveBeenCalled()
+
+    // "다시 확인할게요"는 모달만 닫고 저장하지 않는다
+    fireEvent.click(screen.getByText('다시 확인할게요'))
+    expect(screen.queryByText('양을 확인해주세요')).toBeNull()
+    expect(onDone).not.toHaveBeenCalled()
+
+    // 그램 수를 직접 고치면(=검증했다고 간주) 다시 저장할 때 모달이 뜨지 않는다
+    fireEvent.click(screen.getAllByLabelText('10g 늘리기')[1])
+    fireEvent.click(screen.getByText('식사 기록하기'))
+    expect(screen.queryByText('양을 확인해주세요')).toBeNull()
+    expect(onDone).toHaveBeenCalledTimes(1)
+  })
+
+  it('"그대로 저장"을 누르면 모달이 닫히고 입력된 양 그대로 저장된다', async () => {
+    const lowConfidenceFood: FoodExtraction = {
+      ...food,
+      foods: [{ name: '현미밥', estimatedGrams: 180, cookingMethod: null, confidence: 0.45 }],
+    }
+    fetchMock.mockResolvedValue(ok(lowConfidenceFood))
+    const onDone = vi.fn()
+    render(
+      <AppProvider>
+        <FoodCaptureFlow onDone={onDone} />
+      </AppProvider>,
+    )
+    uploadPhoto()
+    expect(await screen.findByText('AI 음식 분석', undefined, wait)).toBeTruthy()
+
+    fireEvent.click(screen.getByText('식사 기록하기'))
+    expect(screen.getByText('양을 확인해주세요')).toBeTruthy()
+
+    fireEvent.click(screen.getByText('그대로 저장'))
+    expect(screen.queryByText('양을 확인해주세요')).toBeNull()
+    expect(onDone).toHaveBeenCalledTimes(1)
+    const meal = onDone.mock.calls[0][0]
+    expect(meal.foods.map((f: { name: string; amount: string }) => `${f.name} ${f.amount}`)).toEqual(['현미밥 180g'])
+  })
+
   it('영양 정보를 찾지 못한 음식이 있으면 저장할 수 없고, 삭제하면 저장할 수 있다', async () => {
     fetchMock.mockResolvedValue(
       ok({ ...food, foods: [...food.foods, { name: '정체불명 특별 메뉴', estimatedGrams: 100, cookingMethod: null, confidence: 0.3 }] }),

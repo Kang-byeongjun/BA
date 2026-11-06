@@ -7,6 +7,7 @@ import { inferMealSlot } from '../../lib/time'
 import {
   createEmptyRow,
   createRowsFromExtraction,
+  hasUnverifiedLowConfidence,
   isActiveRow,
   LOW_CONFIDENCE,
   rowNutrients,
@@ -72,6 +73,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
   // DB·검색으로 못 찾은 음식에 "AI로 추정하기"를 눌렀을 때의 진행/실패 상태. 여러 행에서 동시에 쓸 수 있다.
   const [estimatingKeys, setEstimatingKeys] = useState<Set<string>>(new Set())
   const [estimateErrors, setEstimateErrors] = useState<Record<string, string>>({})
+  const [showPortionConfirm, setShowPortionConfirm] = useState(false)
   const nameInputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
   const pendingFocusKey = useRef<string | null>(null)
 
@@ -188,6 +190,15 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
   }
 
   const lowOverall = extraction.overallConfidence < LOW_CONFIDENCE
+  // AI가 자신 없어한 그램 수를 사용자가 한 번도 손대지 않은 행 — 저장 전에 한 번 더 확인시킨다.
+  const unverifiedRows = rows.filter(isActiveRow).filter(hasUnverifiedLowConfidence)
+  const handleSaveClick = () => {
+    if (unverifiedRows.length > 0) {
+      setShowPortionConfirm(true)
+      return
+    }
+    onConfirm({ title, slot, rows })
+  }
   const blockedReason = !canSave
     ? summary.activeCount === 0
       ? '기록할 음식을 추가해주세요.'
@@ -526,13 +537,52 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
       <div className="border-t border-slate-100 bg-white p-4">
         {blockedReason && <p className="mb-2 text-center text-xs text-amber-700">{blockedReason}</p>}
         <button
-          onClick={() => onConfirm({ title, slot, rows })}
+          onClick={handleSaveClick}
           disabled={!canSave}
           className="w-full rounded-full bg-emerald-500 py-4 font-semibold text-white shadow-lg shadow-emerald-200 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
         >
           식사 기록하기
         </button>
       </div>
+
+      {showPortionConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={() => setShowPortionConfirm(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center gap-2 text-amber-700">
+              <AlertTriangle size={20} />
+              <p className="text-base font-bold">양을 확인해주세요</p>
+            </div>
+            <p className="mb-3 text-sm text-slate-600">
+              AI가 자신 없어한 양을 그대로 저장하려고 해요. 사진만으로는 양을 가늠하기 어려울 수 있으니, 아래 음식의 그램 수를
+              한 번 더 확인해주세요.
+            </p>
+            <ul className="mb-4 space-y-1">
+              {unverifiedRows.map((row) => (
+                <li key={row.key} className="rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800">
+                  {row.name || '(이름 없음)'} · {row.grams}g
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowPortionConfirm(false)}
+                className="flex-1 rounded-full border-2 border-slate-200 py-3 text-sm font-semibold text-slate-600"
+              >
+                다시 확인할게요
+              </button>
+              <button
+                onClick={() => {
+                  setShowPortionConfirm(false)
+                  onConfirm({ title, slot, rows })
+                }}
+                className="flex-1 rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white"
+              >
+                그대로 저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
