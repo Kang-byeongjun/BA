@@ -54,6 +54,7 @@ export default function Profile() {
   const [scanOpen, setScanOpen] = useState(false)
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [inBodyDraft, setInBodyDraft] = useState<Record<string, string> | null>(null)
 
   if (!profile || !nutritionTarget) return null
 
@@ -93,6 +94,41 @@ export default function Profile() {
       />
     )
   }
+
+  const allInBodyRows = [...REQUIRED_INBODY_ROWS, ...OPTIONAL_INBODY_ROWS]
+
+  const openInBodyEdit = () => {
+    const draft: Record<string, string> = {}
+    for (const row of allInBodyRows) {
+      const value = profile[row.key]
+      draft[row.key] = value === null ? '' : String(value)
+    }
+    setInBodyDraft(draft)
+  }
+
+  const saveInBodyEdit = () => {
+    if (!inBodyDraft) return
+    const measurements: InBodyMeasurements = {
+      weight: Number(inBodyDraft.weight),
+      age: Number(inBodyDraft.age),
+      height: Number(inBodyDraft.height),
+      skeletalMuscleMass: inBodyDraft.skeletalMuscleMass.trim() === '' ? null : Number(inBodyDraft.skeletalMuscleMass),
+      bodyFatMass: inBodyDraft.bodyFatMass.trim() === '' ? null : Number(inBodyDraft.bodyFatMass),
+      bodyFatPercentage: inBodyDraft.bodyFatPercentage.trim() === '' ? null : Number(inBodyDraft.bodyFatPercentage),
+      bodyWater: inBodyDraft.bodyWater.trim() === '' ? null : Number(inBodyDraft.bodyWater),
+      proteinMass: inBodyDraft.proteinMass.trim() === '' ? null : Number(inBodyDraft.proteinMass),
+      mineralMass: inBodyDraft.mineralMass.trim() === '' ? null : Number(inBodyDraft.mineralMass),
+      basalMetabolicRate: inBodyDraft.basalMetabolicRate.trim() === '' ? null : Number(inBodyDraft.basalMetabolicRate),
+    }
+    dispatch({ type: 'UPDATE_INBODY', measurements, source: 'manual' })
+    setDraftTarget(null)
+    setNotice('InBody 정보가 바뀌어 영양 목표를 다시 계산했어요. 필요하면 아래에서 직접 수정할 수 있어요.')
+    setInBodyDraft(null)
+  }
+
+  const inBodyEditValid =
+    inBodyDraft !== null &&
+    REQUIRED_INBODY_ROWS.every((row) => inBodyDraft[row.key].trim() !== '' && Number(inBodyDraft[row.key]) > 0)
 
   const handleGoalChange = (goal: Goal) => {
     if (goal === profile.goal) return
@@ -174,59 +210,106 @@ export default function Profile() {
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-800">InBody 정보</p>
-          {isDemo && (
-            <button onClick={() => setScanOpen(true)} className="flex items-center gap-1 text-xs font-medium text-emerald-600">
-              <Sparkles size={14} />
-              결과지 사진으로 업데이트 (개발자용)
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {isDemo && (
+              <button onClick={() => setScanOpen(true)} className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+                <Sparkles size={14} />
+                결과지 사진으로 업데이트 (개발자용)
+              </button>
+            )}
+            {inBodyDraft === null && (
+              <button onClick={openInBodyEdit} className="text-xs font-medium text-emerald-600">
+                수정
+              </button>
+            )}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-            <span className="text-xs text-slate-500">성별</span>
-            <span className="text-sm font-semibold text-slate-800">{profile.gender === 'male' ? '남성' : '여성'}</span>
-          </div>
-          {REQUIRED_INBODY_ROWS.map((row) => (
-            <div key={row.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-xs text-slate-500">{row.label}</span>
-              <span className="text-sm font-semibold text-slate-800">
-                {profile[row.key]}
-                {row.unit}
-              </span>
-            </div>
-          ))}
-          <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-            <span className="text-xs text-slate-500">BMI</span>
-            <span className="text-sm font-semibold text-slate-800">
-              {bmi}
-              <span className="ml-1 text-[11px] font-normal text-slate-400">({BMI_CATEGORY_LABELS[classifyBmi(bmi)]})</span>
-            </span>
-          </div>
-          {OPTIONAL_INBODY_ROWS.map((row) => {
-            const value = profile[row.key]
-            const isEstimated = row.key === 'basalMetabolicRate' && profile.basalMetabolicRateEstimated
-            return (
-              <div key={row.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                <span className="text-xs text-slate-500">{row.label}</span>
+        {inBodyDraft === null ? (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <span className="text-xs text-slate-500">성별</span>
+                <span className="text-sm font-semibold text-slate-800">{profile.gender === 'male' ? '남성' : '여성'}</span>
+              </div>
+              {REQUIRED_INBODY_ROWS.map((row) => (
+                <div key={row.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                  <span className="text-xs text-slate-500">{row.label}</span>
+                  <span className="text-sm font-semibold text-slate-800">
+                    {profile[row.key]}
+                    {row.unit}
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <span className="text-xs text-slate-500">BMI</span>
                 <span className="text-sm font-semibold text-slate-800">
-                  {value === null ? (
-                    <span className="text-xs font-normal text-slate-400">측정 안 함</span>
-                  ) : (
-                    <>
-                      {value}
-                      {row.unit}
-                      {isEstimated && <span className="ml-1 text-[11px] font-normal text-amber-500">(추정)</span>}
-                    </>
-                  )}
+                  {bmi}
+                  <span className="ml-1 text-[11px] font-normal text-slate-400">({BMI_CATEGORY_LABELS[classifyBmi(bmi)]})</span>
                 </span>
               </div>
-            )
-          })}
-        </div>
-        {profile.skeletalMuscleMass === null && (
-          <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
-            아직 InBody 결과가 없어요. InBody를 측정하면 체성분 항목이 채워지고 기초대사량도 더 정확해져요.
-          </p>
+              {OPTIONAL_INBODY_ROWS.map((row) => {
+                const value = profile[row.key]
+                const isEstimated = row.key === 'basalMetabolicRate' && profile.basalMetabolicRateEstimated
+                return (
+                  <div key={row.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                    <span className="text-xs text-slate-500">{row.label}</span>
+                    <span className="text-sm font-semibold text-slate-800">
+                      {value === null ? (
+                        <span className="text-xs font-normal text-slate-400">측정 안 함</span>
+                      ) : (
+                        <>
+                          {value}
+                          {row.unit}
+                          {isEstimated && <span className="ml-1 text-[11px] font-normal text-amber-500">(추정)</span>}
+                        </>
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            {profile.skeletalMuscleMass === null && (
+              <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                아직 InBody 결과가 없어요. InBody를 측정하면 체성분 항목이 채워지고 기초대사량도 더 정확해져요.
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              {allInBodyRows.map((row) => (
+                <div key={row.key}>
+                  <label className="mb-1 block text-xs text-slate-500">{row.label}</label>
+                  <div className="flex items-center rounded-lg border border-slate-200 bg-white px-2">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={inBodyDraft[row.key]}
+                      onChange={(e) => setInBodyDraft({ ...inBodyDraft, [row.key]: e.target.value })}
+                      placeholder={REQUIRED_INBODY_ROWS.some((r) => r.key === row.key) ? '0' : '모르면 비워두세요'}
+                      className="w-full bg-transparent py-2 text-sm text-slate-900 outline-none placeholder:text-xs"
+                    />
+                    <span className="pl-1 text-xs text-slate-400">{row.unit}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => setInBodyDraft(null)}
+                className="w-1/3 rounded-full border-2 border-slate-200 py-2.5 text-sm font-semibold text-slate-500"
+              >
+                취소
+              </button>
+              <button
+                onClick={saveInBodyEdit}
+                disabled={!inBodyEditValid}
+                className="w-2/3 rounded-full bg-emerald-500 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+              >
+                저장
+              </button>
+            </div>
+          </>
         )}
       </div>
 

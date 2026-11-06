@@ -48,7 +48,8 @@ export interface InBodyMeasurements {
 // 측정 시점의 InBody 스냅샷. "이전 측정 대비 변화"를 보여주기 위해 최신 값 위에 쌓아간다(최신이 배열 앞).
 export type InBodySource =
   | 'onboarding' // 온보딩 중 입력(수동 또는 스캔 보조)
-  | 'scan' // 마이 탭 "결과지 사진으로 업데이트"
+  | 'scan' // 마이 탭 "결과지 사진으로 업데이트" (개발자 모드 전용)
+  | 'manual' // 마이 탭에서 직접 수정
   | 'estimated' // InBody 없이 간편 온보딩, 체성분 항목 없음
 
 export interface InBodyHistoryEntry {
@@ -67,6 +68,7 @@ export interface InBodyHistoryEntry {
 export const IN_BODY_SOURCE_LABELS: Record<InBodySource, string> = {
   onboarding: '온보딩 입력',
   scan: '결과지 스캔',
+  manual: '직접 수정',
   estimated: '간편 입력(추정)',
 }
 
