@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, Loader2, Sparkles } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { requestCoachMessage } from '../../services/coachService'
 import {
   GOAL_LABELS,
@@ -46,7 +46,9 @@ function fallbackMessage(meal: RecommendedMeal): string {
   return `오늘 ${label}이 부족해서 추천했어요. ${meal.title}로 채워보세요.`
 }
 
-function MealCoach({ meal, goal }: { meal: RecommendedMeal; goal: Goal }) {
+// autoStart: 가장 부족한 영양소의 1순위 추천 하나만, 사용자가 누르지 않아도 코치 문구를
+// 미리 보여준다(나머지는 기존처럼 눌러야 뜬다 — 카드마다 자동 호출하면 API 요청이 과해진다).
+function MealCoach({ meal, goal, autoStart = false }: { meal: RecommendedMeal; goal: Goal; autoStart?: boolean }) {
   const [state, setState] = useState<CoachState>({ status: 'idle' })
 
   const handleRequest = async () => {
@@ -66,6 +68,12 @@ function MealCoach({ meal, goal }: { meal: RecommendedMeal; goal: Goal }) {
       setState({ status: 'done', message: fallbackMessage(meal), isFallback: true })
     }
   }
+
+  useEffect(() => {
+    if (autoStart) void handleRequest()
+    // 처음 마운트될 때 한 번만 — meal.id가 바뀌면(날짜가 바뀌어 추천이 갱신되면) 새로 마운트되며 다시 실행된다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   if (state.status === 'idle') {
     return (
@@ -139,13 +147,13 @@ export default function RecommendationCard({ meals, goal }: Props) {
     <div className="rounded-2xl border border-slate-100 bg-white p-4">
       <h3 className="mb-3 text-sm font-semibold text-slate-800">{title}</h3>
       <div className="space-y-4">
-        {groups.map((group) => (
+        {groups.map((group, groupIndex) => (
           <div key={group.nutrient}>
             <p className="mb-2 text-xs font-semibold text-emerald-700">
               {NUTRIENT_LABELS[group.nutrient]}이 부족해요 · 목표의 {group.percent}%
             </p>
             <div className="space-y-2">
-              {group.items.map((meal) => {
+              {group.items.map((meal, itemIndex) => {
                 // 재료 추천(1개 재료, 이름이 제목과 같음)은 이름만 중복이라 빼고, 양은 그대로 보여준다.
                 const singleRedundantName = meal.ingredients.length === 1 && meal.ingredients[0]?.name === meal.title
                 return (
@@ -165,7 +173,7 @@ export default function RecommendationCard({ meals, goal }: Props) {
                             ? meal.ingredients[0].amount
                             : meal.ingredients.map((i) => `${i.name} ${i.amount}`).join(' · ')}
                         </p>
-                        <MealCoach meal={meal} goal={goal} />
+                        <MealCoach meal={meal} goal={goal} autoStart={groupIndex === 0 && itemIndex === 0} />
                       </div>
                     </div>
                   </div>
