@@ -6,7 +6,7 @@ import { resolveAnalysisMode } from '../../lib/aiMode'
 import { prepareImage, type PreparedImage } from '../../lib/imagePrep'
 import { sleep } from '../../lib/sleep'
 import { analyzeFoodImage } from '../../services/foodVisionService'
-import { buildMeal } from '../../services/mealService'
+import { buildMeal, recordPortionCorrections } from '../../services/mealService'
 import type { Meal, MealSlot } from '../../types'
 import AnalysisErrorView from '../common/AnalysisErrorView'
 import AnalyzingLoader from '../common/AnalyzingLoader'
@@ -146,6 +146,7 @@ export default function FoodCaptureFlow({ onDone, initialSlot }: Props) {
         initialSlot={initialSlot}
         onReanalyze={() => preparedRef.current && void analyze(preparedRef.current)}
         onConfirm={({ title, slot, rows }) => {
+          recordPortionCorrections(rows)
           const meal = buildMeal({ title, slot, rows, thumbnail: preparedRef.current?.thumbnail ?? null })
           dispatch({ type: 'ADD_MEAL', meal })
           onDone(meal)

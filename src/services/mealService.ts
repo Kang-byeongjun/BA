@@ -1,6 +1,7 @@
 import type { FoodExtraction } from '../../shared/analysis'
 import type { FoodDbEntry } from '../data/foodDatabase'
 import { generateId } from '../lib/id'
+import { applyPortionCorrection, recordPortionCorrection } from '../lib/portionCorrection'
 import type { AnalyzedFoodItem, Meal, MealSlot } from '../types'
 import {
   calculateNutrients,
@@ -26,9 +27,13 @@ export interface FoodRow {
   key: string
   name: string
   grams: number
-  // AI가 처음 추정한 그램 수. 사용자가 직접 추가한 행은 null. grams와 비교해 "사용자가 직접
-  // 확인·수정했는지"를 판단하는 데 쓴다(바꿨다면 신뢰도가 낮았어도 사용자가 검증한 것으로 본다).
+  // 화면에 처음 보여준 그램 수(개인화 보정이 있었다면 그 결과). 사용자가 직접 추가한 행은
+  // null. grams와 비교해 "사용자가 직접 확인·수정했는지"를 판단하는 데 쓴다(바꿨다면
+  // 신뢰도가 낮았어도 사용자가 검증한 것으로 본다).
   originalGrams: number | null
+  // AI가 실제로 추정한 원본 그램 수(개인화 보정 전). 사용자가 직접 추가한 행은 null.
+  // 보정 이력을 기록할 때 기준값으로만 쓰고, UI의 "사용자가 손댔는지" 판단에는 쓰지 않는다.
+  aiEstimatedGrams: number | null
   // 영양 DB와 연결된 항목. null이면 영양 정보를 아직 찾지 못한 상태.
   entry: FoodDbEntry | null
   matchType: MatchType
@@ -40,11 +45,13 @@ export interface FoodRow {
 export function createRowsFromExtraction(extraction: FoodExtraction, provider: NutritionProvider = localNutritionProvider): FoodRow[] {
   return extraction.foods.map((food) => {
     const { entry, matchType } = provider.match(food.name)
+    const grams = applyPortionCorrection(food.name, food.estimatedGrams)
     return {
       key: generateId('row'),
       name: food.name,
-      grams: food.estimatedGrams,
-      originalGrams: food.estimatedGrams,
+      grams,
+      originalGrams: grams,
+      aiEstimatedGrams: food.estimatedGrams,
       entry,
       matchType,
       cookingMethod: food.cookingMethod,
@@ -59,10 +66,27 @@ export function createEmptyRow(): FoodRow {
     name: '',
     grams: 100,
     originalGrams: null,
+    aiEstimatedGrams: null,
     entry: null,
     matchType: 'none',
     cookingMethod: null,
     confidence: null,
+  }
+}
+
+/** 음식별 보정 이력에 맞춰 처음 추정치가 조정됐으면 true(화면에 안내 배지를 보여주는 데 쓴다). */
+export function hasPortionCorrection(row: FoodRow): boolean {
+  return row.aiEstimatedGrams !== null && row.originalGrams !== row.aiEstimatedGrams
+}
+
+/**
+ * 사용자가 화면에 보인 양(originalGrams)을 실제로 고쳐서 저장했으면, 그 보정을 음식별
+ * 이력에 남긴다. 다음에 같은 음식을 찍었을 때 추정치를 더 정확하게 잡는 데 쓰인다.
+ */
+export function recordPortionCorrections(rows: FoodRow[]): void {
+  for (const row of rows.filter(isActiveRow)) {
+    if (row.aiEstimatedGrams === null || row.grams === row.originalGrams) continue
+    recordPortionCorrection(row.name, row.aiEstimatedGrams, row.grams)
   }
 }
 

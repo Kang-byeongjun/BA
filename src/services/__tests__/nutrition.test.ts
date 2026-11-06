@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest'
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { FoodExtraction } from '../../../shared/analysis'
 import { FOOD_DATABASE } from '../../data/foodDatabase'
 import { resolveAnalysisMode } from '../../lib/aiMode'
 import { MEAL_COMBOS } from '../../data/mealCombos'
-import { buildMeal, createEmptyRow, createRowsFromExtraction, summarizeRows } from '../mealService'
+import { buildMeal, createEmptyRow, createRowsFromExtraction, hasPortionCorrection, recordPortionCorrections, summarizeRows } from '../mealService'
 import {
   calculateNutrients,
   computeGoalFit,
@@ -1004,6 +1005,10 @@ describe('nutritionService: 계산', () => {
 })
 
 describe('mealService', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
   it('AI 분석 결과(음식+중량)를 행으로 바꾸고 영양 DB와 연결한다', () => {
     const rows = createRowsFromExtraction(extraction)
     expect(rows.map((r) => [r.name, r.grams, r.entry?.id])).toEqual([
@@ -1074,6 +1079,36 @@ describe('mealService', () => {
     const rows = createRowsFromExtraction(extraction)
     const meal = buildMeal({ title: '식사', slot: '저녁', rows, thumbnail: null })
     expect(meal.hasLowConfidencePortions).toBe(false)
+  })
+
+  it('사용자가 양을 고쳐서 저장하면 그 음식의 보정 이력이 쌓이고, 다음 분석부터 반영된다', () => {
+    const singleFood: FoodExtraction = { ...extraction, foods: [{ name: '닭가슴살', estimatedGrams: 100, cookingMethod: null, confidence: 0.9 }] }
+
+    // 두 번 연속으로 120g으로 고쳐 저장 → 보정 비율 1.2가 쌓인다
+    for (let i = 0; i < 2; i++) {
+      const rows = createRowsFromExtraction(singleFood).map((r) => ({ ...r, grams: 120 }))
+      recordPortionCorrections(rows)
+    }
+
+    const nextRows = createRowsFromExtraction(singleFood)
+    expect(nextRows[0].grams).toBe(120)
+    expect(hasPortionCorrection(nextRows[0])).toBe(true)
+  })
+
+  it('양을 고치지 않고 그대로 저장하면 보정 이력이 쌓이지 않는다', () => {
+    const singleFood: FoodExtraction = { ...extraction, foods: [{ name: '두부', estimatedGrams: 100, cookingMethod: null, confidence: 0.9 }] }
+    recordPortionCorrections(createRowsFromExtraction(singleFood))
+    recordPortionCorrections(createRowsFromExtraction(singleFood))
+
+    const nextRows = createRowsFromExtraction(singleFood)
+    expect(nextRows[0].grams).toBe(100)
+    expect(hasPortionCorrection(nextRows[0])).toBe(false)
+  })
+
+  it('사용자가 직접 추가한 행(AI 추정치가 없는 행)은 보정 이력에 남기지 않는다', () => {
+    const rows = [{ ...createEmptyRow(), name: '직접 추가한 음식', grams: 300 }]
+    expect(() => recordPortionCorrections(rows)).not.toThrow()
+    expect(hasPortionCorrection(rows[0])).toBe(false)
   })
 })
 

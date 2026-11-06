@@ -7,6 +7,7 @@ import { inferMealSlot } from '../../lib/time'
 import {
   createEmptyRow,
   createRowsFromExtraction,
+  hasPortionCorrection,
   hasUnverifiedLowConfidence,
   isActiveRow,
   LOW_CONFIDENCE,
@@ -351,6 +352,11 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                       {lowConfidence && (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
                           인식 확신 낮음
+                        </span>
+                      )}
+                      {hasPortionCorrection(row) && (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                          지난 수정 이력 반영
                         </span>
                       )}
                     </div>
