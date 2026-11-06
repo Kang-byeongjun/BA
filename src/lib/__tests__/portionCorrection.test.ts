@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest'
-import { applyPortionCorrection, getPortionCorrectionFactor, recordPortionCorrection } from '../portionCorrection'
+import {
+  applyPortionCorrection,
+  getPortionCorrectionFactor,
+  listPortionCorrections,
+  recordPortionCorrection,
+  resetAllPortionCorrections,
+  resetPortionCorrection,
+} from '../portionCorrection'
 
 beforeEach(() => {
   localStorage.clear()
@@ -47,5 +54,44 @@ describe('applyPortionCorrection', () => {
     recordPortionCorrection('닭가슴살', 100, 150)
     recordPortionCorrection('닭가슴살', 100, 150)
     expect(applyPortionCorrection('닭가슴살', 100)).toBe(150)
+  })
+})
+
+describe('listPortionCorrections', () => {
+  it('이력이 없으면 빈 배열을 돌려준다', () => {
+    expect(listPortionCorrections()).toEqual([])
+  })
+
+  it('음식별 수정 횟수와 보정 비율(2번 미만이면 null)을 돌려주고, 수정 횟수가 많은 순으로 정렬한다', () => {
+    recordPortionCorrection('닭가슴살', 100, 150)
+    recordPortionCorrection('닭가슴살', 100, 150)
+    recordPortionCorrection('두부', 100, 110)
+
+    const list = listPortionCorrections()
+    expect(list).toEqual([
+      { key: expect.any(String), displayName: '닭가슴살', sampleCount: 2, factor: 1.5 },
+      { key: expect.any(String), displayName: '두부', sampleCount: 1, factor: null },
+    ])
+  })
+})
+
+describe('resetPortionCorrection / resetAllPortionCorrections', () => {
+  it('특정 음식의 이력만 지운다', () => {
+    recordPortionCorrection('닭가슴살', 100, 150)
+    recordPortionCorrection('닭가슴살', 100, 150)
+    recordPortionCorrection('두부', 100, 110)
+
+    const [chicken] = listPortionCorrections().filter((c) => c.displayName === '닭가슴살')
+    resetPortionCorrection(chicken.key)
+
+    expect(getPortionCorrectionFactor('닭가슴살')).toBeNull()
+    expect(listPortionCorrections().map((c) => c.displayName)).toEqual(['두부'])
+  })
+
+  it('전체 이력을 지운다', () => {
+    recordPortionCorrection('닭가슴살', 100, 150)
+    recordPortionCorrection('두부', 100, 110)
+    resetAllPortionCorrections()
+    expect(listPortionCorrections()).toEqual([])
   })
 })

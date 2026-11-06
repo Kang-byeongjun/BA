@@ -3,6 +3,12 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
 import { BMI_CATEGORY_LABELS, calculateBmi, classifyBmi } from '../../lib/bmi'
+import {
+  listPortionCorrections,
+  resetAllPortionCorrections,
+  resetPortionCorrection,
+  type PortionCorrectionSummary,
+} from '../../lib/portionCorrection'
 import { describeNutritionRationale, generateNutritionTarget } from '../../services/nutritionTargetService'
 import {
   DEFAULT_WORKOUT_PROFILE,
@@ -55,6 +61,8 @@ export default function Profile() {
   const [workoutEditOpen, setWorkoutEditOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [inBodyDraft, setInBodyDraft] = useState<Record<string, string> | null>(null)
+  const [corrections, setCorrections] = useState<PortionCorrectionSummary[]>(() => listPortionCorrections())
+  const [confirmingCorrectionReset, setConfirmingCorrectionReset] = useState(false)
 
   if (!profile || !nutritionTarget) return null
 
@@ -158,6 +166,17 @@ export default function Profile() {
     setDraftTarget(recalculated)
     dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: recalculated })
     setSaved(true)
+  }
+
+  const handleResetCorrection = (key: string) => {
+    resetPortionCorrection(key)
+    setCorrections(listPortionCorrections())
+  }
+
+  const handleResetAllCorrections = () => {
+    resetAllPortionCorrections()
+    setCorrections([])
+    setConfirmingCorrectionReset(false)
   }
 
   return (
@@ -389,6 +408,47 @@ export default function Profile() {
           <NutritionRationale rationale={describeNutritionRationale(profile, workoutProfile)} />
         </div>
       </div>
+
+      {corrections.length > 0 && (
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-slate-800">AI 분량 추정 보정</p>
+              <p className="mt-0.5 text-xs text-slate-400">그램 수를 고친 음식 이력이에요. 2번 이상 쌓이면 다음 추정에 반영돼요.</p>
+            </div>
+            {confirmingCorrectionReset ? (
+              <div className="flex shrink-0 gap-2">
+                <button onClick={() => setConfirmingCorrectionReset(false)} className="text-xs font-medium text-slate-400">
+                  취소
+                </button>
+                <button onClick={handleResetAllCorrections} className="text-xs font-semibold text-rose-500">
+                  확인
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setConfirmingCorrectionReset(true)} className="shrink-0 text-xs font-medium text-rose-500">
+                전체 초기화
+              </button>
+            )}
+          </div>
+          <div className="space-y-2">
+            {corrections.map((c) => (
+              <div key={c.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">{c.displayName}</p>
+                  <p className="text-[11px] text-slate-400">
+                    {c.sampleCount}번 수정
+                    {c.factor !== null ? ` · 평균 ${c.factor.toFixed(2)}배 보정 적용 중` : ' · 1번 더 수정하면 보정이 적용돼요'}
+                  </p>
+                </div>
+                <button onClick={() => handleResetCorrection(c.key)} className="shrink-0 text-xs font-medium text-slate-400">
+                  초기화
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
         <p className="mb-2 text-sm font-semibold text-rose-700">데이터 초기화</p>
