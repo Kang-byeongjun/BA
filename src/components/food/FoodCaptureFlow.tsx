@@ -145,10 +145,11 @@ export default function FoodCaptureFlow({ onDone, initialSlot }: Props) {
         mode={mode}
         initialSlot={initialSlot}
         onReanalyze={() => preparedRef.current && void analyze(preparedRef.current)}
-        onConfirm={({ title, slot, rows }) => {
+        onConfirm={({ title, slot, rows, waterMl }) => {
           recordPortionCorrections(rows)
           const meal = buildMeal({ title, slot, rows, thumbnail: preparedRef.current?.thumbnail ?? null })
           dispatch({ type: 'ADD_MEAL', meal })
+          if (waterMl > 0) dispatch({ type: 'ADD_WATER', amount: waterMl })
           onDone(meal)
         }}
         onCancel={handleCancelClose}

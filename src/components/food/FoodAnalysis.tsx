@@ -1,9 +1,10 @@
-import { AlertTriangle, Loader2, Minus, Plus, Sparkles, Trash2, X } from 'lucide-react'
+import { AlertTriangle, Droplet, Loader2, Minus, Plus, Sparkles, Trash2, Undo2, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FoodExtraction } from '../../../shared/analysis'
 import { AnalysisError } from '../../../shared/errors'
 import type { FoodDbEntry } from '../../data/foodDatabase'
 import { inferMealSlot } from '../../lib/time'
+import { QUICK_WATER_AMOUNTS } from '../../lib/water'
 import {
   createEmptyRow,
   createRowsFromExtraction,
@@ -28,7 +29,7 @@ interface Props {
   // 없으면 지금 시각 기준으로 추정한다(inferMealSlot).
   initialSlot?: MealSlot
   onReanalyze: () => void
-  onConfirm: (input: { title: string; slot: MealSlot; rows: FoodRow[] }) => void
+  onConfirm: (input: { title: string; slot: MealSlot; rows: FoodRow[]; waterMl: number }) => void
   onCancel: () => void
 }
 
@@ -65,6 +66,8 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
   const [title, setTitle] = useState(extraction.mealName)
   const [slot, setSlot] = useState<MealSlot>(() => initialSlot ?? inferMealSlot(Date.now()))
   const [rows, setRows] = useState<FoodRow[]>(() => createRowsFromExtraction(extraction))
+  // 음식에 포함된 수분은 계산하지 않는다 — 사용자가 이 식사와 함께 마신 물을 직접 더한다.
+  const [waterMl, setWaterMl] = useState(0)
   const [openSuggestKey, setOpenSuggestKey] = useState<string | null>(null)
   // DB에 없는 음식(예: 양념치킨)을 삭제하지 않고도 기록할 수 있게, 그 음식만 사용자가 직접
   // 영양정보를 입력하는 경로. AI가 숫자를 추정하는 게 아니라 사용자가 직접 넣는 값이라
@@ -208,7 +211,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
       setShowPortionConfirm(true)
       return
     }
-    onConfirm({ title, slot, rows })
+    onConfirm({ title, slot, rows, waterMl })
   }
   const blockedReason = !canSave
     ? summary.activeCount === 0
@@ -283,6 +286,43 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                 {s}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <div className="mb-1.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Droplet size={16} className="text-sky-500" />
+              <p className="text-sm font-semibold text-slate-800">물 섭취 (선택)</p>
+            </div>
+            {waterMl > 0 && (
+              <span className="text-sm text-slate-500">
+                <span className="font-semibold text-slate-900">{waterMl}</span>ml
+              </span>
+            )}
+          </div>
+          <p className="mb-2 text-[11px] text-slate-400">
+            음식에 포함된 수분은 계산하지 않아요. 같이 마신 물이 있으면 눌러서 더해주세요.
+          </p>
+          <div className="flex items-center gap-2">
+            {QUICK_WATER_AMOUNTS.map(({ label, ml }) => (
+              <button
+                key={ml}
+                onClick={() => setWaterMl((w) => w + ml)}
+                className="flex-1 rounded-xl bg-sky-50 py-2 text-xs font-semibold text-sky-700 active:scale-[0.98]"
+              >
+                +{ml}ml · {label}
+              </button>
+            ))}
+            {waterMl > 0 && (
+              <button
+                onClick={() => setWaterMl(0)}
+                aria-label="물 섭취 초기화"
+                className="shrink-0 rounded-xl bg-slate-50 p-2.5 text-slate-400 active:scale-[0.98]"
+              >
+                <Undo2 size={16} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -617,7 +657,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
               <button
                 onClick={() => {
                   setShowPortionConfirm(false)
-                  onConfirm({ title, slot, rows })
+                  onConfirm({ title, slot, rows, waterMl })
                 }}
                 className="flex-1 rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white"
               >

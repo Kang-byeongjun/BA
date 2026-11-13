@@ -13,7 +13,6 @@ import CalorieSummary from './CalorieSummary'
 import HomeCoach from './HomeCoach'
 import TodayMealsSection from './TodayMealsSection'
 import UpdatesPanel from './UpdatesPanel'
-import WaterQuickAdd from './WaterQuickAdd'
 
 interface Props {
   // slot을 넘기면 그 칸으로 바로 기록된다(아침 칸의 "+추가"를 눌렀는데 지금 시간이 밤이라
@@ -40,7 +39,6 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
   const streakDays = useMemo(() => getStreakDays(meals), [meals])
   const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
 
-  const todayWaterLogs = useMemo(() => waterLogs.filter((w) => isSameDay(w.timestamp, Date.now())), [waterLogs])
   const todayWaterTotal = useMemo(() => getTodayWaterTotal(waterLogs), [waterLogs])
 
   if (!nutritionTarget) return null
@@ -114,15 +112,6 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
       {recommendations[0] && <HomeCoach meal={recommendations[0]} goal={recommendationProfile.goal} />}
 
       <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} streakDays={streakDays} />
-
-      <WaterQuickAdd
-        onAdd={(amount) => dispatch({ type: 'ADD_WATER', amount })}
-        onUndo={() => {
-          const last = todayWaterLogs[0]
-          if (last) dispatch({ type: 'DELETE_WATER', id: last.id })
-        }}
-        canUndo={todayWaterLogs.length > 0}
-      />
 
       <button
         onClick={() => onOpenCamera()}
