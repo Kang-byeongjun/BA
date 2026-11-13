@@ -12,6 +12,7 @@ import type {
   Meal,
   NutritionTarget,
   UserProfile,
+  WaterLog,
   Workout,
   WorkoutProfile,
   WorkoutType,
@@ -30,6 +31,7 @@ interface AppState {
   // InBody 측정/추정 이력. 최신 항목이 배열 맨 앞에 온다.
   inBodyHistory: InBodyHistoryEntry[]
   meals: Meal[]
+  waterLogs: WaterLog[]
   workouts: Workout[]
   activeWorkout: ActiveWorkoutSession | null
   pendingWorkout: Workout | null
@@ -45,6 +47,8 @@ type Action =
   | { type: 'SET_WORKOUT_PROFILE'; workoutProfile: WorkoutProfile }
   | { type: 'ADD_MEAL'; meal: Meal }
   | { type: 'DELETE_MEAL'; id: string }
+  | { type: 'ADD_WATER'; amount: number }
+  | { type: 'DELETE_WATER'; id: string }
   | { type: 'START_WORKOUT'; workoutType: WorkoutType }
   | { type: 'PAUSE_WORKOUT' }
   | { type: 'RESUME_WORKOUT' }
@@ -79,6 +83,7 @@ function initState(): AppState {
     workoutProfile: loadFromStorage<WorkoutProfile | null>(STORAGE_KEYS.workoutProfile, null),
     inBodyHistory: loadFromStorage<InBodyHistoryEntry[]>(STORAGE_KEYS.inBodyHistory, []),
     meals: loadFromStorage<Meal[]>(STORAGE_KEYS.meals, []),
+    waterLogs: loadFromStorage<WaterLog[]>(STORAGE_KEYS.waterLogs, []),
     workouts: loadFromStorage<Workout[]>(STORAGE_KEYS.workouts, []),
     activeWorkout: loadFromStorage<ActiveWorkoutSession | null>(STORAGE_KEYS.activeWorkout, null),
     pendingWorkout: loadFromStorage<Workout | null>(STORAGE_KEYS.pendingWorkout, null),
@@ -141,6 +146,15 @@ function reducer(state: AppState, action: Action): AppState {
 
     case 'DELETE_MEAL':
       return { ...state, meals: state.meals.filter((m) => m.id !== action.id) }
+
+    case 'ADD_WATER':
+      return {
+        ...state,
+        waterLogs: [{ id: generateId('water'), timestamp: Date.now(), amount: action.amount }, ...state.waterLogs],
+      }
+
+    case 'DELETE_WATER':
+      return { ...state, waterLogs: state.waterLogs.filter((w) => w.id !== action.id) }
 
     case 'START_WORKOUT':
       return {
@@ -214,6 +228,7 @@ function reducer(state: AppState, action: Action): AppState {
         workoutProfile: null,
         inBodyHistory: [],
         meals: [],
+        waterLogs: [],
         workouts: [],
         activeWorkout: null,
         pendingWorkout: null,
@@ -264,6 +279,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.meals, state.meals)
   }, [state.meals])
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.waterLogs, state.waterLogs)
+  }, [state.waterLogs])
 
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.workouts, state.workouts)

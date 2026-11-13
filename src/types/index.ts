@@ -187,6 +187,16 @@ export interface Meal {
   hasLowConfidencePortions: boolean
 }
 
+// ---------- 수분 섭취 ----------
+
+export interface WaterLog {
+  id: string
+  timestamp: number // epoch ms
+  amount: number // ml
+}
+
+export const DEFAULT_WATER_TARGET_ML = 2000
+
 // ---------- 추천 ----------
 
 export interface MealComboIngredientDisplay {

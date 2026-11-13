@@ -4,13 +4,15 @@ import { useApp } from '../../context/AppContext'
 import MealDetailModal from '../meals/MealDetailModal'
 import { generateFeedback, getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
 import { isSameDay } from '../../lib/time'
-import type { Meal, MealSlot } from '../../types'
+import { getTodayWaterTotal } from '../../lib/water'
+import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
 import CalorieSummary from './CalorieSummary'
 import FeedbackPanel from './FeedbackPanel'
 import NutritionBar from './NutritionBar'
 import RecommendationCard from './RecommendationCard'
 import TodayMealsSection from './TodayMealsSection'
 import UpdatesPanel from './UpdatesPanel'
+import WaterTracker from './WaterTracker'
 
 interface Props {
   // slot을 넘기면 그 칸으로 바로 기록된다(아침 칸의 "+추가"를 눌렀는데 지금 시간이 밤이라
@@ -22,7 +24,7 @@ interface Props {
 }
 
 export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMeal }: Props) {
-  const { meals, nutritionTarget, profile, dispatch } = useApp()
+  const { meals, waterLogs, nutritionTarget, profile, dispatch } = useApp()
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null)
   const [updatesPanelOpen, setUpdatesPanelOpen] = useState(false)
 
@@ -37,6 +39,9 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
   const streakDays = useMemo(() => getStreakDays(meals), [meals])
   const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
   const hasUncertainPortionsToday = todayMeals.some((m) => m.hasLowConfidencePortions)
+
+  const todayWaterLogs = useMemo(() => waterLogs.filter((w) => isSameDay(w.timestamp, Date.now())), [waterLogs])
+  const todayWaterTotal = useMemo(() => getTodayWaterTotal(waterLogs), [waterLogs])
 
   if (!nutritionTarget) return null
 
@@ -120,6 +125,17 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
       </button>
 
       <TodayMealsSection meals={todayMeals} onSelect={setSelectedMeal} onAdd={onOpenCamera} />
+
+      <WaterTracker
+        consumedMl={todayWaterTotal}
+        targetMl={DEFAULT_WATER_TARGET_ML}
+        onAdd={(amount) => dispatch({ type: 'ADD_WATER', amount })}
+        onUndo={() => {
+          const last = todayWaterLogs[0]
+          if (last) dispatch({ type: 'DELETE_WATER', id: last.id })
+        }}
+        canUndo={todayWaterLogs.length > 0}
+      />
 
       {hasUncertainPortionsToday && (
         <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">

@@ -38,4 +38,5 @@ export const STORAGE_KEYS = {
   aiMode: 'aiMode',
   workoutProfile: 'workoutProfile',
   inBodyHistory: 'inBodyHistory',
+  waterLogs: 'waterLogs',
 } as const
