@@ -1,4 +1,5 @@
-import { Droplet, Undo2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Droplet, Undo2 } from 'lucide-react'
+import { useState } from 'react'
 import AnimatedBar from './AnimatedBar'
 
 interface Props {
@@ -13,6 +14,27 @@ const QUICK_AMOUNTS = [
   { label: '한 컵', ml: 200 },
   { label: '생수 한 병', ml: 500 },
 ]
+
+function WhyItMatters() {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div className="mt-3 border-t border-slate-100 pt-2.5">
+      <button onClick={() => setOpen((v) => !v)} className="flex items-center gap-1 text-xs font-medium text-slate-500">
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        수분 섭취가 왜 중요할까요?
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-1.5 text-xs text-slate-500">
+          <li>· 영양소를 소화·흡수하고 세포 곳곳으로 옮기는 매개체 역할을 해요.</li>
+          <li>· 체온 조절, 혈액순환, 노폐물 배출(신장 기능)에 기본이 돼요.</li>
+          <li>· 몸이 살짝 목마른 걸 배고픔으로 오해해서 과식하는 경우가 많아요.</li>
+          <li>· 운동 중 체내 수분이 부족하면 근력·집중력이 먼저 떨어져요.</li>
+        </ul>
+      )}
+    </div>
+  )
+}
 
 export default function WaterTracker({ consumedMl, targetMl, onAdd, onUndo, canUndo }: Props) {
   const percent = Math.min(100, Math.round((consumedMl / targetMl) * 100))
@@ -52,6 +74,8 @@ export default function WaterTracker({ consumedMl, targetMl, onAdd, onUndo, canU
           </button>
         )}
       </div>
+
+      <WhyItMatters />
     </div>
   )
 }
