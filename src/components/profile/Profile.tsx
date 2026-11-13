@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
@@ -63,6 +63,8 @@ export default function Profile() {
   const [inBodyDraft, setInBodyDraft] = useState<Record<string, string> | null>(null)
   const [corrections, setCorrections] = useState<PortionCorrectionSummary[]>(() => listPortionCorrections())
   const [confirmingCorrectionReset, setConfirmingCorrectionReset] = useState(false)
+  // 자주 안 쓰는 관리 기능(보정 이력·데이터 초기화)이라 기본은 접어둔다.
+  const [toolsOpen, setToolsOpen] = useState(false)
 
   if (!profile || !nutritionTarget) return null
 
@@ -409,74 +411,88 @@ export default function Profile() {
         </div>
       </div>
 
-      {corrections.length > 0 && (
-        <div className="rounded-2xl border border-slate-100 bg-white p-4">
-          <div className="mb-3 flex items-start justify-between gap-2">
+      <div className="rounded-2xl border border-slate-100 bg-white p-4">
+        <button onClick={() => setToolsOpen((v) => !v)} className="flex w-full items-center justify-between">
+          <p className="text-sm font-semibold text-slate-800">관리 도구</p>
+          {toolsOpen ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+        </button>
+        {!toolsOpen && (
+          <p className="mt-1 text-xs text-slate-400">AI 보정 이력 확인, 전체 데이터 초기화는 여기서 할 수 있어요.</p>
+        )}
+
+        {toolsOpen && (
+        <div className="mt-3 space-y-4">
+          {corrections.length > 0 && (
             <div>
-              <p className="text-sm font-semibold text-slate-800">AI 분량 추정 보정</p>
-              <p className="mt-0.5 text-xs text-slate-400">그램 수를 고친 음식 이력이에요. 2번 이상 쌓이면 다음 추정에 반영돼요.</p>
+              <div className="mb-3 flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">AI 분량 추정 보정</p>
+                  <p className="mt-0.5 text-xs text-slate-400">그램 수를 고친 음식 이력이에요. 2번 이상 쌓이면 다음 추정에 반영돼요.</p>
+                </div>
+                {confirmingCorrectionReset ? (
+                  <div className="flex shrink-0 gap-2">
+                    <button onClick={() => setConfirmingCorrectionReset(false)} className="text-xs font-medium text-slate-400">
+                      취소
+                    </button>
+                    <button onClick={handleResetAllCorrections} className="text-xs font-semibold text-rose-500">
+                      확인
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmingCorrectionReset(true)} className="shrink-0 text-xs font-medium text-rose-500">
+                    전체 초기화
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {corrections.map((c) => (
+                  <div key={c.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">{c.displayName}</p>
+                      <p className="text-[11px] text-slate-400">
+                        {c.sampleCount}번 수정
+                        {c.factor !== null ? ` · 평균 ${c.factor.toFixed(2)}배 보정 적용 중` : ' · 1번 더 수정하면 보정이 적용돼요'}
+                      </p>
+                    </div>
+                    <button onClick={() => handleResetCorrection(c.key)} className="shrink-0 text-xs font-medium text-slate-400">
+                      초기화
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-            {confirmingCorrectionReset ? (
-              <div className="flex shrink-0 gap-2">
-                <button onClick={() => setConfirmingCorrectionReset(false)} className="text-xs font-medium text-slate-400">
+          )}
+
+          <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+            <p className="mb-2 text-sm font-semibold text-rose-700">데이터 초기화</p>
+            <p className="mb-3 text-xs text-rose-500">
+              온보딩 정보, 식사 기록, 운동 기록이 모두 삭제되고 처음부터 다시 시작해요.
+            </p>
+            {confirmingReset ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmingReset(false)}
+                  className="flex-1 rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
+                >
                   취소
                 </button>
-                <button onClick={handleResetAllCorrections} className="text-xs font-semibold text-rose-500">
-                  확인
+                <button
+                  onClick={() => dispatch({ type: 'RESET_APP' })}
+                  className="flex-1 rounded-full bg-rose-500 py-2.5 text-sm font-semibold text-white"
+                >
+                  초기화하기
                 </button>
               </div>
             ) : (
-              <button onClick={() => setConfirmingCorrectionReset(true)} className="shrink-0 text-xs font-medium text-rose-500">
-                전체 초기화
+              <button
+                onClick={() => setConfirmingReset(true)}
+                className="w-full rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
+              >
+                전체 데이터 초기화
               </button>
             )}
           </div>
-          <div className="space-y-2">
-            {corrections.map((c) => (
-              <div key={c.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">{c.displayName}</p>
-                  <p className="text-[11px] text-slate-400">
-                    {c.sampleCount}번 수정
-                    {c.factor !== null ? ` · 평균 ${c.factor.toFixed(2)}배 보정 적용 중` : ' · 1번 더 수정하면 보정이 적용돼요'}
-                  </p>
-                </div>
-                <button onClick={() => handleResetCorrection(c.key)} className="shrink-0 text-xs font-medium text-slate-400">
-                  초기화
-                </button>
-              </div>
-            ))}
-          </div>
         </div>
-      )}
-
-      <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
-        <p className="mb-2 text-sm font-semibold text-rose-700">데이터 초기화</p>
-        <p className="mb-3 text-xs text-rose-500">
-          온보딩 정보, 식사 기록, 운동 기록이 모두 삭제되고 처음부터 다시 시작해요.
-        </p>
-        {confirmingReset ? (
-          <div className="flex gap-2">
-            <button
-              onClick={() => setConfirmingReset(false)}
-              className="flex-1 rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
-            >
-              취소
-            </button>
-            <button
-              onClick={() => dispatch({ type: 'RESET_APP' })}
-              className="flex-1 rounded-full bg-rose-500 py-2.5 text-sm font-semibold text-white"
-            >
-              초기화하기
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setConfirmingReset(true)}
-            className="w-full rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
-          >
-            전체 데이터 초기화
-          </button>
         )}
       </div>
     </div>
