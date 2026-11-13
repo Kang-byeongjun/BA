@@ -23,6 +23,8 @@ export interface SetRow {
 
 export interface ExerciseLog {
   key: string
+  /** 엔진 종목 id (지난 기록 찾기용) */
+  exerciseId: string
   name: string
   defaultReps: number
   /** 세트 완료 시 시작할 휴식 시간(초). 화면의 "휴식 60~90초" 중 앞 숫자 */
@@ -63,6 +65,7 @@ export function buildLogs(exercises: RoutineExercise[]): ExerciseLog[] {
       const rx = e.prescription!
       return {
         key: `${e.order}-${e.id}`,
+        exerciseId: e.id,
         name: e.name,
         defaultReps: rx.repsMax,
         restSeconds: rx.restMin,

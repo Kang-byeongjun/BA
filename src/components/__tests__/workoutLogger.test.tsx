@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoutineExercise } from '../../../server/engine/types'
 import { playRestAlarm, unlockRestAlarm } from '../../lib/restAlarm'
+import type { WorkoutSessionRecord } from '../../lib/workoutHistory'
 import type { LoggerDay } from '../../lib/workoutLog'
 import WorkoutLogger from '../workout/WorkoutLogger'
 import { createWorkoutLog, loadWorkoutLog, WORKOUT_LOG_STORAGE_KEY } from '../workout/workoutLogStorage'
@@ -46,8 +47,8 @@ const restButton = () => screen.getByRole('button', { name: /휴식 남은 시�
 const elapsed = () => text(screen.getByLabelText('전체 운동 시간'))
 const advance = (ms: number) => act(() => void vi.advanceTimersByTime(ms))
 
-function renderLogger(onExit = () => {}) {
-  return render(<WorkoutLogger initial={createWorkoutLog(day(), Date.now())} onExit={onExit} />)
+function renderLogger(onExit = () => {}, onFinish: (r: WorkoutSessionRecord) => void = () => {}) {
+  return render(<WorkoutLogger initial={createWorkoutLog(day(), Date.now())} onExit={onExit} onFinish={onFinish} />)
 }
 
 beforeEach(() => {
@@ -205,7 +206,7 @@ describe('WorkoutLogger — 세트 기록', () => {
 
   it('근력 종목이 없는 날은 안내 문구를 보여준다', () => {
     render(
-      <WorkoutLogger initial={createWorkoutLog({ day: 2, label: '유산소', exercises: [day().exercises[2]!] }, Date.now())} onExit={() => {}} />,
+      <WorkoutLogger initial={createWorkoutLog({ day: 2, label: '유산소', exercises: [day().exercises[2]!] }, Date.now())} onExit={() => {}} onFinish={() => {}} />,
     )
     expect(screen.getByText('이 날은 기록할 근력 종목이 없어요.')).toBeTruthy()
   })
@@ -324,7 +325,7 @@ describe('WorkoutLogger — 새로고침 복원', () => {
     vi.setSystemTime(T0 + 25_000)
     const saved = loadWorkoutLog()!
     expect(saved.startedAt).toBe(T0)
-    render(<WorkoutLogger initial={saved} onExit={() => {}} />)
+    render(<WorkoutLogger initial={saved} onExit={() => {}} onFinish={() => {}} />)
 
     const b = card('벤치프레스')
     expect(input(b, '1세트 kg').value).toBe('60')
@@ -349,7 +350,7 @@ describe('WorkoutLogger — 새로고침 복원', () => {
     const first = renderLogger()
     fireEvent.click(restSwitch())
     first.unmount()
-    render(<WorkoutLogger initial={loadWorkoutLog()!} onExit={() => {}} />)
+    render(<WorkoutLogger initial={loadWorkoutLog()!} onExit={() => {}} onFinish={() => {}} />)
     expect(restSwitch().getAttribute('aria-checked')).toBe('false')
   })
 
@@ -358,7 +359,7 @@ describe('WorkoutLogger — 새로고침 복원', () => {
     fireEvent.click(doneBtn(card('벤치프레스'), 1))
     first.unmount()
     vi.setSystemTime(T0 + 10 * 60_000)
-    render(<WorkoutLogger initial={loadWorkoutLog()!} onExit={() => {}} />)
+    render(<WorkoutLogger initial={loadWorkoutLog()!} onExit={() => {}} onFinish={() => {}} />)
     advance(1_000)
     expect(screen.queryByRole('button', { name: /휴식 남은 시간/ })).toBeNull()
     expect(playRestAlarm).not.toHaveBeenCalled()

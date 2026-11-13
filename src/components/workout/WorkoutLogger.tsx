@@ -1,6 +1,14 @@
-import { Check, ChevronLeft, Copy, Plus, X } from 'lucide-react'
+import { Check, ChevronLeft, Copy, History, Plus, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
+import { generateId } from '../../lib/id'
 import { playRestAlarm, unlockRestAlarm } from '../../lib/restAlarm'
+import {
+  buildSessionRecord,
+  countCompletedSets,
+  lastRecordOf,
+  loadWorkoutHistory,
+  type WorkoutSessionRecord,
+} from '../../lib/workoutHistory'
 import {
   adjustRest,
   isRestDoneShowing,
@@ -18,6 +26,7 @@ import {
   type RestState,
   type SetRow,
 } from '../../lib/workoutLog'
+import LastRecordSheet from './LastRecordSheet'
 import WorkoutLoggerBar from './WorkoutLoggerBar'
 import { saveWorkoutLog, type SavedWorkoutLog } from './workoutLogStorage'
 
@@ -31,7 +40,11 @@ import { saveWorkoutLog, type SavedWorkoutLog } from './workoutLogStorage'
 interface Props {
   initial: SavedWorkoutLog
   onExit: () => void
+  /** "운동 완료" 확인 후, 완료한 세트로 만든 기록을 넘긴다(저장은 부모가 한다) */
+  onFinish: (record: WorkoutSessionRecord) => void
 }
+
+type Dialog = 'exit' | 'finish' | 'noSets' | null
 
 // 타이머 화면 갱신 간격. 계산은 시각 기준이라 간격이 늦어져도 숫자는 정확하다.
 const TICK_MS = 250
@@ -52,10 +65,11 @@ interface CardProps {
   log: ExerciseLog
   onChange: (next: ExerciseLog) => void
   onSetCompleted: (log: ExerciseLog) => void
+  onShowLast: (log: ExerciseLog) => void
   newId: () => number
 }
 
-function ExerciseCard({ log, onChange, onSetCompleted, newId }: CardProps) {
+function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, newId }: CardProps) {
   const memoId = useId()
   const setRows = (sets: SetRow[]) => onChange({ ...log, sets })
   const patch = (id: number, p: Partial<SetRow>) => setRows(log.sets.map((s) => (s.id === id ? { ...s, ...p } : s)))
@@ -69,10 +83,18 @@ function ExerciseCard({ log, onChange, onSetCompleted, newId }: CardProps) {
   return (
     <section aria-label={log.name} className="space-y-3 rounded-3xl border border-slate-100 bg-white p-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-bold text-slate-900">{log.name}</h2>
-        <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-          볼륨 {formatKg(volumeOf(log.sets))}
-        </span>
+        <h2 className="min-w-0 font-bold text-slate-900">{log.name}</h2>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={() => onShowLast(log)}
+            className="flex items-center gap-1 rounded-full border border-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+          >
+            <History size={13} /> 지난 기록
+          </button>
+          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+            볼륨 {formatKg(volumeOf(log.sets))}
+          </span>
+        </div>
       </div>
 
       <label htmlFor={memoId} className="sr-only">
@@ -172,7 +194,18 @@ function ExerciseCard({ log, onChange, onSetCompleted, newId }: CardProps) {
   )
 }
 
-function ConfirmExitModal({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+interface ModalProps {
+  title: string
+  message?: string
+  cancelLabel?: string
+  confirmLabel: string
+  tone: 'danger' | 'primary'
+  onCancel: () => void
+  onConfirm: () => void
+}
+
+/** 화면 안의 확인 창(브라우저 alert/confirm 대신). cancelLabel이 없으면 버튼 하나짜리 안내 창 */
+function Modal({ title, message, cancelLabel, confirmLabel, tone, onCancel, onConfirm }: ModalProps) {
   const titleId = useId()
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={onCancel}>
@@ -184,15 +217,20 @@ function ConfirmExitModal({ onCancel, onConfirm }: { onCancel: () => void; onCon
         className="w-full max-w-sm space-y-4 rounded-3xl bg-white p-6 text-center"
       >
         <p id={titleId} className="text-lg font-bold text-slate-900">
-          기록을 중단할까요?
+          {title}
         </p>
-        <p className="text-sm text-slate-500">중단하면 지금까지 적은 기록이 지워져요.</p>
+        {message && <p className="text-sm text-slate-500">{message}</p>}
         <div className="flex gap-2">
-          <button onClick={onCancel} className="flex-1 rounded-full bg-slate-100 py-3 font-semibold text-slate-600">
-            계속 기록하기
-          </button>
-          <button onClick={onConfirm} className="flex-1 rounded-full bg-rose-500 py-3 font-semibold text-white">
-            중단하기
+          {cancelLabel && (
+            <button onClick={onCancel} className="flex-1 rounded-full bg-slate-100 py-3 font-semibold text-slate-600">
+              {cancelLabel}
+            </button>
+          )}
+          <button
+            onClick={onConfirm}
+            className={`flex-1 rounded-full py-3 font-semibold text-white ${tone === 'danger' ? 'bg-rose-500' : 'bg-emerald-500'}`}
+          >
+            {confirmLabel}
           </button>
         </div>
       </div>
@@ -200,14 +238,17 @@ function ConfirmExitModal({ onCancel, onConfirm }: { onCancel: () => void; onCon
   )
 }
 
-export default function WorkoutLogger({ initial, onExit }: Props) {
+export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
   const { day, startedAt } = initial
   const [logs, setLogs] = useState(initial.logs)
   // 복원했을 때 이미 끝난 휴식은 알림 없이 '끝남'으로 정리한다.
   const [rest, setRestState] = useState<RestState>(() => settleRest(initial.rest, Date.now()).rest)
   const [now, setNow] = useState(() => Date.now())
   const [expanded, setExpanded] = useState(false)
-  const [confirming, setConfirming] = useState(false)
+  const [dialog, setDialog] = useState<Dialog>(null)
+  // "지난 기록"용. 기록 화면을 여는 동안에는 새 기록이 생기지 않으므로 처음 한 번만 읽는다.
+  const [history] = useState(loadWorkoutHistory)
+  const [lastFor, setLastFor] = useState<ExerciseLog | null>(null)
 
   // 타이머(setInterval) 안에서 최신 휴식 상태를 읽기 위해 ref에도 같이 둔다.
   const restRef = useRef(rest)
@@ -254,6 +295,11 @@ export default function WorkoutLogger({ initial, onExit }: Props) {
     updateRest((r) => startRest(r, log.restSeconds, t))
   }
 
+  const finish = () => {
+    setDialog(null)
+    onFinish(buildSessionRecord({ id: generateId('session'), day, startedAt, logs, now: Date.now() }))
+  }
+
   const remaining = rest.endsAt !== null ? restRemaining(rest, now) : null
   const total = totalVolumeOf(logs)
 
@@ -263,7 +309,7 @@ export default function WorkoutLogger({ initial, onExit }: Props) {
         <div className="flex items-center gap-2">
           <button
             aria-label="뒤로 가기"
-            onClick={() => setConfirming(true)}
+            onClick={() => setDialog('exit')}
             className="-ml-2 rounded-full p-2 text-slate-600 hover:bg-slate-100"
           >
             <ChevronLeft size={22} />
@@ -290,6 +336,7 @@ export default function WorkoutLogger({ initial, onExit }: Props) {
               log={log}
               onChange={(next) => setLogs((ls) => ls.map((l) => (l.key === next.key ? next : l)))}
               onSetCompleted={onSetCompleted}
+              onShowLast={setLastFor}
               newId={newId}
             />
           ))
@@ -316,9 +363,45 @@ export default function WorkoutLogger({ initial, onExit }: Props) {
           updateRest(skipRest)
           setExpanded(false)
         }}
+        onFinish={() => setDialog(countCompletedSets(logs) > 0 ? 'finish' : 'noSets')}
       />
 
-      {confirming && <ConfirmExitModal onCancel={() => setConfirming(false)} onConfirm={onExit} />}
+      {lastFor && (
+        <LastRecordSheet name={lastFor.name} last={lastRecordOf(history, lastFor.exerciseId)} onClose={() => setLastFor(null)} />
+      )}
+
+      {dialog === 'exit' && (
+        <Modal
+          title="기록을 중단할까요?"
+          message="중단하면 지금까지 적은 기록이 지워져요."
+          cancelLabel="계속 기록하기"
+          confirmLabel="중단하기"
+          tone="danger"
+          onCancel={() => setDialog(null)}
+          onConfirm={onExit}
+        />
+      )}
+      {dialog === 'finish' && (
+        <Modal
+          title="운동을 마칠까요?"
+          message="완료하지 않은 세트는 기록되지 않아요"
+          cancelLabel="계속하기"
+          confirmLabel="완료하기"
+          tone="primary"
+          onCancel={() => setDialog(null)}
+          onConfirm={finish}
+        />
+      )}
+      {dialog === 'noSets' && (
+        <Modal
+          title="완료한 세트가 없어요"
+          message="세트를 마치면 완료 체크를 눌러주세요."
+          confirmLabel="확인"
+          tone="primary"
+          onCancel={() => setDialog(null)}
+          onConfirm={() => setDialog(null)}
+        />
+      )}
     </div>
   )
 }

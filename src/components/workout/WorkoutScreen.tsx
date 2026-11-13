@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '../../context/AppContext'
+import { generateId } from '../../lib/id'
+import { appendWorkoutHistory, type WorkoutSessionRecord } from '../../lib/workoutHistory'
 import WorkoutComplete from './WorkoutComplete'
 import RoutineSection from './RoutineSection'
 import WorkoutHistory from './WorkoutHistory'
 import WorkoutLogger from './WorkoutLogger'
+import WorkoutSummary from './WorkoutSummary'
 import { clearWorkoutLog, createWorkoutLog, loadWorkoutLog, saveWorkoutLog, type SavedWorkoutLog } from './workoutLogStorage'
 import WorkoutTimerView from './WorkoutTimerView'
 
@@ -25,17 +28,37 @@ export default function WorkoutScreen({ onLoggingChange }: Props) {
     onLoggingChange?.(logging)
   }, [logging, onLoggingChange])
 
+  const closeSession = () => {
+    clearWorkoutLog()
+    setSession(null)
+  }
+
+  // "운동 완료" → ① 세트 상세를 우리 전용 기록에 ② 팀원 앱 "최근 운동 기록"에 '헬스'로 ③ 요약 화면
+  const finishSession = (record: WorkoutSessionRecord) => {
+    if (!session) return
+    appendWorkoutHistory(record)
+    dispatch({
+      type: 'ADD_WORKOUT',
+      workout: {
+        id: generateId('workout'),
+        type: '헬스',
+        startTime: record.startedAt,
+        endTime: record.date,
+        duration: record.durationSeconds, // 기록 화면의 운동 시간
+      },
+    })
+    // 요약 화면에서 새로고침해도 다시 저장되지 않도록 "저장 완료" 표시를 남긴다("확인"을 누르면 지움)
+    const done: SavedWorkoutLog = { ...session, completed: record }
+    saveWorkoutLog(done)
+    setSession(done)
+  }
+
+  if (session?.completed) {
+    return <WorkoutSummary record={session.completed} onConfirm={closeSession} />
+  }
+
   if (session) {
-    return (
-      <WorkoutLogger
-        key={session.startedAt}
-        initial={session}
-        onExit={() => {
-          clearWorkoutLog()
-          setSession(null)
-        }}
-      />
-    )
+    return <WorkoutLogger key={session.startedAt} initial={session} onExit={closeSession} onFinish={finishSession} />
   }
 
   return (

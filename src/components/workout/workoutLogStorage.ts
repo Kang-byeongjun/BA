@@ -1,4 +1,5 @@
 import { loadFromStorage, removeFromStorage, saveToStorage } from '../../lib/storage'
+import type { WorkoutSessionRecord } from '../../lib/workoutHistory'
 import { buildLogs, INITIAL_REST, type ExerciseLog, type LoggerDay, type RestState } from '../../lib/workoutLog'
 
 /**
@@ -20,6 +21,11 @@ export interface SavedWorkoutLog {
   startedAt: number
   logs: ExerciseLog[]
   rest: RestState
+  /**
+   * "운동 완료"로 이미 저장한 기록. 있으면 기록 화면 대신 요약 화면을 보여준다.
+   * (요약 화면에서 새로고침해도 같은 운동이 두 번 저장되지 않게 하려고 남겨 둔다. "확인"을 누르면 지움)
+   */
+  completed?: WorkoutSessionRecord
 }
 
 export function createWorkoutLog(day: LoggerDay, now: number): SavedWorkoutLog {
@@ -44,7 +50,10 @@ function isValid(v: unknown): v is SavedWorkoutLog {
 
 export function loadWorkoutLog(): SavedWorkoutLog | null {
   const v = loadFromStorage<unknown>(WORKOUT_LOG_STORAGE_KEY, null)
-  return isValid(v) ? v : null
+  if (!isValid(v)) return null
+  // 2단계에서 저장된 기록에는 exerciseId가 없다 → key("순서-종목id")에서 꺼내 채운다
+  const logs = v.logs.map((l) => (l.exerciseId ? l : { ...l, exerciseId: l.key.slice(l.key.indexOf('-') + 1) }))
+  return { ...v, logs }
 }
 
 export function hasSavedWorkoutLog(): boolean {
