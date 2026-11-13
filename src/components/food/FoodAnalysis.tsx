@@ -1,9 +1,10 @@
-import { AlertTriangle, Loader2, Minus, Plus, Sparkles, Trash2, X } from 'lucide-react'
+import { AlertTriangle, Droplet, Loader2, Minus, Plus, Sparkles, Trash2, Undo2, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FoodExtraction } from '../../../shared/analysis'
 import { AnalysisError } from '../../../shared/errors'
 import type { FoodDbEntry } from '../../data/foodDatabase'
 import { inferMealSlot } from '../../lib/time'
+import { QUICK_WATER_AMOUNTS } from '../../lib/water'
 import {
   createEmptyRow,
   createRowsFromExtraction,
@@ -28,7 +29,7 @@ interface Props {
   // 없으면 지금 시각 기준으로 추정한다(inferMealSlot).
   initialSlot?: MealSlot
   onReanalyze: () => void
-  onConfirm: (input: { title: string; slot: MealSlot; rows: FoodRow[] }) => void
+  onConfirm: (input: { title: string; slot: MealSlot; rows: FoodRow[]; waterMl: number }) => void
   onCancel: () => void
 }
 
@@ -65,6 +66,8 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
   const [title, setTitle] = useState(extraction.mealName)
   const [slot, setSlot] = useState<MealSlot>(() => initialSlot ?? inferMealSlot(Date.now()))
   const [rows, setRows] = useState<FoodRow[]>(() => createRowsFromExtraction(extraction))
+  // 음식에 포함된 수분은 계산하지 않는다 — 사용자가 이 식사와 함께 마신 물을 직접 더한다.
+  const [waterMl, setWaterMl] = useState(0)
   const [openSuggestKey, setOpenSuggestKey] = useState<string | null>(null)
   // DB에 없는 음식(예: 양념치킨)을 삭제하지 않고도 기록할 수 있게, 그 음식만 사용자가 직접
   // 영양정보를 입력하는 경로. AI가 숫자를 추정하는 게 아니라 사용자가 직접 넣는 값이라
@@ -75,8 +78,18 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
   const [estimatingKeys, setEstimatingKeys] = useState<Set<string>>(new Set())
   const [estimateErrors, setEstimateErrors] = useState<Record<string, string>>({})
   const [showPortionConfirm, setShowPortionConfirm] = useState(false)
+  // 확인이 필요한 행으로 스크롤한 뒤 잠깐 테두리를 강조해서 "이거예요"를 보여준다.
+  const [flashKey, setFlashKey] = useState<string | null>(null)
   const nameInputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
+  const rowCardRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const pendingFocusKey = useRef<string | null>(null)
+
+  const scrollToRow = (key: string) => {
+    // jsdom(테스트 환경)에는 scrollIntoView가 없어서 메서드 자체도 optional chaining으로 감싼다.
+    rowCardRefs.current.get(key)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+    setFlashKey(key)
+    setTimeout(() => setFlashKey((k) => (k === key ? null : k)), 1600)
+  }
 
   useEffect(() => {
     if (!pendingFocusKey.current) return
@@ -198,7 +211,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
       setShowPortionConfirm(true)
       return
     }
-    onConfirm({ title, slot, rows })
+    onConfirm({ title, slot, rows, waterMl })
   }
   const blockedReason = !canSave
     ? summary.activeCount === 0
@@ -277,6 +290,43 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
         </div>
 
         <div className="rounded-2xl border border-slate-100 bg-white p-4">
+          <div className="mb-1.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Droplet size={16} className="text-sky-500" />
+              <p className="text-sm font-semibold text-slate-800">물 섭취 (선택)</p>
+            </div>
+            {waterMl > 0 && (
+              <span className="text-sm text-slate-500">
+                <span className="font-semibold text-slate-900">{waterMl}</span>ml
+              </span>
+            )}
+          </div>
+          <p className="mb-2 text-[11px] text-slate-400">
+            음식에 포함된 수분은 계산하지 않아요. 같이 마신 물이 있으면 눌러서 더해주세요.
+          </p>
+          <div className="flex items-center gap-2">
+            {QUICK_WATER_AMOUNTS.map(({ label, ml }) => (
+              <button
+                key={ml}
+                onClick={() => setWaterMl((w) => w + ml)}
+                className="flex-1 rounded-xl bg-sky-50 py-2 text-xs font-semibold text-sky-700 active:scale-[0.98]"
+              >
+                +{ml}ml · {label}
+              </button>
+            ))}
+            {waterMl > 0 && (
+              <button
+                onClick={() => setWaterMl(0)}
+                aria-label="물 섭취 초기화"
+                className="shrink-0 rounded-xl bg-slate-50 p-2.5 text-slate-400 active:scale-[0.98]"
+              >
+                <Undo2 size={16} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 bg-white p-4">
           <p className="mb-1 text-xs font-medium text-slate-500">인식된 음식</p>
           <p className="mb-3 text-[11px] text-slate-400">
             사진 분석을 기반으로 한 예상량입니다. 그램 수가 가늠되지 않으면 아래 크기 버튼으로, 알고 있으면 숫자로 직접 맞춰주세요.
@@ -290,12 +340,29 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
               const unresolved = active && !row.entry
               const cooking = row.cookingMethod ? COOKING_LABELS[row.cookingMethod] : undefined
               const lowConfidence = row.confidence !== null && row.confidence < LOW_CONFIDENCE
+              const needsCheck = hasUnverifiedLowConfidence(row)
 
               return (
                 <div
                   key={row.key}
-                  className={`relative rounded-xl border p-3 ${unresolved ? 'border-amber-300 bg-amber-50/50' : 'border-slate-100 bg-slate-50/60'}`}
+                  ref={(el) => {
+                    if (el) rowCardRefs.current.set(row.key, el)
+                    else rowCardRefs.current.delete(row.key)
+                  }}
+                  className={`relative rounded-xl border p-3 transition-shadow ${
+                    unresolved
+                      ? 'border-amber-300 bg-amber-50/50'
+                      : needsCheck
+                        ? 'border-amber-300 bg-amber-50/40'
+                        : 'border-slate-100 bg-slate-50/60'
+                  } ${flashKey === row.key ? 'ring-2 ring-amber-400' : ''}`}
                 >
+                  {needsCheck && (
+                    <p className="mb-2 flex items-center gap-1 text-[11px] font-semibold text-amber-700">
+                      <AlertTriangle size={12} />
+                      AI가 자신 없어한 양이에요 — 맞는지 확인해주세요
+                    </p>
+                  )}
                   <div className="flex items-center gap-2">
                     <input
                       ref={(el) => {
@@ -349,7 +416,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                       {cooking && (
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">{cooking}</span>
                       )}
-                      {lowConfidence && (
+                      {lowConfidence && !needsCheck && (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
                           인식 확신 낮음
                         </span>
@@ -564,14 +631,25 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
             </p>
             <ul className="mb-4 space-y-1">
               {unverifiedRows.map((row) => (
-                <li key={row.key} className="rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800">
-                  {row.name || '(이름 없음)'} · {row.grams}g
+                <li key={row.key}>
+                  <button
+                    onClick={() => {
+                      setShowPortionConfirm(false)
+                      scrollToRow(row.key)
+                    }}
+                    className="w-full rounded-lg bg-amber-50 px-3 py-1.5 text-left text-sm font-medium text-amber-800"
+                  >
+                    {row.name || '(이름 없음)'} · {row.grams}g
+                  </button>
                 </li>
               ))}
             </ul>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowPortionConfirm(false)}
+                onClick={() => {
+                  setShowPortionConfirm(false)
+                  if (unverifiedRows[0]) scrollToRow(unverifiedRows[0].key)
+                }}
                 className="flex-1 rounded-full border-2 border-slate-200 py-3 text-sm font-semibold text-slate-600"
               >
                 다시 확인할게요
@@ -579,7 +657,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
               <button
                 onClick={() => {
                   setShowPortionConfirm(false)
-                  onConfirm({ title, slot, rows })
+                  onConfirm({ title, slot, rows, waterMl })
                 }}
                 className="flex-1 rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white"
               >

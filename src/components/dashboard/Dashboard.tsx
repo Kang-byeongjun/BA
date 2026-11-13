@@ -1,18 +1,18 @@
-import { Camera, Sparkles, X } from 'lucide-react'
+import { Bell, Camera, Sparkles, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import MealDetailModal from '../meals/MealDetailModal'
-import { generateFeedback, getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
+import { getDayStatus } from '../../lib/calendar'
+import { buildHomeGreeting } from '../../lib/greeting'
+import { getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
+import { getHomeNudge } from '../../lib/nudge'
 import { isSameDay } from '../../lib/time'
 import { getTodayWaterTotal } from '../../lib/water'
 import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
 import CalorieSummary from './CalorieSummary'
-import FeedbackPanel from './FeedbackPanel'
-import NutritionBar from './NutritionBar'
-import RecommendationCard from './RecommendationCard'
+import HomeCoach from './HomeCoach'
 import TodayMealsSection from './TodayMealsSection'
 import UpdatesPanel from './UpdatesPanel'
-import WaterTracker from './WaterTracker'
 
 interface Props {
   // slot을 넘기면 그 칸으로 바로 기록된다(아침 칸의 "+추가"를 눌렀는데 지금 시간이 밤이라
@@ -38,9 +38,7 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
   const consumed = useMemo(() => sumMeals(todayMeals), [todayMeals])
   const streakDays = useMemo(() => getStreakDays(meals), [meals])
   const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
-  const hasUncertainPortionsToday = todayMeals.some((m) => m.hasLowConfidencePortions)
 
-  const todayWaterLogs = useMemo(() => waterLogs.filter((w) => isSameDay(w.timestamp, Date.now())), [waterLogs])
   const todayWaterTotal = useMemo(() => getTodayWaterTotal(waterLogs), [waterLogs])
 
   if (!nutritionTarget) return null
@@ -50,14 +48,27 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
   const recommendationProfile = profile
     ? { goal: profile.goal, gender: profile.gender, bodyFatPercentage: profile.bodyFatPercentage }
     : { goal: 'health_care' as const, gender: 'male' as const, bodyFatPercentage: null }
-  const feedback = generateFeedback(consumed, nutritionTarget)
+  // 추천 상세(RecommendationCard)는 식단 탭으로 옮겼지만, 1순위 추천의 코치 문구(HomeCoach)는
+  // 홈에서 계속 보여주므로 recommendations 계산 자체는 여기 남아있어야 한다.
   const recommendations = getRecommendedMeals(consumed, nutritionTarget, recommendationProfile, eatenTodayFoodNames)
+  const greeting = buildHomeGreeting({
+    streakDays,
+    hasLoggedToday: todayMeals.length > 0,
+    yesterdayStatus: getDayStatus(meals, nutritionTarget, Date.now() - 86_400_000),
+    hour: new Date().getHours(),
+  })
+  const nudge = getHomeNudge({
+    hour: new Date().getHours(),
+    loggedSlots: new Set(todayMeals.map((m) => m.slot)),
+    waterMl: todayWaterTotal,
+    waterTargetMl: DEFAULT_WATER_TARGET_ML,
+  })
 
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-slate-400">
-          안녕하세요{profile ? ',' : ''} 오늘도 목표를 향해 달려볼까요?
+          안녕하세요{profile ? ',' : ''} {greeting}
         </p>
         <button
           onClick={() => setUpdatesPanelOpen(true)}
@@ -83,49 +94,24 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
         </div>
       )}
 
+      {nudge && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <Bell size={16} className="mt-0.5 shrink-0 text-sky-600" />
+            <p className="text-sm text-sky-800">{nudge.message}</p>
+          </div>
+          <button
+            onClick={() => (nudge.action === 'log-dinner' ? onOpenCamera('저녁') : dispatch({ type: 'ADD_WATER', amount: 200 }))}
+            className="shrink-0 rounded-full bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white"
+          >
+            {nudge.action === 'log-dinner' ? '기록하기' : '한 잔 추가'}
+          </button>
+        </div>
+      )}
+
+      {recommendations[0] && <HomeCoach meal={recommendations[0]} goal={recommendationProfile.goal} />}
+
       <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} streakDays={streakDays} />
-
-      <div className="space-y-4 rounded-2xl border border-slate-100 bg-white p-4">
-        <NutritionBar
-          label="단백질"
-          consumed={consumed.protein}
-          target={nutritionTarget.protein}
-          unit="g"
-          colorClass="bg-sky-500"
-        />
-        <NutritionBar
-          label="탄수화물"
-          consumed={consumed.carbohydrates}
-          target={nutritionTarget.carbohydrates}
-          unit="g"
-          colorClass="bg-amber-500"
-        />
-        <NutritionBar
-          label="지방"
-          consumed={consumed.fat}
-          target={nutritionTarget.fat}
-          unit="g"
-          colorClass="bg-violet-500"
-        />
-        <NutritionBar
-          label="식이섬유"
-          consumed={consumed.fiber}
-          target={nutritionTarget.fiber}
-          unit="g"
-          colorClass="bg-emerald-500"
-        />
-      </div>
-
-      <WaterTracker
-        consumedMl={todayWaterTotal}
-        targetMl={DEFAULT_WATER_TARGET_ML}
-        onAdd={(amount) => dispatch({ type: 'ADD_WATER', amount })}
-        onUndo={() => {
-          const last = todayWaterLogs[0]
-          if (last) dispatch({ type: 'DELETE_WATER', id: last.id })
-        }}
-        canUndo={todayWaterLogs.length > 0}
-      />
 
       <button
         onClick={() => onOpenCamera()}
@@ -136,14 +122,6 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
       </button>
 
       <TodayMealsSection meals={todayMeals} onSelect={setSelectedMeal} onAdd={onOpenCamera} />
-
-      {hasUncertainPortionsToday && (
-        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          오늘 기록 중 AI가 자신 없어했던 양이 그대로 포함돼 있어요. 아래 % 숫자는 참고용으로 봐주세요.
-        </p>
-      )}
-      <FeedbackPanel feedback={feedback} />
-      <RecommendationCard meals={recommendations} goal={recommendationProfile.goal} />
 
       {selectedMeal && (
         <MealDetailModal

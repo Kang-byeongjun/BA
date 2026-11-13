@@ -199,7 +199,7 @@ describe('음식 사진 흐름 (Test B)', () => {
     const save = screen.getByText('식사 기록하기') as HTMLButtonElement
     expect(save.disabled).toBe(true)
     expect(screen.getAllByText(/영양 정보를 찾지 못했어요/).length).toBeGreaterThan(0)
-    expect(screen.getByText('인식 확신 낮음')).toBeTruthy()
+    expect(screen.getByText(/AI가 자신 없어한 양이에요/)).toBeTruthy()
 
     fireEvent.click(screen.getAllByLabelText('음식 삭제')[3])
     expect((screen.getByText('식사 기록하기') as HTMLButtonElement).disabled).toBe(false)

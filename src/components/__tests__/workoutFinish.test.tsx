@@ -155,7 +155,7 @@ describe('App — 운동 완료 흐름', () => {
     const items = within(screen.getByRole('region', { name: '종목별 볼륨' })).getAllByRole('listitem')
     expect(items.map((li) => li.textContent)).toEqual(['벤치프레스 · 2세트1,200kg', '바벨로우 · 1세트400kg'])
     // 요약 화면에서도 하단 메뉴는 숨김
-    expect(screen.queryByRole('button', { name: '음식 촬영' })).toBeNull()
+    expect(screen.queryByRole('navigation')).toBeNull()
 
     // 세트 상세는 우리 전용 기록에
     const history = loadWorkoutHistory()
@@ -175,7 +175,7 @@ describe('App — 운동 완료 흐름', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '확인' }))
     expect(screen.getByRole('region', { name: '추천 루틴' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: '음식 촬영' })).toBeTruthy()
+    expect(screen.getByRole('navigation')).toBeTruthy()
     expect(loadWorkoutLog()).toBeNull()
 
     const list = screen.getByText('최근 운동 기록').parentElement!

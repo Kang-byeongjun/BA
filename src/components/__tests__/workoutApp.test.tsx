@@ -27,7 +27,7 @@ const result: WorkoutResult = {
   ],
 }
 
-const nav = () => screen.queryByRole('button', { name: '음식 촬영' }) // 하단 메뉴 가운데 버튼
+const nav = () => screen.queryByRole('navigation') // 하단 메뉴(<nav>)
 
 beforeEach(() => {
   localStorage.clear()
