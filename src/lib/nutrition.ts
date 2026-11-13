@@ -1,6 +1,7 @@
 import { getFoodById } from '../data/foodDatabase'
 import { INGREDIENT_MEAL_COMBOS, type MealComboDef } from '../data/mealCombos'
 import { computeGoalFit, resolveMealCombo, type ResolvedMealCombo } from '../services/nutritionService'
+import { isSameDay } from './time'
 import type {
   Gender,
   Goal,
@@ -23,6 +24,26 @@ export function sumMeals(meals: Meal[]) {
     }),
     { calories: 0, protein: 0, carbohydrates: 0, fat: 0, fiber: 0 },
   )
+}
+
+const ONE_DAY_MS = 86_400_000
+
+/**
+ * 오늘까지 끊기지 않고 기록한 연속 일수. 오늘 아직 기록이 없어도 어제까지 이어졌으면 스트릭이
+ * 깨진 게 아니므로(오늘은 아직 끝나지 않았다) 어제부터 거슬러 센다.
+ */
+export function getStreakDays(meals: Meal[], now: number = Date.now()): number {
+  const hasMealOn = (ts: number) => meals.some((m) => isSameDay(m.timestamp, ts))
+
+  let cursor = now
+  if (!hasMealOn(cursor)) cursor -= ONE_DAY_MS
+
+  let streak = 0
+  while (hasMealOn(cursor)) {
+    streak++
+    cursor -= ONE_DAY_MS
+  }
+  return streak
 }
 
 export function getPercentage(consumed: number, target: number): number {

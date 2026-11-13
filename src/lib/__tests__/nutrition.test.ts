@@ -1,8 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import { INGREDIENT_MEAL_COMBOS, MEAL_COMBOS } from '../../data/mealCombos'
 import { resolveMealCombo } from '../../services/nutritionService'
-import type { NutritionTarget } from '../../types'
-import { generateFeedback, getRecommendedMeals } from '../nutrition'
+import type { Meal, NutritionTarget } from '../../types'
+import { generateFeedback, getRecommendedMeals, getStreakDays } from '../nutrition'
+
+const ONE_DAY_MS = 86_400_000
+
+function mealAt(timestamp: number): Meal {
+  return {
+    id: String(timestamp),
+    timestamp,
+    slot: '점심',
+    title: '테스트 식사',
+    image: null,
+    foods: [],
+    calories: 500,
+    protein: 20,
+    carbohydrates: 50,
+    fat: 10,
+    fiber: 5,
+    hasLowConfidencePortions: false,
+  }
+}
 
 const target: NutritionTarget = { calories: 2000, protein: 120, carbohydrates: 250, fat: 70, fiber: 30 }
 const healthCareProfile = {
@@ -216,6 +235,36 @@ describe('getRecommendedMeals', () => {
       expect(INGREDIENT_MEAL_COMBOS.some((c) => c.id === meal.id)).toBe(true)
       expect(MEAL_COMBOS.some((c) => c.id === meal.id)).toBe(false)
     }
+  })
+})
+
+describe('getStreakDays — 끊기지 않고 기록한 연속 일수', () => {
+  it('기록이 없으면 0이다', () => {
+    expect(getStreakDays([])).toBe(0)
+  })
+
+  it('오늘 기록이 있으면 오늘을 포함해서 센다', () => {
+    const now = Date.now()
+    const meals = [mealAt(now), mealAt(now - ONE_DAY_MS), mealAt(now - 2 * ONE_DAY_MS)]
+    expect(getStreakDays(meals, now)).toBe(3)
+  })
+
+  it('오늘 아직 기록이 없어도 어제까지 이어졌으면 깨진 게 아니라 어제부터 센다', () => {
+    const now = Date.now()
+    const meals = [mealAt(now - ONE_DAY_MS), mealAt(now - 2 * ONE_DAY_MS)]
+    expect(getStreakDays(meals, now)).toBe(2)
+  })
+
+  it('중간에 하루라도 비면 그 이전 기록은 세지 않는다', () => {
+    const now = Date.now()
+    const meals = [mealAt(now), mealAt(now - 3 * ONE_DAY_MS), mealAt(now - 4 * ONE_DAY_MS)]
+    expect(getStreakDays(meals, now)).toBe(1)
+  })
+
+  it('같은 날 여러 끼를 먹어도 하루로만 센다', () => {
+    const now = Date.now()
+    const meals = [mealAt(now), mealAt(now - 3600_000), mealAt(now - ONE_DAY_MS)]
+    expect(getStreakDays(meals, now)).toBe(2)
   })
 })
 

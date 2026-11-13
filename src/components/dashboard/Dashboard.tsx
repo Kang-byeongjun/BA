@@ -2,7 +2,7 @@ import { Camera, Sparkles, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import MealDetailModal from '../meals/MealDetailModal'
-import { generateFeedback, getRecommendedMeals, sumMeals } from '../../lib/nutrition'
+import { generateFeedback, getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
 import { isSameDay } from '../../lib/time'
 import type { Meal, MealSlot } from '../../types'
 import CalorieSummary from './CalorieSummary'
@@ -34,6 +34,7 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
 
   const todayMeals = useMemo(() => meals.filter((m) => isSameDay(m.timestamp, Date.now())), [meals])
   const consumed = useMemo(() => sumMeals(todayMeals), [todayMeals])
+  const streakDays = useMemo(() => getStreakDays(meals), [meals])
   const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
   const hasUncertainPortionsToday = todayMeals.some((m) => m.hasLowConfidencePortions)
 
@@ -77,7 +78,7 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
         </div>
       )}
 
-      <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} />
+      <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} streakDays={streakDays} />
 
       <div className="space-y-4 rounded-2xl border border-slate-100 bg-white p-4">
         <NutritionBar
