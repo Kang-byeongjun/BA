@@ -2,17 +2,20 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import type { WorkoutType } from '../../types'
 import WorkoutComplete from './WorkoutComplete'
+import RoutineSection from './RoutineSection'
 import WorkoutHistory from './WorkoutHistory'
 import WorkoutTimerView from './WorkoutTimerView'
 import WorkoutTypeSelect from './WorkoutTypeSelect'
 
 export default function WorkoutScreen() {
-  const { activeWorkout, pendingWorkout, dispatch } = useApp()
+  const { activeWorkout, pendingWorkout, workoutProfile, dispatch } = useApp()
   const [selectedType, setSelectedType] = useState<WorkoutType>('헬스')
 
   return (
     <div className="space-y-5 px-4 pb-4 pt-6">
       <h1 className="text-xl font-bold text-slate-900">오늘의 운동</h1>
+
+      <RoutineSection profile={workoutProfile} />
 
       {pendingWorkout ? (
         <WorkoutComplete
