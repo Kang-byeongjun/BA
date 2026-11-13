@@ -6,9 +6,15 @@ import type { RoutineExercise, WorkoutResult } from '../../../server/engine/type
  * 전역 상태(useApp)나 서버 호출에 의존하지 않는다. 데이터는 모두 props로 받는다.
  */
 
+export type RoutineDay = WorkoutResult['days'][number]
+
 interface Props {
   result: WorkoutResult
+  /** 있으면 일차 탭 아래에 "이 루틴으로 운동 시작" 버튼을 보여준다 */
+  onStart?: (day: RoutineDay) => void
 }
+
+export const FALLBACK_NOTICE = 'AI가 연결되지 않아 규칙 기반 기본 루틴으로 구성했어요'
 
 const range = (min: number, max: number) => (min === max ? `${min}` : `${min}~${max}`)
 
@@ -19,7 +25,7 @@ function prescriptionText(rx: NonNullable<RoutineExercise['prescription']>): { m
   }
 }
 
-function ExerciseItem({ exercise }: { exercise: RoutineExercise }) {
+function ExerciseItem({ exercise, showReason }: { exercise: RoutineExercise; showReason: boolean }) {
   const rx = exercise.prescription ? prescriptionText(exercise.prescription) : null
 
   return (
@@ -30,7 +36,7 @@ function ExerciseItem({ exercise }: { exercise: RoutineExercise }) {
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-slate-900">{exercise.name}</p>
-          <p className="mt-1 text-sm text-slate-500">{exercise.reason}</p>
+          {showReason && <p className="mt-1 text-sm text-slate-500">{exercise.reason}</p>}
           <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-medium">
             {rx ? (
               <>
@@ -53,11 +59,13 @@ function ExerciseItem({ exercise }: { exercise: RoutineExercise }) {
   )
 }
 
-export default function RoutineView({ result }: Props) {
+export default function RoutineView({ result, onStart }: Props) {
   const [dayIndex, setDayIndex] = useState(0)
   const days = result.days
   // 결과가 바뀌어 일차 수가 줄어도 범위를 벗어나지 않게 한다.
   const current = days[Math.min(dayIndex, days.length - 1)]
+  // 기본(규칙) 루틴의 종목별 이유는 AI가 쓴 설명이 아니라서 숨긴다.
+  const isFallback = result.source === 'fallback'
 
   return (
     <div className="space-y-3">
@@ -65,12 +73,7 @@ export default function RoutineView({ result }: Props) {
         <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{result.goalReason}</p>
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-slate-600">{result.summary}</p>
-        {result.source === 'fallback' && (
-          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">기본 루틴이에요</span>
-        )}
-      </div>
+      <p className="text-sm text-slate-600">{isFallback ? FALLBACK_NOTICE : result.summary}</p>
 
       {days.length > 1 && (
         <div role="tablist" aria-label="운동 일차" className="flex gap-2 overflow-x-auto pb-1">
@@ -93,10 +96,19 @@ export default function RoutineView({ result }: Props) {
         </div>
       )}
 
+      {current && onStart && (
+        <button
+          onClick={() => onStart(current)}
+          className="w-full rounded-full bg-emerald-500 py-3 font-semibold text-white shadow-lg shadow-emerald-200"
+        >
+          이 루틴으로 운동 시작
+        </button>
+      )}
+
       {current && (
         <ol role="tabpanel" aria-label={`${current.day}일차 ${current.label}`} className="space-y-2">
           {current.exercises.map((e) => (
-            <ExerciseItem key={`${current.day}-${e.order}-${e.id}`} exercise={e} />
+            <ExerciseItem key={`${current.day}-${e.order}-${e.id}`} exercise={e} showReason={!isFallback} />
           ))}
         </ol>
       )}

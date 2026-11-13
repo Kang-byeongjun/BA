@@ -5,7 +5,7 @@ import type { RoutineExercise, WorkoutResult } from '../../../server/engine/type
 import { AppProvider } from '../../context/AppContext'
 import { DEFAULT_WORKOUT_PROFILE, type WorkoutProfile } from '../../types'
 import RoutineSection from '../workout/RoutineSection'
-import RoutineView from '../workout/RoutineView'
+import RoutineView, { FALLBACK_NOTICE } from '../workout/RoutineView'
 import WorkoutScreen from '../workout/WorkoutScreen'
 
 // 실제 /api/workout(=AI)은 부르지 않는다. fetch를 가짜로 바꿔서 검증한다.
@@ -111,11 +111,36 @@ describe('RoutineView', () => {
     expect(text(container.firstElementChild?.firstElementChild)).toContain('인바디 결과로 근육 증가')
   })
 
-  it('source가 fallback일 때만 "기본 루틴이에요"를 표시한다', () => {
+  it('source가 fallback이면 안내 문구로 바꾸고 종목별 이유를 숨긴다', () => {
     const { rerender } = render(<RoutineView result={result()} />)
-    expect(screen.queryByText('기본 루틴이에요')).toBeNull()
+    expect(screen.queryByText(FALLBACK_NOTICE)).toBeNull()
+    expect(screen.getByText('상체와 하체를 나눠 운동해요.')).toBeTruthy()
+    expect(screen.getByText('가슴 대근육부터')).toBeTruthy()
+
     rerender(<RoutineView result={result({ source: 'fallback' })} />)
-    expect(screen.getByText('기본 루틴이에요')).toBeTruthy()
+    expect(screen.getByText('AI가 연결되지 않아 규칙 기반 기본 루틴으로 구성했어요')).toBeTruthy()
+    expect(screen.queryByText('상체와 하체를 나눠 운동해요.')).toBeNull()
+    expect(screen.queryByText('가슴 대근육부터')).toBeNull()
+    expect(screen.queryByText('기본 이유')).toBeNull()
+    // 세트·횟수와 주의 문구는 그대로
+    expect(screen.getAllByText('2~3세트 × 8~12회').length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('note')).toHaveLength(1)
+  })
+
+  it('onStart가 있으면 일차 탭 아래에 시작 버튼을 보여주고, 고른 일차를 넘긴다', () => {
+    const { rerender } = render(<RoutineView result={result()} />)
+    expect(screen.queryByRole('button', { name: '이 루틴으로 운동 시작' })).toBeNull()
+
+    const onStart = vi.fn()
+    rerender(<RoutineView result={result()} onStart={onStart} />)
+    const start = screen.getByRole('button', { name: '이 루틴으로 운동 시작' })
+    // 탭 목록 바로 다음, 종목 목록 앞
+    expect(screen.getByRole('tablist').nextElementSibling).toBe(start)
+
+    fireEvent.click(screen.getByRole('tab', { name: '2일차 · 하체' }))
+    fireEvent.click(start)
+    expect(onStart).toHaveBeenCalledTimes(1)
+    expect(onStart.mock.calls[0]![0]).toMatchObject({ day: 2, label: '하체' })
   })
 
   it('하루짜리 루틴이면 탭 없이 바로 보여준다', () => {
@@ -190,7 +215,7 @@ describe('RoutineSection', () => {
 })
 
 describe('WorkoutScreen', () => {
-  it('맨 위에 추천 루틴이 있고, 기존 운동 시작 화면도 그대로 있다', async () => {
+  it('맨 위에 추천 루틴이 있고, 운동 종류 선택·스톱워치는 숨기고 최근 기록은 보여준다', async () => {
     localStorage.setItem('ai-diet-app:workoutProfile', JSON.stringify(profile()))
     render(
       <AppProvider>
@@ -199,8 +224,32 @@ describe('WorkoutScreen', () => {
     )
     const section = screen.getByRole('region', { name: '추천 루틴' })
     expect(within(section).getByRole('button', { name: '루틴 만들기' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: '운동 시작' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '운동 시작' })).toBeNull()
+    expect(screen.queryByText('00:00:00')).toBeNull()
+    expect(screen.queryByText('운동 종류')).toBeNull()
+    expect(screen.queryByRole('button', { name: /러닝/ })).toBeNull()
+    expect(screen.getByText('최근 운동 기록')).toBeTruthy()
     await waitFor(() => expect(fetchMock).not.toHaveBeenCalled())
+  })
+
+  it('"이 루틴으로 운동 시작"을 누르면 기록 화면으로 가고, 중단하면 돌아온다', async () => {
+    localStorage.setItem('ai-diet-app:workoutProfile', JSON.stringify(profile()))
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true, data: result() }))
+    render(
+      <AppProvider>
+        <WorkoutScreen />
+      </AppProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: '루틴 만들기' }))
+    fireEvent.click(await screen.findByRole('button', { name: '이 루틴으로 운동 시작' }))
+
+    expect(screen.getByRole('heading', { name: '1일차 · 상체' })).toBeTruthy()
+    expect(screen.queryByRole('region', { name: '추천 루틴' })).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: '뒤로 가기' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '중단하기' }))
+    expect(screen.getByRole('region', { name: '추천 루틴' })).toBeTruthy()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('저장된 운동 프로필이 없으면 입력 안내를 보여준다', () => {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { unsupportedPainNotice } from '../../lib/workoutAdapter'
 import { getCachedWorkoutRoutine, getWorkoutRoutine, type WorkoutRoutineResponse } from '../../services/workoutService'
 import type { WorkoutProfile } from '../../types'
-import RoutineView from './RoutineView'
+import RoutineView, { type RoutineDay } from './RoutineView'
 
 /**
  * RoutineSection — 운동 탭 맨 위의 "추천 루틴" 카드.
@@ -13,9 +13,11 @@ import RoutineView from './RoutineView'
 
 interface Props {
   profile: WorkoutProfile | null
+  /** 일차 탭 아래 "이 루틴으로 운동 시작"을 눌렀을 때 */
+  onStart?: (day: RoutineDay) => void
 }
 
-export default function RoutineSection({ profile }: Props) {
+export default function RoutineSection({ profile, onStart }: Props) {
   const [data, setData] = useState<WorkoutRoutineResponse | null>(() => (profile ? getCachedWorkoutRoutine(profile) : null))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,7 +77,7 @@ export default function RoutineSection({ profile }: Props) {
           )}
           {notice && <p className="text-xs text-slate-500">ⓘ {notice}</p>}
           {data ? (
-            <RoutineView result={data.result} />
+            <RoutineView result={data.result} onStart={onStart} />
           ) : (
             !loading && (
               <p className="rounded-2xl bg-emerald-50 px-4 py-6 text-center text-sm text-emerald-800">
