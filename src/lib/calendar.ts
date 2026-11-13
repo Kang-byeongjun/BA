@@ -10,6 +10,15 @@ export interface CalendarDay {
   calories: number
 }
 
+/** 하루치 칼로리 섭취가 목표에 얼마나 가까웠는지를 상태로 분류한다. 기록이 없으면 'none'. */
+export function getDayStatus(meals: Meal[], target: NutritionTarget, timestamp: number): DayStatus {
+  const dayMeals = meals.filter((m) => isSameDay(m.timestamp, timestamp))
+  if (dayMeals.length === 0) return 'none'
+
+  const calories = sumMeals(dayMeals).calories
+  return getNutritionStatus(getPercentage(calories, target.calories))
+}
+
 /**
  * year/month(0-11)에 해당하는 달의 하루하루에 대해, 그날 칼로리 섭취가 목표에 얼마나
  * 가까웠는지를 상태(부족/적정/목표근접/초과)로 분류한다. 기록이 없는 날은 'none'.
@@ -26,15 +35,9 @@ export function getMonthlyDayStatuses(
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day, 12).getTime()
     const dayMeals = meals.filter((m) => isSameDay(m.timestamp, date))
-
-    if (dayMeals.length === 0) {
-      result.push({ date, status: 'none', calories: 0 })
-      continue
-    }
-
-    const calories = sumMeals(dayMeals).calories
-    const percent = getPercentage(calories, target.calories)
-    result.push({ date, status: getNutritionStatus(percent), calories })
+    const calories = dayMeals.length > 0 ? sumMeals(dayMeals).calories : 0
+    const status: DayStatus = dayMeals.length === 0 ? 'none' : getNutritionStatus(getPercentage(calories, target.calories))
+    result.push({ date, status, calories })
   }
 
   return result

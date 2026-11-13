@@ -2,6 +2,8 @@ import { Camera, Sparkles, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import MealDetailModal from '../meals/MealDetailModal'
+import { getDayStatus } from '../../lib/calendar'
+import { buildHomeGreeting } from '../../lib/greeting'
 import { generateFeedback, getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
 import { isSameDay } from '../../lib/time'
 import { getTodayWaterTotal } from '../../lib/water'
@@ -52,12 +54,18 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
     : { goal: 'health_care' as const, gender: 'male' as const, bodyFatPercentage: null }
   const feedback = generateFeedback(consumed, nutritionTarget)
   const recommendations = getRecommendedMeals(consumed, nutritionTarget, recommendationProfile, eatenTodayFoodNames)
+  const greeting = buildHomeGreeting({
+    streakDays,
+    hasLoggedToday: todayMeals.length > 0,
+    yesterdayStatus: getDayStatus(meals, nutritionTarget, Date.now() - 86_400_000),
+    hour: new Date().getHours(),
+  })
 
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-slate-400">
-          안녕하세요{profile ? ',' : ''} 오늘도 목표를 향해 달려볼까요?
+          안녕하세요{profile ? ',' : ''} {greeting}
         </p>
         <button
           onClick={() => setUpdatesPanelOpen(true)}
