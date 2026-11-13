@@ -75,8 +75,18 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
   const [estimatingKeys, setEstimatingKeys] = useState<Set<string>>(new Set())
   const [estimateErrors, setEstimateErrors] = useState<Record<string, string>>({})
   const [showPortionConfirm, setShowPortionConfirm] = useState(false)
+  // 확인이 필요한 행으로 스크롤한 뒤 잠깐 테두리를 강조해서 "이거예요"를 보여준다.
+  const [flashKey, setFlashKey] = useState<string | null>(null)
   const nameInputRefs = useRef<Map<string, HTMLInputElement>>(new Map())
+  const rowCardRefs = useRef<Map<string, HTMLDivElement>>(new Map())
   const pendingFocusKey = useRef<string | null>(null)
+
+  const scrollToRow = (key: string) => {
+    // jsdom(테스트 환경)에는 scrollIntoView가 없어서 메서드 자체도 optional chaining으로 감싼다.
+    rowCardRefs.current.get(key)?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+    setFlashKey(key)
+    setTimeout(() => setFlashKey((k) => (k === key ? null : k)), 1600)
+  }
 
   useEffect(() => {
     if (!pendingFocusKey.current) return
@@ -290,12 +300,29 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
               const unresolved = active && !row.entry
               const cooking = row.cookingMethod ? COOKING_LABELS[row.cookingMethod] : undefined
               const lowConfidence = row.confidence !== null && row.confidence < LOW_CONFIDENCE
+              const needsCheck = hasUnverifiedLowConfidence(row)
 
               return (
                 <div
                   key={row.key}
-                  className={`relative rounded-xl border p-3 ${unresolved ? 'border-amber-300 bg-amber-50/50' : 'border-slate-100 bg-slate-50/60'}`}
+                  ref={(el) => {
+                    if (el) rowCardRefs.current.set(row.key, el)
+                    else rowCardRefs.current.delete(row.key)
+                  }}
+                  className={`relative rounded-xl border p-3 transition-shadow ${
+                    unresolved
+                      ? 'border-amber-300 bg-amber-50/50'
+                      : needsCheck
+                        ? 'border-amber-300 bg-amber-50/40'
+                        : 'border-slate-100 bg-slate-50/60'
+                  } ${flashKey === row.key ? 'ring-2 ring-amber-400' : ''}`}
                 >
+                  {needsCheck && (
+                    <p className="mb-2 flex items-center gap-1 text-[11px] font-semibold text-amber-700">
+                      <AlertTriangle size={12} />
+                      AI가 자신 없어한 양이에요 — 맞는지 확인해주세요
+                    </p>
+                  )}
                   <div className="flex items-center gap-2">
                     <input
                       ref={(el) => {
@@ -349,7 +376,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                       {cooking && (
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">{cooking}</span>
                       )}
-                      {lowConfidence && (
+                      {lowConfidence && !needsCheck && (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
                           인식 확신 낮음
                         </span>
@@ -564,14 +591,25 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
             </p>
             <ul className="mb-4 space-y-1">
               {unverifiedRows.map((row) => (
-                <li key={row.key} className="rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-800">
-                  {row.name || '(이름 없음)'} · {row.grams}g
+                <li key={row.key}>
+                  <button
+                    onClick={() => {
+                      setShowPortionConfirm(false)
+                      scrollToRow(row.key)
+                    }}
+                    className="w-full rounded-lg bg-amber-50 px-3 py-1.5 text-left text-sm font-medium text-amber-800"
+                  >
+                    {row.name || '(이름 없음)'} · {row.grams}g
+                  </button>
                 </li>
               ))}
             </ul>
             <div className="flex gap-2">
               <button
-                onClick={() => setShowPortionConfirm(false)}
+                onClick={() => {
+                  setShowPortionConfirm(false)
+                  if (unverifiedRows[0]) scrollToRow(unverifiedRows[0].key)
+                }}
                 className="flex-1 rounded-full border-2 border-slate-200 py-3 text-sm font-semibold text-slate-600"
               >
                 다시 확인할게요
