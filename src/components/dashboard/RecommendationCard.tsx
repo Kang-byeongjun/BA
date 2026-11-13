@@ -131,6 +131,8 @@ function AlternativesToggle({ alternatives }: { alternatives: MealComboIngredien
 
 export default function RecommendationCard({ meals, goal }: Props) {
   const title = '오늘 보충하면 좋은 재료'
+  // 보조 정보라 기본은 접어두고, 눌렀을 때만 펼친다(홈 화면 스크롤 길이를 줄이기 위함).
+  const [open, setOpen] = useState(false)
 
   if (meals.length === 0) {
     return (
@@ -145,8 +147,13 @@ export default function RecommendationCard({ meals, goal }: Props) {
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4">
-      <h3 className="mb-3 text-sm font-semibold text-slate-800">{title}</h3>
-      <div className="space-y-4">
+      <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+        {open ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+      </button>
+      {!open && <p className="mt-1 text-xs text-slate-400">부족한 영양소를 채울 재료를 추천해드려요. 눌러서 펼쳐보세요.</p>}
+      {open && (
+      <div className="mt-3 space-y-4">
         {groups.map((group, groupIndex) => (
           <div key={group.nutrient}>
             <p className="mb-2 text-xs font-semibold text-emerald-700">
@@ -184,6 +191,7 @@ export default function RecommendationCard({ meals, goal }: Props) {
           </div>
         ))}
       </div>
+      )}
     </div>
   )
 }

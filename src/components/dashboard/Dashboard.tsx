@@ -110,8 +110,6 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
         />
       </div>
 
-      <TodayMealsSection meals={todayMeals} onSelect={setSelectedMeal} onAdd={onOpenCamera} />
-
       <button
         onClick={() => onOpenCamera()}
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 font-semibold text-white shadow-lg shadow-slate-300 active:scale-[0.98]"
@@ -119,6 +117,8 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
         <Camera size={20} />
         음식 촬영하고 기록하기
       </button>
+
+      <TodayMealsSection meals={todayMeals} onSelect={setSelectedMeal} onAdd={onOpenCamera} />
 
       {hasUncertainPortionsToday && (
         <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
