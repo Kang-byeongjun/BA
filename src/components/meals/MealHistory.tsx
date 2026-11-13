@@ -3,14 +3,16 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { generateFeedback, getRecommendedMeals, sumMeals } from '../../lib/nutrition'
 import { formatRelativeDate, formatTimeOfDay, isSameDay } from '../../lib/time'
-import type { Meal } from '../../types'
+import { getTodayWaterTotal } from '../../lib/water'
+import { DEFAULT_WATER_TARGET_ML, type Meal } from '../../types'
 import FeedbackPanel from '../dashboard/FeedbackPanel'
 import NutritionBar from '../dashboard/NutritionBar'
 import RecommendationCard from '../dashboard/RecommendationCard'
+import WaterBar from '../dashboard/WaterBar'
 import MealDetailModal from './MealDetailModal'
 
 export default function MealHistory() {
-  const { meals, nutritionTarget, profile, dispatch } = useApp()
+  const { meals, waterLogs, nutritionTarget, profile, dispatch } = useApp()
   const [selected, setSelected] = useState<Meal | null>(null)
 
   const sorted = [...meals].sort((a, b) => b.timestamp - a.timestamp)
@@ -19,6 +21,8 @@ export default function MealHistory() {
   const consumed = useMemo(() => sumMeals(todayMeals), [todayMeals])
   const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
   const hasUncertainPortionsToday = todayMeals.some((m) => m.hasLowConfidencePortions)
+  const todayWaterLogs = useMemo(() => waterLogs.filter((w) => isSameDay(w.timestamp, Date.now())), [waterLogs])
+  const todayWaterTotal = useMemo(() => getTodayWaterTotal(waterLogs), [waterLogs])
 
   const handleDelete = (id: string) => {
     dispatch({ type: 'DELETE_MEAL', id })
@@ -67,6 +71,16 @@ export default function MealHistory() {
           target={nutritionTarget.fiber}
           unit="g"
           colorClass="bg-emerald-500"
+        />
+        <WaterBar
+          consumedMl={todayWaterTotal}
+          targetMl={DEFAULT_WATER_TARGET_ML}
+          onAdd={(amount) => dispatch({ type: 'ADD_WATER', amount })}
+          onUndo={() => {
+            const last = todayWaterLogs[0]
+            if (last) dispatch({ type: 'DELETE_WATER', id: last.id })
+          }}
+          canUndo={todayWaterLogs.length > 0}
         />
       </div>
 

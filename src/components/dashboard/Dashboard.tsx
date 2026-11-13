@@ -13,7 +13,7 @@ import CalorieSummary from './CalorieSummary'
 import HomeCoach from './HomeCoach'
 import TodayMealsSection from './TodayMealsSection'
 import UpdatesPanel from './UpdatesPanel'
-import WaterTracker from './WaterTracker'
+import WaterQuickAdd from './WaterQuickAdd'
 
 interface Props {
   // slot을 넘기면 그 칸으로 바로 기록된다(아침 칸의 "+추가"를 눌렀는데 지금 시간이 밤이라
@@ -115,9 +115,7 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
 
       <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} streakDays={streakDays} />
 
-      <WaterTracker
-        consumedMl={todayWaterTotal}
-        targetMl={DEFAULT_WATER_TARGET_ML}
+      <WaterQuickAdd
         onAdd={(amount) => dispatch({ type: 'ADD_WATER', amount })}
         onUndo={() => {
           const last = todayWaterLogs[0]
