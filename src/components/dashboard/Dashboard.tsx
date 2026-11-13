@@ -1,10 +1,11 @@
-import { Camera, Sparkles, X } from 'lucide-react'
+import { Bell, Camera, Sparkles, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import MealDetailModal from '../meals/MealDetailModal'
 import { getDayStatus } from '../../lib/calendar'
 import { buildHomeGreeting } from '../../lib/greeting'
 import { generateFeedback, getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
+import { getHomeNudge } from '../../lib/nudge'
 import { isSameDay } from '../../lib/time'
 import { getTodayWaterTotal } from '../../lib/water'
 import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
@@ -60,6 +61,12 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
     yesterdayStatus: getDayStatus(meals, nutritionTarget, Date.now() - 86_400_000),
     hour: new Date().getHours(),
   })
+  const nudge = getHomeNudge({
+    hour: new Date().getHours(),
+    loggedSlots: new Set(todayMeals.map((m) => m.slot)),
+    waterMl: todayWaterTotal,
+    waterTargetMl: DEFAULT_WATER_TARGET_ML,
+  })
 
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
@@ -87,6 +94,21 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
           </div>
           <button onClick={onDismissRecentMeal} aria-label="닫기" className="shrink-0 text-emerald-600">
             <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {nudge && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <Bell size={16} className="mt-0.5 shrink-0 text-sky-600" />
+            <p className="text-sm text-sky-800">{nudge.message}</p>
+          </div>
+          <button
+            onClick={() => (nudge.action === 'log-dinner' ? onOpenCamera('저녁') : dispatch({ type: 'ADD_WATER', amount: 200 }))}
+            className="shrink-0 rounded-full bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white"
+          >
+            {nudge.action === 'log-dinner' ? '기록하기' : '한 잔 추가'}
           </button>
         </div>
       )}
