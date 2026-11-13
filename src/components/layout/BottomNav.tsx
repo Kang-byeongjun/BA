@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
-import { Camera, Dumbbell, Home, UtensilsCrossed, UserRound } from 'lucide-react'
+import { Camera, CalendarDays, Dumbbell, Home, UtensilsCrossed, UserRound } from 'lucide-react'
 
-export type Tab = 'home' | 'meals' | 'workout' | 'profile'
+export type Tab = 'home' | 'meals' | 'calendar' | 'workout' | 'profile'
 
 interface Props {
   active: Tab
@@ -14,6 +14,7 @@ type NavTab = { key: Tab; label: string; icon: ComponentType<{ size?: number }> 
 const TABS: NavTab[] = [
   { key: 'home', label: '홈', icon: Home },
   { key: 'meals', label: '식단', icon: UtensilsCrossed },
+  { key: 'calendar', label: '캘린더', icon: CalendarDays },
 ]
 
 const TABS_RIGHT: NavTab[] = [
@@ -48,9 +49,13 @@ function NavButton({
 export default function BottomNav({ active, onChange, onCamera }: Props) {
   return (
     <nav className="relative flex items-end border-t border-slate-100 bg-white/95 px-2 pb-[calc(env(safe-area-inset-bottom)+4px)] backdrop-blur">
-      {TABS.map((tab) => (
-        <NavButton key={tab.key} tab={tab} active={active} onChange={onChange} />
-      ))}
+      {/* 좌/우 그룹을 각각 flex-1로 감싸서 탭 개수가 달라도(좌 3개·우 2개) 두 그룹의
+          너비가 항상 같다 — 그래야 가운데 촬영 버튼이 탭 개수와 무관하게 항상 중앙에 온다. */}
+      <div className="flex flex-1 items-end">
+        {TABS.map((tab) => (
+          <NavButton key={tab.key} tab={tab} active={active} onChange={onChange} />
+        ))}
+      </div>
 
       <div className="flex flex-1 flex-col items-center justify-start">
         <button
@@ -63,9 +68,11 @@ export default function BottomNav({ active, onChange, onCamera }: Props) {
         <span className="mt-0.5 text-[11px] font-medium text-emerald-600">촬영</span>
       </div>
 
-      {TABS_RIGHT.map((tab) => (
-        <NavButton key={tab.key} tab={tab} active={active} onChange={onChange} />
-      ))}
+      <div className="flex flex-1 items-end">
+        {TABS_RIGHT.map((tab) => (
+          <NavButton key={tab.key} tab={tab} active={active} onChange={onChange} />
+        ))}
+      </div>
     </nav>
   )
 }
