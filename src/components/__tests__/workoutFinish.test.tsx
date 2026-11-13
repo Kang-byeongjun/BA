@@ -79,7 +79,7 @@ describe('WorkoutLogger — 운동 완료', () => {
     expect(r.durationSeconds).toBe(125)
     expect(r.completedSets).toBe(1)
     expect(r.totalVolume).toBe(600)
-    expect(r.exercises).toEqual([{ exerciseId: 'bench', name: '벤치프레스', sets: [{ kg: 60, reps: 10 }], volume: 600 }])
+    expect(r.exercises).toEqual([{ exerciseId: 'bench', name: '벤치프레스', group: 'CHEST', sets: [{ kg: 60, reps: 10 }], volume: 600 }])
   })
 })
 

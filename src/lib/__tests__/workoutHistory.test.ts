@@ -68,6 +68,19 @@ describe('buildSessionRecord', () => {
   })
 })
 
+describe('buildSessionRecord — 부위', () => {
+  it('종목마다 추천 결과의 근육 부위(group)를 같이 저장한다', () => {
+    const logs = [log('bench', '벤치프레스', [['60', '10', true]]), log('mystery', '모르는 종목', [['10', '10', true]])]
+    const day = {
+      day: 1,
+      label: '상체',
+      exercises: [{ order: 1, id: 'bench', name: '벤치프레스', group: 'CHEST' as const, reason: '', caution: null, prescription: null }],
+    }
+    const r = buildSessionRecord({ id: 's1', day, startedAt: T0, logs, now: T0 + 1000 })
+    expect(r.exercises.map((e) => e.group)).toEqual(['CHEST', undefined]) // 못 찾으면 비워 둠 → 요약에서 "기타"
+  })
+})
+
 describe('기록 보관', () => {
   it('최근 기록이 앞에 오고, 최근 20회까지만 보관한다', () => {
     for (let i = 1; i <= MAX_HISTORY + 5; i++) appendWorkoutHistory(record(`s${i}`, [], T0 + i))

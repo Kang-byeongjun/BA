@@ -1,3 +1,5 @@
+// 타입만 가져온다(import type은 빌드 때 지워져서 운동 DB가 브라우저 코드에 들어가지 않는다)
+import type { MuscleGroup } from '../../server/engine/types'
 import { loadFromStorage, saveToStorage } from './storage'
 import { volumeOf, type ExerciseLog, type LoggerDay } from './workoutLog'
 
@@ -20,6 +22,8 @@ export interface RecordedExercise {
   /** 엔진 종목 id. "지난 기록"을 찾을 때 쓴다 */
   exerciseId: string
   name: string
+  /** 근육 부위(추천 결과 RoutineExercise.group에서 가져옴). 예전 기록에는 없을 수 있다 → 요약에서 "기타" */
+  group?: MuscleGroup
   sets: RecordedSet[]
   volume: number
 }
@@ -55,10 +59,12 @@ export function buildSessionRecord(input: {
   logs: ExerciseLog[]
   now: number
 }): WorkoutSessionRecord {
+  const groupOf = new Map(input.day.exercises.map((e) => [e.id, e.group]))
   const exercises: RecordedExercise[] = input.logs
     .map((l) => ({
       exerciseId: l.exerciseId,
       name: l.name,
+      group: groupOf.get(l.exerciseId),
       sets: l.sets.filter((s) => s.done).map((s) => ({ kg: num(s.kg), reps: num(s.reps) })),
       volume: volumeOf(l.sets),
     }))
