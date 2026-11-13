@@ -11,6 +11,7 @@ import { getTodayWaterTotal } from '../../lib/water'
 import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
 import CalorieSummary from './CalorieSummary'
 import FeedbackPanel from './FeedbackPanel'
+import HomeCoach from './HomeCoach'
 import NutritionBar from './NutritionBar'
 import RecommendationCard from './RecommendationCard'
 import TodayMealsSection from './TodayMealsSection'
@@ -112,6 +113,8 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
           </button>
         </div>
       )}
+
+      {recommendations[0] && <HomeCoach meal={recommendations[0]} goal={recommendationProfile.goal} />}
 
       <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} streakDays={streakDays} />
 
