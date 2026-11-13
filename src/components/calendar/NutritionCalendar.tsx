@@ -1,8 +1,9 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { getMonthlyDayStatuses, type CalendarDay, type DayStatus } from '../../lib/calendar'
 import { isSameDay } from '../../lib/time'
+import { buildMonthlyTrendSummary, getComparableDayCount } from '../../lib/trend'
 import { NUTRITION_STATUS_LABELS } from '../../types'
 import AnimatedBar from '../dashboard/AnimatedBar'
 
@@ -55,6 +56,20 @@ export default function NutritionCalendar() {
   const metDays = loggedDays.filter((d) => d.status === 'adequate' || d.status === 'near_goal')
   const metPercent = loggedDays.length > 0 ? Math.round((metDays.length / loggedDays.length) * 100) : 0
 
+  const previousDays = useMemo(() => {
+    if (!nutritionTarget) return []
+    const prev = new Date(cursor.year, cursor.month - 1, 1)
+    return getMonthlyDayStatuses(meals, nutritionTarget, prev.getFullYear(), prev.getMonth())
+  }, [meals, nutritionTarget, cursor])
+  const trend = useMemo(() => {
+    const dayCount = Math.min(getComparableDayCount(cursor.year, cursor.month), previousDays.length)
+    if (dayCount === 0) return null
+    return buildMonthlyTrendSummary(
+      days.slice(0, dayCount).map((d) => d.status),
+      previousDays.slice(0, dayCount).map((d) => d.status),
+    )
+  }, [days, previousDays, cursor])
+
   const changeMonth = (delta: number) => {
     setSelected(null)
     setCursor(({ year, month }) => {
@@ -102,6 +117,18 @@ export default function NutritionCalendar() {
               heightClass="h-2"
             />
           </div>
+        )}
+
+        {trend && (
+          <p
+            className={`mt-2 flex items-center gap-1 text-xs font-medium ${
+              trend.direction === 'up' ? 'text-emerald-600' : trend.direction === 'down' ? 'text-amber-600' : 'text-slate-500'
+            }`}
+          >
+            {trend.direction === 'up' && <TrendingUp size={12} />}
+            {trend.direction === 'down' && <TrendingDown size={12} />}
+            {trend.message}
+          </p>
         )}
 
         <div className="mt-4 grid grid-cols-7 gap-1.5 text-center text-[11px] text-slate-400">
