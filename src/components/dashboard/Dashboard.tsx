@@ -4,16 +4,13 @@ import { useApp } from '../../context/AppContext'
 import MealDetailModal from '../meals/MealDetailModal'
 import { getDayStatus } from '../../lib/calendar'
 import { buildHomeGreeting } from '../../lib/greeting'
-import { generateFeedback, getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
+import { getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
 import { getHomeNudge } from '../../lib/nudge'
 import { isSameDay } from '../../lib/time'
 import { getTodayWaterTotal } from '../../lib/water'
 import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
 import CalorieSummary from './CalorieSummary'
-import FeedbackPanel from './FeedbackPanel'
 import HomeCoach from './HomeCoach'
-import NutritionBar from './NutritionBar'
-import RecommendationCard from './RecommendationCard'
 import TodayMealsSection from './TodayMealsSection'
 import UpdatesPanel from './UpdatesPanel'
 import WaterTracker from './WaterTracker'
@@ -42,7 +39,6 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
   const consumed = useMemo(() => sumMeals(todayMeals), [todayMeals])
   const streakDays = useMemo(() => getStreakDays(meals), [meals])
   const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
-  const hasUncertainPortionsToday = todayMeals.some((m) => m.hasLowConfidencePortions)
 
   const todayWaterLogs = useMemo(() => waterLogs.filter((w) => isSameDay(w.timestamp, Date.now())), [waterLogs])
   const todayWaterTotal = useMemo(() => getTodayWaterTotal(waterLogs), [waterLogs])
@@ -54,7 +50,8 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
   const recommendationProfile = profile
     ? { goal: profile.goal, gender: profile.gender, bodyFatPercentage: profile.bodyFatPercentage }
     : { goal: 'health_care' as const, gender: 'male' as const, bodyFatPercentage: null }
-  const feedback = generateFeedback(consumed, nutritionTarget)
+  // 추천 상세(RecommendationCard)는 식단 탭으로 옮겼지만, 1순위 추천의 코치 문구(HomeCoach)는
+  // 홈에서 계속 보여주므로 recommendations 계산 자체는 여기 남아있어야 한다.
   const recommendations = getRecommendedMeals(consumed, nutritionTarget, recommendationProfile, eatenTodayFoodNames)
   const greeting = buildHomeGreeting({
     streakDays,
@@ -118,37 +115,6 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
 
       <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} streakDays={streakDays} />
 
-      <div className="space-y-4 rounded-2xl border border-slate-100 bg-white p-4">
-        <NutritionBar
-          label="단백질"
-          consumed={consumed.protein}
-          target={nutritionTarget.protein}
-          unit="g"
-          colorClass="bg-sky-500"
-        />
-        <NutritionBar
-          label="탄수화물"
-          consumed={consumed.carbohydrates}
-          target={nutritionTarget.carbohydrates}
-          unit="g"
-          colorClass="bg-amber-500"
-        />
-        <NutritionBar
-          label="지방"
-          consumed={consumed.fat}
-          target={nutritionTarget.fat}
-          unit="g"
-          colorClass="bg-violet-500"
-        />
-        <NutritionBar
-          label="식이섬유"
-          consumed={consumed.fiber}
-          target={nutritionTarget.fiber}
-          unit="g"
-          colorClass="bg-emerald-500"
-        />
-      </div>
-
       <WaterTracker
         consumedMl={todayWaterTotal}
         targetMl={DEFAULT_WATER_TARGET_ML}
@@ -169,14 +135,6 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
       </button>
 
       <TodayMealsSection meals={todayMeals} onSelect={setSelectedMeal} onAdd={onOpenCamera} />
-
-      {hasUncertainPortionsToday && (
-        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          오늘 기록 중 AI가 자신 없어했던 양이 그대로 포함돼 있어요. 아래 % 숫자는 참고용으로 봐주세요.
-        </p>
-      )}
-      <FeedbackPanel feedback={feedback} />
-      <RecommendationCard meals={recommendations} goal={recommendationProfile.goal} />
 
       {selectedMeal && (
         <MealDetailModal
