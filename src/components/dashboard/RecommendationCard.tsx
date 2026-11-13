@@ -136,9 +136,14 @@ export default function RecommendationCard({ meals, goal }: Props) {
 
   if (meals.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-100 bg-white p-4">
-        <h3 className="mb-1 text-sm font-semibold text-slate-800">{title}</h3>
-        <p className="text-sm text-slate-500">오늘 목표를 모두 달성했어요! 훌륭해요 🎉</p>
+      <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+        <div className="mb-1 flex items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+            <Sparkles size={14} />
+          </span>
+          <h3 className="text-sm font-semibold text-emerald-900">{title}</h3>
+        </div>
+        <p className="text-sm text-slate-600">오늘 목표를 모두 달성했어요! 훌륭해요 🎉</p>
       </div>
     )
   }
@@ -146,12 +151,17 @@ export default function RecommendationCard({ meals, goal }: Props) {
   const groups = groupByNutrient(meals)
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-4">
+    <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
-        {open ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+            <Sparkles size={14} />
+          </span>
+          <h3 className="text-sm font-semibold text-emerald-900">{title}</h3>
+        </div>
+        {open ? <ChevronUp size={18} className="text-emerald-400" /> : <ChevronDown size={18} className="text-emerald-400" />}
       </button>
-      {!open && <p className="mt-1 text-xs text-slate-400">부족한 영양소를 채울 재료를 추천해드려요. 눌러서 펼쳐보세요.</p>}
+      {!open && <p className="mt-1 text-xs text-emerald-700">부족한 영양소를 채울 재료를 추천해드려요. 눌러서 펼쳐보세요.</p>}
       {open && (
       <div className="mt-3 space-y-4">
         {groups.map((group, groupIndex) => (
