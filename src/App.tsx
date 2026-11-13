@@ -7,11 +7,14 @@ import MealHistory from './components/meals/MealHistory'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
 import Profile from './components/profile/Profile'
 import WorkoutScreen from './components/workout/WorkoutScreen'
+import { hasSavedWorkoutLog } from './components/workout/workoutLogStorage'
 import { AppProvider, useApp } from './context/AppContext'
 import type { Meal, MealSlot } from './types'
 
 function MainApp() {
-  const [tab, setTab] = useState<Tab>('home')
+  // 기록 중이던 운동이 저장돼 있으면 새로고침 후 운동 탭으로 연다
+  const [tab, setTab] = useState<Tab>(() => (hasSavedWorkoutLog() ? 'workout' : 'home'))
+  const [logging, setLogging] = useState(hasSavedWorkoutLog)
   // null = 카메라 닫힘. 그 외에는 열려 있고, undefined는 "어느 칸인지 모름"(시간 기준 추정)을 뜻한다.
   const [cameraSlot, setCameraSlot] = useState<MealSlot | undefined | null>(null)
   const [recentMeal, setRecentMeal] = useState<Meal | null>(null)
@@ -37,13 +40,17 @@ function MainApp() {
 
   return (
     <MobileShell
-      footer={<BottomNav active={tab} onChange={setTab} onCamera={() => setCameraSlot(undefined)} />}
+      footer={
+        tab === 'workout' && logging ? undefined : (
+          <BottomNav active={tab} onChange={setTab} onCamera={() => setCameraSlot(undefined)} />
+        )
+      }
     >
       {tab === 'home' && (
         <Dashboard onOpenCamera={(slot) => setCameraSlot(slot)} recentMeal={recentMeal} onDismissRecentMeal={dismissRecentMeal} />
       )}
       {tab === 'meals' && <MealHistory />}
-      {tab === 'workout' && <WorkoutScreen />}
+      {tab === 'workout' && <WorkoutScreen onLoggingChange={setLogging} />}
       {tab === 'profile' && <Profile />}
     </MobileShell>
   )
