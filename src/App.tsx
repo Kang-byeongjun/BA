@@ -37,9 +37,7 @@ function MainApp() {
   }
 
   return (
-    <MobileShell
-      footer={<BottomNav active={tab} onChange={setTab} onCamera={() => setCameraSlot(undefined)} />}
-    >
+    <MobileShell footer={<BottomNav active={tab} onChange={setTab} />}>
       {tab === 'home' && (
         <Dashboard onOpenCamera={(slot) => setCameraSlot(slot)} recentMeal={recentMeal} onDismissRecentMeal={dismissRecentMeal} />
       )}
