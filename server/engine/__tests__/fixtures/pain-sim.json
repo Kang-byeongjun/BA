@@ -1,0 +1,371 @@
+[
+ {
+  "experience": "BEGINNER",
+  "pain": [],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 9,
+   "BACK": 10,
+   "ARM": 11,
+   "LEGS": 14,
+   "ABS": 6,
+   "CARDIO": 6
+  }
+ },
+ {
+  "experience": "BEGINNER",
+  "pain": [
+   "LOWBACK"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 9,
+   "BACK": 9,
+   "ARM": 11,
+   "LEGS": 14,
+   "ABS": 6,
+   "CARDIO": 6
+  }
+ },
+ {
+  "experience": "BEGINNER",
+  "pain": [
+   "KNEE"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 9,
+   "BACK": 10,
+   "ARM": 11,
+   "LEGS": 13,
+   "ABS": 6,
+   "CARDIO": 5
+  }
+ },
+ {
+  "experience": "BEGINNER",
+  "pain": [
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 8,
+   "SHOULDER": 6,
+   "BACK": 10,
+   "ARM": 11,
+   "LEGS": 14,
+   "ABS": 6,
+   "CARDIO": 6
+  }
+ },
+ {
+  "experience": "BEGINNER",
+  "pain": [
+   "LOWBACK",
+   "KNEE"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 9,
+   "BACK": 9,
+   "ARM": 11,
+   "LEGS": 13,
+   "ABS": 6,
+   "CARDIO": 5
+  }
+ },
+ {
+  "experience": "BEGINNER",
+  "pain": [
+   "LOWBACK",
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 8,
+   "SHOULDER": 6,
+   "BACK": 9,
+   "ARM": 11,
+   "LEGS": 14,
+   "ABS": 6,
+   "CARDIO": 6
+  }
+ },
+ {
+  "experience": "BEGINNER",
+  "pain": [
+   "KNEE",
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 8,
+   "SHOULDER": 6,
+   "BACK": 10,
+   "ARM": 11,
+   "LEGS": 13,
+   "ABS": 6,
+   "CARDIO": 5
+  }
+ },
+ {
+  "experience": "BEGINNER",
+  "pain": [
+   "LOWBACK",
+   "KNEE",
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 8,
+   "SHOULDER": 6,
+   "BACK": 9,
+   "ARM": 11,
+   "LEGS": 13,
+   "ABS": 6,
+   "CARDIO": 5
+  }
+ },
+ {
+  "experience": "INTERMEDIATE",
+  "pain": [],
+  "counts": {
+   "CHEST": 13,
+   "SHOULDER": 10,
+   "BACK": 14,
+   "ARM": 13,
+   "LEGS": 20,
+   "ABS": 9,
+   "CARDIO": 8
+  }
+ },
+ {
+  "experience": "INTERMEDIATE",
+  "pain": [
+   "LOWBACK"
+  ],
+  "counts": {
+   "CHEST": 13,
+   "SHOULDER": 10,
+   "BACK": 12,
+   "ARM": 13,
+   "LEGS": 19,
+   "ABS": 9,
+   "CARDIO": 8
+  }
+ },
+ {
+  "experience": "INTERMEDIATE",
+  "pain": [
+   "KNEE"
+  ],
+  "counts": {
+   "CHEST": 13,
+   "SHOULDER": 10,
+   "BACK": 14,
+   "ARM": 13,
+   "LEGS": 18,
+   "ABS": 9,
+   "CARDIO": 7
+  }
+ },
+ {
+  "experience": "INTERMEDIATE",
+  "pain": [
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 6,
+   "BACK": 14,
+   "ARM": 13,
+   "LEGS": 20,
+   "ABS": 9,
+   "CARDIO": 8
+  }
+ },
+ {
+  "experience": "INTERMEDIATE",
+  "pain": [
+   "LOWBACK",
+   "KNEE"
+  ],
+  "counts": {
+   "CHEST": 13,
+   "SHOULDER": 10,
+   "BACK": 12,
+   "ARM": 13,
+   "LEGS": 17,
+   "ABS": 9,
+   "CARDIO": 7
+  }
+ },
+ {
+  "experience": "INTERMEDIATE",
+  "pain": [
+   "LOWBACK",
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 6,
+   "BACK": 12,
+   "ARM": 13,
+   "LEGS": 19,
+   "ABS": 9,
+   "CARDIO": 8
+  }
+ },
+ {
+  "experience": "INTERMEDIATE",
+  "pain": [
+   "KNEE",
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 6,
+   "BACK": 14,
+   "ARM": 13,
+   "LEGS": 18,
+   "ABS": 9,
+   "CARDIO": 7
+  }
+ },
+ {
+  "experience": "INTERMEDIATE",
+  "pain": [
+   "LOWBACK",
+   "KNEE",
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 6,
+   "BACK": 12,
+   "ARM": 13,
+   "LEGS": 17,
+   "ABS": 9,
+   "CARDIO": 7
+  }
+ },
+ {
+  "experience": "ADVANCED",
+  "pain": [],
+  "counts": {
+   "CHEST": 13,
+   "SHOULDER": 11,
+   "BACK": 15,
+   "ARM": 13,
+   "LEGS": 22,
+   "ABS": 9,
+   "CARDIO": 8
+  }
+ },
+ {
+  "experience": "ADVANCED",
+  "pain": [
+   "LOWBACK"
+  ],
+  "counts": {
+   "CHEST": 13,
+   "SHOULDER": 10,
+   "BACK": 13,
+   "ARM": 13,
+   "LEGS": 19,
+   "ABS": 9,
+   "CARDIO": 8
+  }
+ },
+ {
+  "experience": "ADVANCED",
+  "pain": [
+   "KNEE"
+  ],
+  "counts": {
+   "CHEST": 13,
+   "SHOULDER": 11,
+   "BACK": 15,
+   "ARM": 13,
+   "LEGS": 19,
+   "ABS": 9,
+   "CARDIO": 7
+  }
+ },
+ {
+  "experience": "ADVANCED",
+  "pain": [
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 6,
+   "BACK": 14,
+   "ARM": 13,
+   "LEGS": 22,
+   "ABS": 9,
+   "CARDIO": 8
+  }
+ },
+ {
+  "experience": "ADVANCED",
+  "pain": [
+   "LOWBACK",
+   "KNEE"
+  ],
+  "counts": {
+   "CHEST": 13,
+   "SHOULDER": 10,
+   "BACK": 13,
+   "ARM": 13,
+   "LEGS": 17,
+   "ABS": 9,
+   "CARDIO": 7
+  }
+ },
+ {
+  "experience": "ADVANCED",
+  "pain": [
+   "LOWBACK",
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 6,
+   "BACK": 12,
+   "ARM": 13,
+   "LEGS": 19,
+   "ABS": 9,
+   "CARDIO": 8
+  }
+ },
+ {
+  "experience": "ADVANCED",
+  "pain": [
+   "KNEE",
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 6,
+   "BACK": 14,
+   "ARM": 13,
+   "LEGS": 19,
+   "ABS": 9,
+   "CARDIO": 7
+  }
+ },
+ {
+  "experience": "ADVANCED",
+  "pain": [
+   "LOWBACK",
+   "KNEE",
+   "SHOULDER"
+  ],
+  "counts": {
+   "CHEST": 9,
+   "SHOULDER": 6,
+   "BACK": 12,
+   "ARM": 13,
+   "LEGS": 17,
+   "ABS": 9,
+   "CARDIO": 7
+  }
+ }
+]
