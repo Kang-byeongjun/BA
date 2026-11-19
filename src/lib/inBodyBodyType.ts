@@ -2,9 +2,13 @@
 // 공식 InBody 알고리즘이 아니라, 골격근량·체지방량이 각자의 표준 구간 대비 얼마나 벗어났는지 비교한 근사치다.
 export type InBodyBodyType = 'C' | 'D' | 'I'
 
+// "골격근·지방분석" 그래프의 가로축은 kg이 아니라 "표준 대비 %"다(100 = 그 사람의 표준치).
+// min/max는 "표준" 구간의 좌우 경계(%), value는 이 사람 측정값이 그 축 위에서 차지하는 위치(%) —
+// 막대 위 점/마커의 위치를 읽은 것이라 모를 수도 있다(그럴 땐 null).
 export interface InBodyStandardRange {
   min: number
   max: number
+  value: number | null
 }
 
 export const BODY_TYPE_LABELS: Record<InBodyBodyType, string> = {
@@ -13,17 +17,18 @@ export const BODY_TYPE_LABELS: Record<InBodyBodyType, string> = {
   C: 'C자형 · 지방 우세',
 }
 
-const STANDARD_RANGE_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/
+const STANDARD_RANGE_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)(?:@(\d+(?:\.\d+)?))?$/
 
-// 서버가 "min-max" 형태의 문자열로 내려주는 표준 구간을 파싱한다(비교 가능한 값이 없으면 null).
+// 서버가 "min-max" 또는 "min-max@value" 형태의 문자열로 내려주는 표준 구간을 파싱한다
+// (비교 가능한 값이 없으면 null).
 export function toStandardRange(raw: string | null): InBodyStandardRange | null {
   if (raw === null) return null
   const match = STANDARD_RANGE_RE.exec(raw.trim())
   if (!match) return null
-  return { min: Number(match[1]), max: Number(match[2]) }
+  return { min: Number(match[1]), max: Number(match[2]), value: match[3] !== undefined ? Number(match[3]) : null }
 }
 
-export function ratioToStandard(value: number, range: InBodyStandardRange): number {
+export function ratioToStandard(value: number, range: { min: number; max: number }): number {
   const midpoint = (range.min + range.max) / 2
   return midpoint > 0 ? value / midpoint : 0
 }
@@ -31,17 +36,17 @@ export function ratioToStandard(value: number, range: InBodyStandardRange): numb
 // 두 비율 차이가 이 안쪽이면 "어느 한쪽이 뚜렷하게 우세하다"고 보기 어려워 균형형(I자형)으로 본다.
 const BALANCED_THRESHOLD = 0.05
 
+// 골격근량·체지방량 각각의 측정값이 그래프 위에서 표준 구간 대비 얼마나 벗어났는지(ratio)로 비교한다.
+// 측정값 위치(range.value)를 못 읽었으면 그 항목은 비교할 수 없으므로 전체를 null로 본다.
 export function classifyBodyType(
-  skeletalMuscleMass: number | null,
-  bodyFatMass: number | null,
   skeletalMuscleMassRange: InBodyStandardRange | null,
   bodyFatMassRange: InBodyStandardRange | null,
 ): InBodyBodyType | null {
-  if (skeletalMuscleMass === null || bodyFatMass === null || !skeletalMuscleMassRange || !bodyFatMassRange) {
+  if (!skeletalMuscleMassRange || !bodyFatMassRange || skeletalMuscleMassRange.value === null || bodyFatMassRange.value === null) {
     return null
   }
-  const muscleRatio = ratioToStandard(skeletalMuscleMass, skeletalMuscleMassRange)
-  const fatRatio = ratioToStandard(bodyFatMass, bodyFatMassRange)
+  const muscleRatio = ratioToStandard(skeletalMuscleMassRange.value, skeletalMuscleMassRange)
+  const fatRatio = ratioToStandard(bodyFatMassRange.value, bodyFatMassRange)
   if (Math.abs(muscleRatio - fatRatio) < BALANCED_THRESHOLD) return 'I'
   return muscleRatio > fatRatio ? 'D' : 'C'
 }
@@ -80,14 +85,12 @@ function ratioToPosition(ratio: number, zoneMinRatio: number, zoneMaxRatio: numb
   return ZONE_BELOW_END + ((ratio - zoneMinRatio) / (zoneMaxRatio - zoneMinRatio)) * (ZONE_STANDARD_END - ZONE_BELOW_END)
 }
 
-export function computeShapePositions(
-  rows: { value: number | null; range: InBodyStandardRange | null }[],
-): (ShapeRowPosition | null)[] {
-  return rows.map((r) => {
-    if (!r.range) return null
-    const zoneMin = ratioToStandard(r.range.min, r.range)
-    const zoneMax = ratioToStandard(r.range.max, r.range)
-    const value = r.value !== null ? ratioToStandard(r.value, r.range) : null
+export function computeShapePositions(ranges: (InBodyStandardRange | null)[]): (ShapeRowPosition | null)[] {
+  return ranges.map((range) => {
+    if (!range) return null
+    const zoneMin = ratioToStandard(range.min, range)
+    const zoneMax = ratioToStandard(range.max, range)
+    const value = range.value !== null ? ratioToStandard(range.value, range) : null
     return {
       zoneMinPos: ZONE_BELOW_END,
       zoneMaxPos: ZONE_STANDARD_END,

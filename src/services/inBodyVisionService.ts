@@ -50,7 +50,7 @@ export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements
     mineralMass: extraction.mineralMassKg,
     basalMetabolicRate: extraction.basalMetabolicRateKcal,
     measuredAt: extraction.testedAtDate,
-    bodyType: classifyBodyType(extraction.skeletalMuscleMassKg, extraction.bodyFatMassKg, skeletalMuscleMassRange, bodyFatMassRange),
+    bodyType: classifyBodyType(skeletalMuscleMassRange, bodyFatMassRange),
     standardRanges: { weight: weightRange, skeletalMuscleMass: skeletalMuscleMassRange, bodyFatMass: bodyFatMassRange },
   }
 }

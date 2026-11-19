@@ -72,43 +72,37 @@ function round(value: number, decimals: number): number {
   return Math.round(value * f) / f
 }
 
-// 체형(C/D자형) 판정에 쓰는 "표준" 구간용 상식적 범위. 이 값 자체가 "정상 범위"라서, 극단적인 개인
-// 실측치(IN_BODY_RANGES)보다 훨씬 좁다 — 예를 들어 체지방량 80~160kg은 실측치로도 말이 안 되고,
-// 하물며 "표준" 구간일 수는 없다. 이 좁은 범위를 넘어서면 AI가 다른 축이나 엉뚱한 숫자를 읽은 것으로 본다.
-type StandardRangeKey = 'weightKg' | 'skeletalMuscleMassKg' | 'bodyFatMassKg'
+// InBody "골격근·지방분석" 그래프의 가로축은 kg이 아니라 "표준 대비 %"다(100 = 그 사람의 표준치).
+// "표준"(정상) 구간의 좌우 경계와, 이 사람 측정값이 그 축 위 어디에 있는지(점/막대 끝 위치)를 함께
+// 받는다: "zoneMin-zoneMax" 또는 측정값 위치까지 읽었으면 "zoneMin-zoneMax@value" 형태의 문자열
+// (각각 별도 필드로 두면 Anthropic 구조화 출력의 nullable 파라미터 상한을 넘는다). 체지방량 그래프는
+// 100%를 넘어가면 눈금 간격이 넓어지는 비선형 축이라, 상식 범위를 넉넉하게 잡는다.
+const PERCENT_STANDARD_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)(?:@(\d+(?:\.\d+)?))?$/
+const ZONE_BOUNDS = { min: 40, max: 250 }
+const VALUE_BOUNDS = { min: 10, max: 500 }
 
-const STANDARD_RANGE_BOUNDS: Record<StandardRangeKey, { min: number; max: number }> = {
-  weightKg: { min: 25, max: 150 },
-  skeletalMuscleMassKg: { min: 10, max: 55 },
-  bodyFatMassKg: { min: 2, max: 45 },
+interface PercentStandard {
+  min: number | null
+  max: number | null
+  value: number | null
 }
 
-const STANDARD_RANGE_STRING_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/
-
-// 체형(C/D자형) 판정과 체형 그래프에 쓰는 "표준" 구간. "min-max" 형태의 문자열로 받는다(min/max를 각각
-// 별도 필드로 두면 Anthropic 구조화 출력의 nullable 파라미터 상한을 넘는다). min<max이고 상식적인 범위
-// 안에 있어야 하며, 그 항목의 실측치와 비교해도 터무니없이 동떨어져 있지 않아야 한다(같은 축을 읽은 게
-// 맞는지 교차 확인). 하나라도 못 믿으면 둘 다 버린다 — 반쪽짜리 구간으로 잘못된 체형을 판정하지 않기 위해서다.
-function validateStandardRange(
-  raw: string | null,
-  key: StandardRangeKey,
-  measuredValue: number | null,
-): { min: number | null; max: number | null } {
-  if (raw === null) return { min: null, max: null }
-  const match = STANDARD_RANGE_STRING_RE.exec(raw.trim())
-  if (!match) return { min: null, max: null }
+function validatePercentStandard(raw: string | null): PercentStandard {
+  if (raw === null) return { min: null, max: null, value: null }
+  const match = PERCENT_STANDARD_RE.exec(raw.trim())
+  if (!match) return { min: null, max: null, value: null }
   const min = Number(match[1])
   const max = Number(match[2])
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: null, max: null }
-  const { min: lo, max: hi } = STANDARD_RANGE_BOUNDS[key]
-  if (min >= max || min < lo || max > hi) return { min: null, max: null }
-  if (measuredValue !== null && (measuredValue < min * 0.2 || measuredValue > max * 5)) return { min: null, max: null }
-  const decimals = IN_BODY_RANGES[key].decimals
-  return { min: round(min, decimals), max: round(max, decimals) }
+  const value = match[3] !== undefined ? Number(match[3]) : null
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: null, max: null, value: null }
+  if (min >= max || min < ZONE_BOUNDS.min || max > ZONE_BOUNDS.max) return { min: null, max: null, value: null }
+  const validValue = value !== null && Number.isFinite(value) && value >= VALUE_BOUNDS.min && value <= VALUE_BOUNDS.max ? value : null
+  return { min: round(min, 0), max: round(max, 0), value: validValue !== null ? round(validValue, 0) : null }
 }
 
-function formatStandardRange(range: { min: number | null; max: number | null }): string | null {
-  return range.min !== null && range.max !== null ? `${range.min}-${range.max}` : null
+function formatPercentStandard(range: PercentStandard): string | null {
+  if (range.min === null || range.max === null) return null
+  return range.value !== null ? `${range.min}-${range.max}@${range.value}` : `${range.min}-${range.max}`
 }
 
 const BOUNDING_BOX_RE = /^(\d*\.?\d+),(\d*\.?\d+),(\d*\.?\d+),(\d*\.?\d+)$/
@@ -182,17 +176,17 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     }
   }
 
-  const weightRange = validateStandardRange(raw.weightStandardRange, 'weightKg', values.weightKg)
-  const muscleRange = validateStandardRange(raw.skeletalMuscleMassStandardRange, 'skeletalMuscleMassKg', values.skeletalMuscleMassKg)
-  const fatRange = validateStandardRange(raw.bodyFatMassStandardRange, 'bodyFatMassKg', values.bodyFatMassKg)
+  const weightRange = validatePercentStandard(raw.weightStandardRange)
+  const muscleRange = validatePercentStandard(raw.skeletalMuscleMassStandardRange)
+  const fatRange = validatePercentStandard(raw.bodyFatMassStandardRange)
 
   return {
     isInBodyReport: true,
     ...values,
     testedAtDate: validateTestedAtDate(raw.testedAtDate),
-    weightStandardRange: formatStandardRange(weightRange),
-    skeletalMuscleMassStandardRange: formatStandardRange(muscleRange),
-    bodyFatMassStandardRange: formatStandardRange(fatRange),
+    weightStandardRange: formatPercentStandard(weightRange),
+    skeletalMuscleMassStandardRange: formatPercentStandard(muscleRange),
+    bodyFatMassStandardRange: formatPercentStandard(fatRange),
     muscleFatAnalysisBox: validateBoundingBox(raw.muscleFatAnalysisBox),
     confidence: clamp01(raw.confidence),
     warnings: cleanWarnings(warnings),
@@ -203,9 +197,9 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
 // 정상이라, normalizeInBody와 달리 "읽은 값이 하나도 없으면 에러"로 보지 않는다 — 표준범위 세 개만
 // 검증해서 돌려주고, 그마저도 다 null이면 호출한 쪽이 "재시도해도 못 읽었다"로 판단해 1차 결과를 쓴다.
 export function normalizeInBodyStandardRangeOnly(raw: InBodyExtraction): InBodyExtraction {
-  const weightRange = validateStandardRange(raw.weightStandardRange, 'weightKg', null)
-  const muscleRange = validateStandardRange(raw.skeletalMuscleMassStandardRange, 'skeletalMuscleMassKg', null)
-  const fatRange = validateStandardRange(raw.bodyFatMassStandardRange, 'bodyFatMassKg', null)
+  const weightRange = validatePercentStandard(raw.weightStandardRange)
+  const muscleRange = validatePercentStandard(raw.skeletalMuscleMassStandardRange)
+  const fatRange = validatePercentStandard(raw.bodyFatMassStandardRange)
 
   return {
     isInBodyReport: true,
@@ -221,9 +215,9 @@ export function normalizeInBodyStandardRangeOnly(raw: InBodyExtraction): InBodyE
     bmi: null,
     basalMetabolicRateKcal: null,
     testedAtDate: null,
-    weightStandardRange: formatStandardRange(weightRange),
-    skeletalMuscleMassStandardRange: formatStandardRange(muscleRange),
-    bodyFatMassStandardRange: formatStandardRange(fatRange),
+    weightStandardRange: formatPercentStandard(weightRange),
+    skeletalMuscleMassStandardRange: formatPercentStandard(muscleRange),
+    bodyFatMassStandardRange: formatPercentStandard(fatRange),
     muscleFatAnalysisBox: null,
     confidence: clamp01(raw.confidence),
     warnings: cleanWarnings(raw.warnings),

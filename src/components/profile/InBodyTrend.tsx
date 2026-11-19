@@ -87,7 +87,7 @@ function BodyShapeChart({
   const chartHeight = ROW_H * rows.length
   // 세 항목을 "표준 대비 비율"이라는 공통 축 위에 함께 놓는다 — 그래야 표준을 크게 벗어난 항목도
   // 서로 다른 자리에 찍혀서, 점들을 이은 선의 기울기가 실제 체형 차이를 보여준다.
-  const shapePositions = computeShapePositions(rows)
+  const shapePositions = computeShapePositions(rows.map((r) => r.range))
   const points = shapePositions.map((p, i) => (p && p.valuePos !== null ? { x: p.valuePos * 100, y: i * ROW_H + BAR_CENTER_Y } : null))
   const linePoints = points
     .filter((p): p is { x: number; y: number } => p !== null)

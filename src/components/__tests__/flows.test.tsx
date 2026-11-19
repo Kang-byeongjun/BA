@@ -49,8 +49,8 @@ const inbody: InBodyExtraction = {
   basalMetabolicRateKcal: 1702,
   testedAtDate: '2026-11-09',
   weightStandardRange: null,
-  skeletalMuscleMassStandardRange: '32-40',
-  bodyFatMassStandardRange: '10-18',
+  skeletalMuscleMassStandardRange: '90-110@100',
+  bodyFatMassStandardRange: '80-120@100',
   muscleFatAnalysisBox: null,
   confidence: 0.55,
   warnings: ['체지방량 숫자가 흐릿해서 읽지 못했어요.'],
@@ -451,8 +451,8 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
       bodyType: 'I',
       standardRanges: {
         weight: null,
-        skeletalMuscleMass: { min: 32, max: 40 },
-        bodyFatMass: { min: 10, max: 18 },
+        skeletalMuscleMass: { min: 90, max: 110, value: 100 },
+        bodyFatMass: { min: 80, max: 120, value: 100 },
       },
     })
   })
@@ -479,9 +479,9 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
       bmi: null,
       basalMetabolicRateKcal: null,
       testedAtDate: null,
-      weightStandardRange: '70-80',
-      skeletalMuscleMassStandardRange: '32-40',
-      bodyFatMassStandardRange: '10-18',
+      weightStandardRange: '85-115@97',
+      skeletalMuscleMassStandardRange: '90-110@115',
+      bodyFatMassStandardRange: '80-120@90',
       muscleFatAnalysisBox: null,
     }
     fetchMock.mockResolvedValueOnce(ok(firstPass)).mockResolvedValueOnce(ok(retryPass))
@@ -503,11 +503,11 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
     fireEvent.click(screen.getByText('확인하고 적용'))
     expect(onApply).toHaveBeenCalledWith(
       expect.objectContaining({
-        bodyType: 'I',
+        bodyType: 'D',
         standardRanges: {
-          weight: { min: 70, max: 80 },
-          skeletalMuscleMass: { min: 32, max: 40 },
-          bodyFatMass: { min: 10, max: 18 },
+          weight: { min: 85, max: 115, value: 97 },
+          skeletalMuscleMass: { min: 90, max: 110, value: 115 },
+          bodyFatMass: { min: 80, max: 120, value: 90 },
         },
       }),
     )
@@ -599,7 +599,11 @@ describe('인바디 재측정 (체형 판정 실패 기록 교체)', () => {
       id: 'ok-1',
       timestamp: Date.now() - 14 * 24 * 60 * 60 * 1000,
       bodyType: 'D',
-      standardRanges: { weight: null, skeletalMuscleMass: { min: 30, max: 38 }, bodyFatMass: { min: 10, max: 18 } },
+      standardRanges: {
+        weight: null,
+        skeletalMuscleMass: { min: 30, max: 38, value: null },
+        bodyFatMass: { min: 10, max: 18, value: null },
+      },
     }
     localStorage.setItem('ai-diet-app:profile', JSON.stringify(profile))
     localStorage.setItem('ai-diet-app:inBodyHistory', JSON.stringify([failedEntry, olderOkEntry]))

@@ -221,13 +221,8 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       const weightRange = toStandardRange(extraction.weightStandardRange)
       const skeletalMuscleMassRange = toStandardRange(extraction.skeletalMuscleMassStandardRange)
       const bodyFatMassRange = toStandardRange(extraction.bodyFatMassStandardRange)
-      // 사용자가 수정한 값 기준으로 다시 판정한다(AI가 처음 읽은 값이 아니라).
-      measurements.bodyType = classifyBodyType(
-        measurements.skeletalMuscleMass,
-        measurements.bodyFatMass,
-        skeletalMuscleMassRange,
-        bodyFatMassRange,
-      )
+      // 체형 판정은 그래프에서 읽은 측정값 위치(%) 기준이라, 사용자가 kg 값을 고쳐도 다시 계산되지 않는다.
+      measurements.bodyType = classifyBodyType(skeletalMuscleMassRange, bodyFatMassRange)
       measurements.standardRanges = { weight: weightRange, skeletalMuscleMass: skeletalMuscleMassRange, bodyFatMass: bodyFatMassRange }
       onApply(measurements)
     }
