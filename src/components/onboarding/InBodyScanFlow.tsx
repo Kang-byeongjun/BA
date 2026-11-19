@@ -2,6 +2,7 @@ import { AlertTriangle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { InBodyExtraction } from '../../../shared/analysis'
 import { AnalysisError, isRetryable, type AnalysisErrorCode } from '../../../shared/errors'
+import { classifyBodyType } from '../../lib/inBodyBodyType'
 import { prepareImage, type PreparedImage } from '../../lib/imagePrep'
 import { sleep } from '../../lib/sleep'
 import type { AnalysisMode } from '../../services/foodVisionService'
@@ -19,8 +20,8 @@ interface Props {
   onClose: () => void
 }
 
-// measuredAt은 숫자 필드가 아니라 별도의 날짜 입력으로 다룬다.
-type FieldKey = Exclude<keyof InBodyMeasurements, 'measuredAt'>
+// measuredAt·bodyType은 숫자 필드가 아니라 별도로 다룬다(날짜 입력 / 계산된 값).
+type FieldKey = Exclude<keyof InBodyMeasurements, 'measuredAt' | 'bodyType'>
 
 const FIELDS: { key: FieldKey; label: string; unit: string }[] = [
   { key: 'weight', label: '체중', unit: 'kg' },
@@ -68,6 +69,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       mineralMass: null,
       basalMetabolicRate: null,
       measuredAt: null,
+      bodyType: null,
     }),
   )
   const [measuredAt, setMeasuredAt] = useState('')
@@ -190,6 +192,17 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       const measurements = {} as InBodyMeasurements
       for (const p of parsed) measurements[p.key] = p.value
       measurements.measuredAt = measuredAt.trim() === '' ? null : measuredAt
+      // 사용자가 수정한 값 기준으로 다시 판정한다(AI가 처음 읽은 값이 아니라).
+      measurements.bodyType = classifyBodyType(
+        measurements.skeletalMuscleMass,
+        measurements.bodyFatMass,
+        extraction.skeletalMuscleMassStandardMinKg !== null && extraction.skeletalMuscleMassStandardMaxKg !== null
+          ? { min: extraction.skeletalMuscleMassStandardMinKg, max: extraction.skeletalMuscleMassStandardMaxKg }
+          : null,
+        extraction.bodyFatMassStandardMinKg !== null && extraction.bodyFatMassStandardMaxKg !== null
+          ? { min: extraction.bodyFatMassStandardMinKg, max: extraction.bodyFatMassStandardMaxKg }
+          : null,
+      )
       onApply(measurements)
     }
 

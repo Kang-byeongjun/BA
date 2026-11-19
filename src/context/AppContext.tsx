@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, type ReactNode } from 'react'
 import { buildDemoMeals, DEMO_NUTRITION_TARGET, DEMO_PROFILE, DEMO_WORKOUT_PROFILE } from '../data/mockData'
+import type { InBodyBodyType } from '../lib/inBodyBodyType'
 import { generateId } from '../lib/id'
 import type { AiMode } from '../lib/aiMode'
 import { loadFromStorage, removeFromStorage, saveToStorage, STORAGE_KEYS } from '../lib/storage'
@@ -44,6 +45,7 @@ type Action =
       nutritionTarget: NutritionTarget
       workoutProfile: WorkoutProfile
       measuredAt?: string | null
+      bodyType?: InBodyBodyType | null
     }
   | { type: 'LOAD_DEMO' }
   | { type: 'SET_AI_MODE'; aiMode: AiMode }
@@ -81,6 +83,7 @@ function historyEntryFromProfile(
   profile: UserProfile,
   source: InBodySource,
   measuredAt?: string | null,
+  bodyType?: InBodyBodyType | null,
 ): InBodyHistoryEntry {
   return {
     id: generateId('inbody'),
@@ -94,12 +97,17 @@ function historyEntryFromProfile(
     proteinMass: profile.proteinMass,
     mineralMass: profile.mineralMass,
     basalMetabolicRate: profile.basalMetabolicRate,
+    bodyType: bodyType ?? null,
   }
 }
 
-// 이 필드가 생기기 전에 저장된 기록은 id가 없으므로, 불러올 때 한 번 채워준다.
+// 이 필드들이 생기기 전에 저장된 기록은 없으므로, 불러올 때 한 번 채워준다.
 function withIds(history: InBodyHistoryEntry[]): InBodyHistoryEntry[] {
-  return history.map((entry) => (entry.id ? entry : { ...entry, id: generateId('inbody') }))
+  return history.map((entry) => ({
+    ...entry,
+    id: entry.id ?? generateId('inbody'),
+    bodyType: entry.bodyType ?? null,
+  }))
 }
 
 function initState(): AppState {
@@ -131,7 +139,7 @@ function reducer(state: AppState, action: Action): AppState {
         nutritionTarget: action.nutritionTarget,
         workoutProfile: action.workoutProfile,
         inBodyHistory: [
-          historyEntryFromProfile(action.profile, 'onboarding', action.measuredAt),
+          historyEntryFromProfile(action.profile, 'onboarding', action.measuredAt, action.bodyType),
           ...state.inBodyHistory,
         ],
       }
@@ -167,7 +175,7 @@ function reducer(state: AppState, action: Action): AppState {
         profile,
         nutritionTarget,
         inBodyHistory: [
-          historyEntryFromProfile(profile, action.source, action.measurements.measuredAt),
+          historyEntryFromProfile(profile, action.source, action.measurements.measuredAt, action.measurements.bodyType),
           ...state.inBodyHistory,
         ],
       }

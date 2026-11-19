@@ -17,6 +17,7 @@ function entry(daysAgo: number, weight: number | null): InBodyHistoryEntry {
     proteinMass: null,
     mineralMass: null,
     basalMetabolicRate: null,
+    bodyType: null,
   }
 }
 

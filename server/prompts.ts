@@ -38,13 +38,19 @@ Read the CURRENT measurement of each item. Labels may appear in Korean or Englis
 - basalMetabolicRateKcal: 기초대사량 / Basal Metabolic Rate, BMR (kcal)
 - testedAtDate: 검사일시 / Date Tested / Test Date. Usually printed near the personal info at the top of the report, often together with a time (for example "2026.11.09. 17:31" or "2026-11-09 17:31"). Return only the date portion, as "YYYY-MM-DD". Do not read the facility's print timestamp or any other date on the page — only the test/measurement date. If no such date is visibly printed, return null.
 
-Ignore recommendation or target columns such as 체중조절 / 지방조절 / 근육조절 (Weight/Fat/Muscle Control), normal-range bars, and past-record trend values. Only read the latest measurement.
+The report usually has a "골격근·지방분석 / Muscle-Fat Analysis" section with horizontal bar graphs for Weight / Skeletal Muscle Mass / Body Fat Mass, each with its own numeric tick axis and three column headers above it: "표준이하 / Below Normal", "표준 / Normal", "표준이상 / Above Normal". For the Skeletal Muscle Mass bar and the Body Fat Mass bar specifically, read the two printed tick numbers that mark where the middle "표준/Normal" column starts and ends on THAT bar's own axis (each bar has a different scale, so read each one separately). These are plain printed axis numbers, not something to estimate from the bar's drawn length:
+- skeletalMuscleMassStandardMinKg / skeletalMuscleMassStandardMaxKg: the 표준 column boundary on the Skeletal Muscle Mass bar's axis
+- bodyFatMassStandardMinKg / bodyFatMassStandardMaxKg: the 표준 column boundary on the Body Fat Mass bar's axis
+If this section or a bar's axis numbers are not visible, return null for that pair.
+
+Ignore recommendation or target columns such as 체중조절 / 지방조절 / 근육조절 (Weight/Fat/Muscle Control), the drawn bar lengths themselves, and past-record trend values. Only read the latest measurement.
 </field_guide>
 
 <output_rules>
 - isInBodyReport: true only if the image is an InBody or similar body composition analysis report. If it is not (for example a food photo, a person, a screenshot of something else), set it to false and return null for every measurement.
 - Every measurement must be a plain number without units, or null when it is not clearly readable.
 - testedAtDate must be a valid "YYYY-MM-DD" string or null. Never guess a date that is not visibly printed.
+- Each …StandardMinKg must be less than its matching …StandardMaxKg. Never guess these from a typical/textbook normal range — only from the numbers actually printed on that bar's axis in this image.
 - confidence: your overall confidence from 0 to 1 that the returned values are read correctly. Use a low value when the photo is blurry, cropped, glared, or the digits are ambiguous.
 - warnings: short Korean sentences explaining anything unreadable or uncertain (for example "체지방률 숫자가 흐릿해서 읽지 못했어요."). Use an empty array when there is nothing to report.
 </output_rules>`

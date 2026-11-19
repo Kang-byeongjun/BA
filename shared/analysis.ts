@@ -31,6 +31,11 @@ export interface InBodyExtraction {
   basalMetabolicRateKcal: number | null
   // 결과지에 찍힌 검사일시(검사일만, YYYY-MM-DD). 안 보이면 null
   testedAtDate: string | null
+  // "골격근·지방분석" 막대그래프의 "표준" 구간 경계값(그 사람 신장 기준 정상범위). 축에 찍힌 눈금 숫자를 그대로 읽는다.
+  skeletalMuscleMassStandardMinKg: number | null
+  skeletalMuscleMassStandardMaxKg: number | null
+  bodyFatMassStandardMinKg: number | null
+  bodyFatMassStandardMaxKg: number | null
   // 0~1
   confidence: number
   warnings: string[]

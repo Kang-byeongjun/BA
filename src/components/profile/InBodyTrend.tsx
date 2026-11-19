@@ -2,6 +2,7 @@ import { ArrowDown, ArrowUp, Minus, Sparkles, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
+import { BODY_TYPE_LABELS, type InBodyBodyType } from '../../lib/inBodyBodyType'
 import { daysBetween, findComparisonEntry } from '../../lib/inBodyTrend'
 import { formatRelativeDate } from '../../lib/time'
 import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry, type InBodyMeasurements } from '../../types'
@@ -40,6 +41,19 @@ function DeltaBadge({ delta, decimals }: { delta: number; decimals: number }) {
       {isUp ? '+' : ''}
       {rounded}
     </span>
+  )
+}
+
+function BodyTypeBadge({ bodyType }: { bodyType: InBodyBodyType | null }) {
+  if (bodyType === null) return null
+  const color = bodyType === 'D' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+  return (
+    <p className={`mb-3 rounded-xl px-3 py-2 text-xs font-medium ${color}`}>
+      {BODY_TYPE_LABELS[bodyType]}
+      <span className="ml-1 font-normal opacity-70">
+        · 골격근량·체지방량을 결과지의 표준범위와 비교한 간이 추정이에요
+      </span>
+    </p>
   )
 }
 
@@ -89,6 +103,7 @@ export default function InBodyTrend({ history }: Props) {
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">예시</span>
           </div>
         </div>
+        <BodyTypeBadge bodyType={latest.bodyType} />
         <WeightTrendChart history={history} />
         <div className="mb-3 rounded-xl bg-slate-50 p-3 opacity-60">
           <p className="mb-2 text-xs font-medium text-slate-500">14일 전 측정 대비</p>
@@ -110,6 +125,7 @@ export default function InBodyTrend({ history }: Props) {
         <AddMeasurementButton onClick={() => setScanOpen(true)} />
       </div>
 
+      <BodyTypeBadge bodyType={latest.bodyType} />
       <WeightTrendChart history={history} />
 
       {comparison ? (

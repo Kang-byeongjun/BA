@@ -1,3 +1,5 @@
+import type { InBodyBodyType } from '../lib/inBodyBodyType'
+
 // ---------- 온보딩 / 사용자 프로필 ----------
 
 export type Goal = 'fat_loss' | 'muscle_gain' | 'weight_maintain' | 'health_care'
@@ -45,6 +47,8 @@ export interface InBodyMeasurements {
   basalMetabolicRate: number | null
   // 결과지에서 읽은 검사일(YYYY-MM-DD). 못 읽었거나 수동 입력이면 null — 이 경우 "지금"을 측정 시점으로 쓴다.
   measuredAt: string | null
+  // 골격근량·체지방량의 표준 구간 대비 비교로 판정한 체형 경향(공식 InBody 판정 아님). 계산 불가하면 null.
+  bodyType: InBodyBodyType | null
 }
 
 // 측정 시점의 InBody 스냅샷. "이전 측정 대비 변화"를 보여주기 위해 최신 값 위에 쌓아간다(최신이 배열 앞).
@@ -66,6 +70,7 @@ export interface InBodyHistoryEntry {
   proteinMass: number | null
   mineralMass: number | null
   basalMetabolicRate: number | null
+  bodyType: InBodyBodyType | null
 }
 
 export const IN_BODY_SOURCE_LABELS: Record<InBodySource, string> = {

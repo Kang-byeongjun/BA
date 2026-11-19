@@ -128,6 +128,7 @@ export default function Profile() {
       mineralMass: inBodyDraft.mineralMass.trim() === '' ? null : Number(inBodyDraft.mineralMass),
       basalMetabolicRate: inBodyDraft.basalMetabolicRate.trim() === '' ? null : Number(inBodyDraft.basalMetabolicRate),
       measuredAt: null,
+      bodyType: null,
     }
     dispatch({ type: 'UPDATE_INBODY', measurements, source: 'manual' })
     setDraftTarget(null)

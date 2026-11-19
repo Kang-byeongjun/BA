@@ -23,6 +23,7 @@ const EMPTY_INBODY: InBodyFormValues = {
   mineralMass: '',
   basalMetabolicRate: '',
   measuredAt: null,
+  bodyType: null,
 }
 
 // 결과지에 없을 수 있는 선택 항목. 비어 있으면 null로, 값이 있으면 숫자로 변환한다.
@@ -89,6 +90,7 @@ export default function OnboardingFlow() {
       nutritionTarget: finalTarget,
       workoutProfile,
       measuredAt: inBody.measuredAt,
+      bodyType: inBody.bodyType,
     })
   }
 

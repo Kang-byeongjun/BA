@@ -72,6 +72,21 @@ function round(value: number, decimals: number): number {
   return Math.round(value * f) / f
 }
 
+// 체형(C/D자형) 판정에 쓰는 "표준" 구간. min<max이고 그 항목의 상식적인 범위(IN_BODY_RANGES) 안에 있어야 한다.
+// 하나라도 못 믿으면 둘 다 버린다 — 반쪽짜리 구간으로 잘못된 체형을 판정하지 않기 위해서다.
+function validateStandardRange(
+  min: number | null,
+  max: number | null,
+  key: Extract<InBodyValueKey, 'skeletalMuscleMassKg' | 'bodyFatMassKg'>,
+): { min: number | null; max: number | null } {
+  if (min === null || max === null) return { min: null, max: null }
+  const { min: lo, max: hi } = IN_BODY_RANGES[key]
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: null, max: null }
+  if (min >= max || min < lo || max > hi) return { min: null, max: null }
+  const decimals = IN_BODY_RANGES[key].decimals
+  return { min: round(min, decimals), max: round(max, decimals) }
+}
+
 export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
   if (!raw.isInBodyReport) throw new AnalysisError('NOT_IN_BODY_REPORT', 'inbody')
 
@@ -125,10 +140,21 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     }
   }
 
+  const muscleRange = validateStandardRange(
+    raw.skeletalMuscleMassStandardMinKg,
+    raw.skeletalMuscleMassStandardMaxKg,
+    'skeletalMuscleMassKg',
+  )
+  const fatRange = validateStandardRange(raw.bodyFatMassStandardMinKg, raw.bodyFatMassStandardMaxKg, 'bodyFatMassKg')
+
   return {
     isInBodyReport: true,
     ...values,
     testedAtDate: validateTestedAtDate(raw.testedAtDate),
+    skeletalMuscleMassStandardMinKg: muscleRange.min,
+    skeletalMuscleMassStandardMaxKg: muscleRange.max,
+    bodyFatMassStandardMinKg: fatRange.min,
+    bodyFatMassStandardMaxKg: fatRange.max,
     confidence: clamp01(raw.confidence),
     warnings: cleanWarnings(warnings),
   }

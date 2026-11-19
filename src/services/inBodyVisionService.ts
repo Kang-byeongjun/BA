@@ -1,5 +1,6 @@
 import type { InBodyExtraction } from '../../shared/analysis'
 import { getMockInBodyExtraction } from '../data/mockData'
+import { classifyBodyType } from '../lib/inBodyBodyType'
 import type { PreparedImage } from '../lib/imagePrep'
 import { sleep } from '../lib/sleep'
 import type { InBodyMeasurements } from '../types'
@@ -40,5 +41,15 @@ export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements
     mineralMass: extraction.mineralMassKg,
     basalMetabolicRate: extraction.basalMetabolicRateKcal,
     measuredAt: extraction.testedAtDate,
+    bodyType: classifyBodyType(
+      extraction.skeletalMuscleMassKg,
+      extraction.bodyFatMassKg,
+      extraction.skeletalMuscleMassStandardMinKg !== null && extraction.skeletalMuscleMassStandardMaxKg !== null
+        ? { min: extraction.skeletalMuscleMassStandardMinKg, max: extraction.skeletalMuscleMassStandardMaxKg }
+        : null,
+      extraction.bodyFatMassStandardMinKg !== null && extraction.bodyFatMassStandardMaxKg !== null
+        ? { min: extraction.bodyFatMassStandardMinKg, max: extraction.bodyFatMassStandardMaxKg }
+        : null,
+    ),
   }
 }

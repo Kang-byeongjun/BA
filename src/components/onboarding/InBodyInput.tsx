@@ -1,5 +1,6 @@
 import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
+import type { InBodyBodyType } from '../../lib/inBodyBodyType'
 import type { Gender } from '../../types'
 import InBodyScanFlow from './InBodyScanFlow'
 
@@ -17,6 +18,7 @@ export interface InBodyFormValues {
   basalMetabolicRate: string
   // 결과지 스캔으로 읽은 검사일(YYYY-MM-DD). 직접 입력이면 null — 이 경우 온보딩 시점을 측정일로 쓴다.
   measuredAt: string | null
+  bodyType: InBodyBodyType | null
 }
 
 export type InBodyEntryMode = 'full' | 'lite'
@@ -28,8 +30,8 @@ interface Props {
   onNext: (values: InBodyFormValues, mode: InBodyEntryMode) => void
 }
 
-// 숫자 입력칸(문자열)으로 다루는 필드만. gender는 버튼 선택, measuredAt은 스캔 화면에서 따로 다룬다.
-type NumericFieldKey = Exclude<keyof InBodyFormValues, 'gender' | 'measuredAt'>
+// 숫자 입력칸(문자열)으로 다루는 필드만. gender는 버튼 선택, measuredAt·bodyType은 스캔 화면에서 따로 다룬다.
+type NumericFieldKey = Exclude<keyof InBodyFormValues, 'gender' | 'measuredAt' | 'bodyType'>
 
 // 간편 시작(InBody 없음)에서도 항상 받는 필수 항목
 const CORE_FIELDS: { key: NumericFieldKey; label: string; unit: string }[] = [
@@ -86,6 +88,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
             ...(scanned.mineralMass !== null && { mineralMass: String(scanned.mineralMass) }),
             ...(scanned.basalMetabolicRate !== null && { basalMetabolicRate: String(scanned.basalMetabolicRate) }),
             measuredAt: scanned.measuredAt,
+            bodyType: scanned.bodyType,
           }))
           // 스캔으로 결과를 받았다는 건 InBody가 있다는 뜻이므로 정식 모드로 전환한다.
           setMode('full')
