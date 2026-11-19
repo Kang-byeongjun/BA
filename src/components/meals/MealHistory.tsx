@@ -95,7 +95,7 @@ export default function MealHistory() {
       <FeedbackPanel feedback={feedback} />
       <RecommendationCard meals={recommendations} goal={recommendationProfile.goal} />
 
-      <MealWeekTrend meals={meals} />
+      <MealWeekTrend meals={meals} nutritionTarget={nutritionTarget} />
 
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <button onClick={() => setHistoryOpen((v) => !v)} className="flex w-full items-center justify-between">

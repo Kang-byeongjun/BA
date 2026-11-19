@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getSlotWeekSeries, recentWeekDays, weekdayLabel } from '../mealWeekTrend'
+import { getDayWeekSeries, getSlotWeekSeries, recentWeekDays, weekdayLabel } from '../mealWeekTrend'
 import type { Meal } from '../../types'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -64,5 +64,18 @@ describe('getSlotWeekSeries', () => {
     const tooOld = meal(THURSDAY_NOON - 10 * DAY_MS, { slot: '아침', calories: 999 })
     const series = getSlotWeekSeries([tooOld], '아침', THURSDAY_NOON)
     expect(series.reduce((s, d) => s + d.calories, 0)).toBe(0)
+  })
+})
+
+describe('getDayWeekSeries', () => {
+  it('끼니 구분 없이 그 날 전체를 합산한다', () => {
+    const meals = [
+      meal(THURSDAY_NOON, { slot: '아침', calories: 400 }),
+      meal(THURSDAY_NOON, { slot: '점심', calories: 600 }),
+      meal(THURSDAY_NOON, { slot: '저녁', calories: 500 }),
+    ]
+    const series = getDayWeekSeries(meals, THURSDAY_NOON)
+    const today = series[series.length - 1]
+    expect(today.calories).toBe(1500)
   })
 })
