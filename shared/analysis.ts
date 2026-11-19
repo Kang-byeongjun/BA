@@ -32,12 +32,11 @@ export interface InBodyExtraction {
   // 결과지에 찍힌 검사일시(검사일만, YYYY-MM-DD). 안 보이면 null
   testedAtDate: string | null
   // "골격근·지방분석" 막대그래프의 "표준" 구간 경계값(그 사람 신장 기준 정상범위). 축에 찍힌 눈금 숫자를 그대로 읽는다.
-  weightStandardMinKg: number | null
-  weightStandardMaxKg: number | null
-  skeletalMuscleMassStandardMinKg: number | null
-  skeletalMuscleMassStandardMaxKg: number | null
-  bodyFatMassStandardMinKg: number | null
-  bodyFatMassStandardMaxKg: number | null
+  // "최솟값-최댓값" 형태의 문자열(예: "30.8-37.5")로 받는다 — Anthropic 구조화 출력 스키마는 nullable
+  // 파라미터 개수에 상한이 있어서(18개에서 실패), min/max를 각각 별도 필드로 두지 않고 하나로 합친다.
+  weightStandardRange: string | null
+  skeletalMuscleMassStandardRange: string | null
+  bodyFatMassStandardRange: string | null
   // 0~1
   confidence: number
   warnings: string[]

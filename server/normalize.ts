@@ -83,22 +83,32 @@ const STANDARD_RANGE_BOUNDS: Record<StandardRangeKey, { min: number; max: number
   bodyFatMassKg: { min: 2, max: 45 },
 }
 
-// 체형(C/D자형) 판정과 체형 그래프에 쓰는 "표준" 구간. min<max이고 상식적인 범위 안에 있어야 하며, 그
-// 항목의 실측치와 비교해도 터무니없이 동떨어져 있지 않아야 한다(같은 축을 읽은 게 맞는지 교차 확인).
-// 하나라도 못 믿으면 둘 다 버린다 — 반쪽짜리 구간으로 잘못된 체형을 판정하지 않기 위해서다.
+const STANDARD_RANGE_STRING_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/
+
+// 체형(C/D자형) 판정과 체형 그래프에 쓰는 "표준" 구간. "min-max" 형태의 문자열로 받는다(min/max를 각각
+// 별도 필드로 두면 Anthropic 구조화 출력의 nullable 파라미터 상한을 넘는다). min<max이고 상식적인 범위
+// 안에 있어야 하며, 그 항목의 실측치와 비교해도 터무니없이 동떨어져 있지 않아야 한다(같은 축을 읽은 게
+// 맞는지 교차 확인). 하나라도 못 믿으면 둘 다 버린다 — 반쪽짜리 구간으로 잘못된 체형을 판정하지 않기 위해서다.
 function validateStandardRange(
-  min: number | null,
-  max: number | null,
+  raw: string | null,
   key: StandardRangeKey,
   measuredValue: number | null,
 ): { min: number | null; max: number | null } {
-  if (min === null || max === null) return { min: null, max: null }
+  if (raw === null) return { min: null, max: null }
+  const match = STANDARD_RANGE_STRING_RE.exec(raw.trim())
+  if (!match) return { min: null, max: null }
+  const min = Number(match[1])
+  const max = Number(match[2])
   if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: null, max: null }
   const { min: lo, max: hi } = STANDARD_RANGE_BOUNDS[key]
   if (min >= max || min < lo || max > hi) return { min: null, max: null }
   if (measuredValue !== null && (measuredValue < min * 0.2 || measuredValue > max * 5)) return { min: null, max: null }
   const decimals = IN_BODY_RANGES[key].decimals
   return { min: round(min, decimals), max: round(max, decimals) }
+}
+
+function formatStandardRange(range: { min: number | null; max: number | null }): string | null {
+  return range.min !== null && range.max !== null ? `${range.min}-${range.max}` : null
 }
 
 export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
@@ -154,30 +164,17 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     }
   }
 
-  const weightRange = validateStandardRange(raw.weightStandardMinKg, raw.weightStandardMaxKg, 'weightKg', values.weightKg)
-  const muscleRange = validateStandardRange(
-    raw.skeletalMuscleMassStandardMinKg,
-    raw.skeletalMuscleMassStandardMaxKg,
-    'skeletalMuscleMassKg',
-    values.skeletalMuscleMassKg,
-  )
-  const fatRange = validateStandardRange(
-    raw.bodyFatMassStandardMinKg,
-    raw.bodyFatMassStandardMaxKg,
-    'bodyFatMassKg',
-    values.bodyFatMassKg,
-  )
+  const weightRange = validateStandardRange(raw.weightStandardRange, 'weightKg', values.weightKg)
+  const muscleRange = validateStandardRange(raw.skeletalMuscleMassStandardRange, 'skeletalMuscleMassKg', values.skeletalMuscleMassKg)
+  const fatRange = validateStandardRange(raw.bodyFatMassStandardRange, 'bodyFatMassKg', values.bodyFatMassKg)
 
   return {
     isInBodyReport: true,
     ...values,
     testedAtDate: validateTestedAtDate(raw.testedAtDate),
-    weightStandardMinKg: weightRange.min,
-    weightStandardMaxKg: weightRange.max,
-    skeletalMuscleMassStandardMinKg: muscleRange.min,
-    skeletalMuscleMassStandardMaxKg: muscleRange.max,
-    bodyFatMassStandardMinKg: fatRange.min,
-    bodyFatMassStandardMaxKg: fatRange.max,
+    weightStandardRange: formatStandardRange(weightRange),
+    skeletalMuscleMassStandardRange: formatStandardRange(muscleRange),
+    bodyFatMassStandardRange: formatStandardRange(fatRange),
     confidence: clamp01(raw.confidence),
     warnings: cleanWarnings(warnings),
   }

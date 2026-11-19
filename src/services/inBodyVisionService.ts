@@ -29,12 +29,9 @@ export async function analyzeInBodyImage(image: PreparedImage, { mode, signal }:
 
 /** API 응답 형식(…Kg 등)을 앱의 체성분 측정값 형식으로 변환한다. null은 null로 유지한다. */
 export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements {
-  const weightRange = toStandardRange(extraction.weightStandardMinKg, extraction.weightStandardMaxKg)
-  const skeletalMuscleMassRange = toStandardRange(
-    extraction.skeletalMuscleMassStandardMinKg,
-    extraction.skeletalMuscleMassStandardMaxKg,
-  )
-  const bodyFatMassRange = toStandardRange(extraction.bodyFatMassStandardMinKg, extraction.bodyFatMassStandardMaxKg)
+  const weightRange = toStandardRange(extraction.weightStandardRange)
+  const skeletalMuscleMassRange = toStandardRange(extraction.skeletalMuscleMassStandardRange)
+  const bodyFatMassRange = toStandardRange(extraction.bodyFatMassStandardRange)
   return {
     weight: extraction.weightKg,
     age: extraction.ageYears,

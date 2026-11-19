@@ -193,12 +193,9 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       const measurements = {} as InBodyMeasurements
       for (const p of parsed) measurements[p.key] = p.value
       measurements.measuredAt = measuredAt.trim() === '' ? null : measuredAt
-      const weightRange = toStandardRange(extraction.weightStandardMinKg, extraction.weightStandardMaxKg)
-      const skeletalMuscleMassRange = toStandardRange(
-        extraction.skeletalMuscleMassStandardMinKg,
-        extraction.skeletalMuscleMassStandardMaxKg,
-      )
-      const bodyFatMassRange = toStandardRange(extraction.bodyFatMassStandardMinKg, extraction.bodyFatMassStandardMaxKg)
+      const weightRange = toStandardRange(extraction.weightStandardRange)
+      const skeletalMuscleMassRange = toStandardRange(extraction.skeletalMuscleMassStandardRange)
+      const bodyFatMassRange = toStandardRange(extraction.bodyFatMassStandardRange)
       // 사용자가 수정한 값 기준으로 다시 판정한다(AI가 처음 읽은 값이 아니라).
       measurements.bodyType = classifyBodyType(
         measurements.skeletalMuscleMass,

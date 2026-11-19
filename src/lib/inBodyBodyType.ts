@@ -13,9 +13,14 @@ export const BODY_TYPE_LABELS: Record<InBodyBodyType, string> = {
   C: 'C자형 · 지방 우세',
 }
 
-// 표준 구간이 둘 다 있어야만 비교 가능하므로, 둘 중 하나라도 없으면 null로 통일해서 다룬다.
-export function toStandardRange(min: number | null, max: number | null): InBodyStandardRange | null {
-  return min !== null && max !== null ? { min, max } : null
+const STANDARD_RANGE_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/
+
+// 서버가 "min-max" 형태의 문자열로 내려주는 표준 구간을 파싱한다(비교 가능한 값이 없으면 null).
+export function toStandardRange(raw: string | null): InBodyStandardRange | null {
+  if (raw === null) return null
+  const match = STANDARD_RANGE_RE.exec(raw.trim())
+  if (!match) return null
+  return { min: Number(match[1]), max: Number(match[2]) }
 }
 
 function ratioToStandard(value: number, range: InBodyStandardRange): number {
