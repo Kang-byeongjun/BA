@@ -6,6 +6,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 function entry(daysAgo: number, overrides: Partial<InBodyHistoryEntry> = {}): InBodyHistoryEntry {
   return {
+    id: `entry-${daysAgo}`,
     timestamp: Date.now() - daysAgo * DAY_MS,
     source: 'scan',
     weight: 70,

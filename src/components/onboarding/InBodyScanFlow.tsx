@@ -19,7 +19,8 @@ interface Props {
   onClose: () => void
 }
 
-type FieldKey = keyof InBodyMeasurements
+// measuredAt은 숫자 필드가 아니라 별도의 날짜 입력으로 다룬다.
+type FieldKey = Exclude<keyof InBodyMeasurements, 'measuredAt'>
 
 const FIELDS: { key: FieldKey; label: string; unit: string }[] = [
   { key: 'weight', label: '체중', unit: 'kg' },
@@ -186,8 +187,9 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
     const badge = confidenceLabel(extraction.confidence)
 
     const apply = () => {
-      const measurements = { measuredAt: measuredAt.trim() === '' ? null : measuredAt } as InBodyMeasurements
+      const measurements = {} as InBodyMeasurements
       for (const p of parsed) measurements[p.key] = p.value
+      measurements.measuredAt = measuredAt.trim() === '' ? null : measuredAt
       onApply(measurements)
     }
 

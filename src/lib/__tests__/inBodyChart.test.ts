@@ -4,6 +4,7 @@ import { getWeightSeries } from '../inBodyChart'
 
 function entry(timestamp: number, weight: number | null): InBodyHistoryEntry {
   return {
+    id: `entry-${timestamp}`,
     timestamp,
     source: 'scan',
     weight,
