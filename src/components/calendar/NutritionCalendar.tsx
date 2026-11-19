@@ -2,8 +2,10 @@ import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp } from 'lucide-reac
 import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { getMonthlyDayStatuses, type CalendarDay, type DayStatus } from '../../lib/calendar'
-import { isSameDay } from '../../lib/time'
+import { formatDurationKorean, formatTimeOfDay, isSameDay } from '../../lib/time'
 import { buildMonthlyTrendSummary, getComparableDayCount } from '../../lib/trend'
+import { loadWorkoutHistory } from '../../lib/workoutHistory'
+import { mergeSessions } from '../../lib/workoutSummary'
 import { NUTRITION_STATUS_LABELS } from '../../types'
 import AnimatedBar from '../dashboard/AnimatedBar'
 
@@ -39,12 +41,16 @@ const LEGEND: { status: DayStatus; label: string }[] = [
 ]
 
 export default function NutritionCalendar() {
-  const { meals, nutritionTarget } = useApp()
+  const { meals, nutritionTarget, workouts } = useApp()
   const now = new Date()
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() })
   const [selected, setSelected] = useState<CalendarDay | null>(null)
 
   const isCurrentMonth = cursor.year === now.getFullYear() && cursor.month === now.getMonth()
+
+  // 운동 기록(팀원 기록 + 우리 세트 상세 기록을 합친 것) — 날짜 칸의 운동 배지와, 선택한 날의
+  // 운동 목록에 같이 쓴다. WorkoutSummaryCard와 같은 방식으로 합친다.
+  const sessions = useMemo(() => mergeSessions(workouts, loadWorkoutHistory()), [workouts])
 
   const days = useMemo(
     () => (nutritionTarget ? getMonthlyDayStatuses(meals, nutritionTarget, cursor.year, cursor.month) : []),
@@ -142,16 +148,18 @@ export default function NutritionCalendar() {
           const dayNum = new Date(d.date).getDate()
           const isToday = isSameDay(d.date, Date.now())
           const isSelected = selected?.date === d.date
+          const hasWorkout = sessions.some((s) => isSameDay(s.startTime, d.date))
           return (
             <button
               key={d.date}
               onClick={() => setSelected((prev) => (prev?.date === d.date ? null : d))}
-              aria-label={`${cursor.month + 1}월 ${dayNum}일 · ${dayStatusLabel(d.status)}`}
-              className={`flex aspect-square flex-col items-center justify-center rounded-lg text-xs font-semibold transition-colors ${STATUS_CELL_CLASS[d.status]} ${
+              aria-label={`${cursor.month + 1}월 ${dayNum}일 · ${dayStatusLabel(d.status)}${hasWorkout ? ' · 운동함' : ''}`}
+              className={`relative flex aspect-square flex-col items-center justify-center rounded-lg text-xs font-semibold transition-colors ${STATUS_CELL_CLASS[d.status]} ${
                 isToday ? 'ring-2 ring-emerald-500' : ''
               } ${isSelected ? 'ring-2 ring-slate-900' : ''}`}
             >
               {dayNum}
+              {hasWorkout && <span className="absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full bg-indigo-500" />}
             </button>
           )
         })}
@@ -164,6 +172,10 @@ export default function NutritionCalendar() {
             {label}
           </span>
         ))}
+        <span className="flex items-center gap-1">
+          <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
+          운동함
+        </span>
       </div>
 
       {selected && (
@@ -171,14 +183,71 @@ export default function NutritionCalendar() {
           <p className="font-semibold text-slate-800">
             {cursor.month + 1}월 {new Date(selected.date).getDate()}일
           </p>
-          {selected.status === 'none' ? (
-            <p className="mt-1 text-slate-400">기록된 식사가 없어요.</p>
-          ) : (
-            <p className="mt-1 text-slate-600">
-              {Math.round(selected.calories).toLocaleString()}kcal 섭취 ·{' '}
-              <span className="font-medium text-slate-800">{NUTRITION_STATUS_LABELS[selected.status]}</span>
-            </p>
-          )}
+
+          <div className="mt-2.5">
+            <p className="text-xs font-medium text-slate-500">식단</p>
+            {selected.status === 'none' ? (
+              <p className="mt-1 text-xs text-slate-400">기록된 식사가 없어요.</p>
+            ) : (
+              <>
+                <p className="mt-1 text-xs text-slate-600">
+                  {Math.round(selected.calories).toLocaleString()}kcal 섭취 ·{' '}
+                  <span className="font-medium text-slate-800">{NUTRITION_STATUS_LABELS[selected.status]}</span>
+                </p>
+                <div className="mt-2 space-y-1.5">
+                  {meals
+                    .filter((m) => isSameDay(m.timestamp, selected.date))
+                    .sort((a, b) => a.timestamp - b.timestamp)
+                    .map((m) => (
+                      <div key={m.id} className="flex items-center gap-2 rounded-lg bg-white px-2 py-1.5">
+                        {m.image ? (
+                          <img src={m.image} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover" />
+                        ) : (
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-xs">
+                            🍽️
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium text-slate-700">{m.title}</p>
+                          <p className="text-[11px] text-slate-400">
+                            {formatTimeOfDay(m.timestamp)} · {m.slot}
+                          </p>
+                        </div>
+                        <span className="shrink-0 text-xs text-slate-500">{m.calories}kcal</span>
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="mt-3 border-t border-slate-100 pt-2.5">
+            <p className="text-xs font-medium text-slate-500">운동</p>
+            {(() => {
+              const daySessions = sessions.filter((s) => isSameDay(s.startTime, selected.date))
+              return daySessions.length === 0 ? (
+                <p className="mt-1 text-xs text-slate-400">운동 기록이 없어요.</p>
+              ) : (
+                <div className="mt-2 space-y-1.5">
+                  {daySessions.map((s) => (
+                    <div
+                      key={`${s.startTime}-${s.endTime}`}
+                      className="flex items-center justify-between rounded-lg bg-white px-2 py-1.5 text-xs"
+                    >
+                      <span className="font-medium text-slate-700">
+                        {s.type}
+                        {s.label ? ` · ${s.label}` : ''}
+                      </span>
+                      <span className="text-slate-500">
+                        {formatDurationKorean(s.durationSeconds)}
+                        {s.totalVolume !== null ? ` · ${Math.round(s.totalVolume * 10) / 10}kg` : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+          </div>
         </div>
       )}
     </div>
