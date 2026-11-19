@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
-import { CalendarDays, Dumbbell, Home, UtensilsCrossed, UserRound } from 'lucide-react'
+import { Dumbbell, Home, LayoutDashboard, UtensilsCrossed, UserRound } from 'lucide-react'
 
-export type Tab = 'home' | 'meals' | 'calendar' | 'workout' | 'profile'
+export type Tab = 'home' | 'meals' | 'dashboard' | 'workout' | 'profile'
 
 interface Props {
   active: Tab
@@ -13,7 +13,7 @@ type NavTab = { key: Tab; label: string; icon: ComponentType<{ size?: number }> 
 const TABS: NavTab[] = [
   { key: 'home', label: '홈', icon: Home },
   { key: 'meals', label: '식단', icon: UtensilsCrossed },
-  { key: 'calendar', label: '캘린더', icon: CalendarDays },
+  { key: 'dashboard', label: '대시보드', icon: LayoutDashboard },
   { key: 'workout', label: '운동', icon: Dumbbell },
   { key: 'profile', label: '마이', icon: UserRound },
 ]

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Meal, NutritionTarget } from '../../types'
-import { getMonthlyDayStatuses } from '../calendar'
+import { getDayStatusesInRange, getMonthlyDayStatuses } from '../calendar'
 
 const target: NutritionTarget = { calories: 2000, protein: 120, carbohydrates: 250, fat: 70, fiber: 30 }
 
@@ -54,5 +54,19 @@ describe('getMonthlyDayStatuses — 월별 날짜마다 칼로리 달성 상태�
     const result = getMonthlyDayStatuses(meals, target, 2026, 10)
     expect(result.find((d) => new Date(d.date).getDate() === 10)?.status).toBe('exceeded')
     expect(result.find((d) => new Date(d.date).getDate() === 20)?.status).toBe('deficient')
+  })
+})
+
+describe('getDayStatusesInRange — 월 경계와 무관하게 임의의 두 날짜 사이를 센다', () => {
+  it('시작일과 종료일을 모두 포함해서 반환한다', () => {
+    const result = getDayStatusesInRange([], target, new Date(2026, 9, 28).getTime(), new Date(2026, 10, 3).getTime())
+    expect(result).toHaveLength(7) // 10/28~11/3
+  })
+
+  it('월을 넘어가도 각 날짜의 섭취 상태를 제대로 매긴다', () => {
+    // 10월은 31일까지라, 10/30~11/1은 10/30·10/31·11/1 세 날짜다.
+    const meals = [mealOn(2026, 9, 30, 2000), mealOn(2026, 10, 1, 500)]
+    const result = getDayStatusesInRange(meals, target, new Date(2026, 9, 30).getTime(), new Date(2026, 10, 1).getTime())
+    expect(result).toEqual(['near_goal', 'none', 'deficient'])
   })
 })

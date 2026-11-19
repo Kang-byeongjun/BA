@@ -42,3 +42,22 @@ export function getMonthlyDayStatuses(
 
   return result
 }
+
+/**
+ * 임의의 두 날짜(두 InBody 측정 사이 등) 사이의 하루하루 상태를 분류한다. 월 경계와 무관하게
+ * startTs~endTs(둘 다 포함) 구간을 그대로 센다.
+ */
+export function getDayStatusesInRange(meals: Meal[], target: NutritionTarget, startTs: number, endTs: number): DayStatus[] {
+  const start = new Date(startTs)
+  const end = new Date(endTs)
+  const result: DayStatus[] = []
+
+  const cursor = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 12)
+  const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 12)
+  while (cursor.getTime() <= endDay.getTime()) {
+    result.push(getDayStatus(meals, target, cursor.getTime()))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return result
+}

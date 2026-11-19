@@ -2,6 +2,8 @@ import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
 import { daysBetween, findComparisonEntry } from '../../lib/inBodyTrend'
 import { formatRelativeDate } from '../../lib/time'
 import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry } from '../../types'
+import ExampleInBodyGrid from '../calendar/ExampleInBodyGrid'
+import WeightTrendChart from '../calendar/WeightTrendChart'
 
 interface Props {
   history: InBodyHistoryEntry[]
@@ -45,9 +47,17 @@ export default function InBodyTrend({ history }: Props) {
   if (history.length < 2) {
     return (
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
-        <p className="mb-1 text-sm font-semibold text-slate-800">인바디 추이</p>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-800">인바디 추이</p>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">예시</span>
+        </div>
+        <WeightTrendChart history={history} />
+        <div className="mb-3 rounded-xl bg-slate-50 p-3 opacity-60">
+          <p className="mb-2 text-xs font-medium text-slate-500">14일 전 측정 대비</p>
+          <ExampleInBodyGrid />
+        </div>
         <p className="text-xs text-slate-400">
-          측정을 2회 이상 하면 변화를 비교해드려요. 2주마다 InBody를 측정해보세요.
+          측정을 2회 이상 하면 위처럼 변화를 비교해드려요. 2주마다 InBody를 측정해보세요.
         </p>
       </div>
     )
@@ -58,6 +68,8 @@ export default function InBodyTrend({ history }: Props) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4">
       <p className="mb-3 text-sm font-semibold text-slate-800">인바디 추이</p>
+
+      <WeightTrendChart history={history} />
 
       {comparison ? (
         <div className="mb-4 rounded-xl bg-slate-50 p-3">

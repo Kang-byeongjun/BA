@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import BottomNav, { type Tab } from './components/layout/BottomNav'
 import MobileShell from './components/layout/MobileShell'
-import NutritionCalendar from './components/calendar/NutritionCalendar'
+import DashboardScreen from './components/calendar/DashboardScreen'
 import Dashboard from './components/dashboard/Dashboard'
 import FoodCaptureFlow from './components/food/FoodCaptureFlow'
 import MealHistory from './components/meals/MealHistory'
@@ -42,7 +42,7 @@ function MainApp() {
         <Dashboard onOpenCamera={(slot) => setCameraSlot(slot)} recentMeal={recentMeal} onDismissRecentMeal={dismissRecentMeal} />
       )}
       {tab === 'meals' && <MealHistory />}
-      {tab === 'calendar' && <NutritionCalendar />}
+      {tab === 'dashboard' && <DashboardScreen />}
       {tab === 'workout' && <WorkoutScreen />}
       {tab === 'profile' && <Profile />}
     </MobileShell>
