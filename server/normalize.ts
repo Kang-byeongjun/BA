@@ -12,6 +12,20 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value))
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+// 모델이 돌려준 검사일시를 검증한다: 형식이 올바르고, 실제 날짜이며, 미래이거나(시계/타임존 오차 1일은 허용)
+// 너무 먼 과거(InBody가 보급된 시기 이전)가 아니어야 한다.
+function validateTestedAtDate(raw: string | null): string | null {
+  if (raw === null || !DATE_RE.test(raw)) return null
+  const date = new Date(`${raw}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return null
+  const tomorrow = Date.now() + 24 * 60 * 60 * 1000
+  if (date.getTime() > tomorrow) return null
+  if (date.getFullYear() < 2000) return null
+  return raw
+}
+
 function cleanWarnings(warnings: string[]): string[] {
   const seen = new Set<string>()
   const result: string[] = []
@@ -114,6 +128,7 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
   return {
     isInBodyReport: true,
     ...values,
+    testedAtDate: validateTestedAtDate(raw.testedAtDate),
     confidence: clamp01(raw.confidence),
     warnings: cleanWarnings(warnings),
   }

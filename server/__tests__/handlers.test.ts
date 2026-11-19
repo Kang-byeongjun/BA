@@ -24,6 +24,7 @@ const goodInBody: InBodyExtraction = {
   mineralMassKg: 4.5,
   bmi: 24.6,
   basalMetabolicRateKcal: 1702,
+  testedAtDate: null,
   confidence: 0.93,
   warnings: [],
 }

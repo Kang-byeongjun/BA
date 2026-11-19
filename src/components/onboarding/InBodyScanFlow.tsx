@@ -66,8 +66,10 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       proteinMass: null,
       mineralMass: null,
       basalMetabolicRate: null,
+      measuredAt: null,
     }),
   )
+  const [measuredAt, setMeasuredAt] = useState('')
   const [missing, setMissing] = useState<Set<FieldKey>>(new Set())
   const [error, setError] = useState<{ code: AnalysisErrorCode; message: string; canRetry: boolean } | null>(null)
 
@@ -102,6 +104,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       const measurements = toMeasurements(result)
       setExtraction(result)
       setValues(toInputValues(measurements))
+      setMeasuredAt(measurements.measuredAt ?? '')
       setMissing(new Set(FIELDS.filter((f) => measurements[f.key] === null).map((f) => f.key)))
       setStage(3)
       setStep('result')
@@ -183,7 +186,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
     const badge = confidenceLabel(extraction.confidence)
 
     const apply = () => {
-      const measurements = {} as InBodyMeasurements
+      const measurements = { measuredAt: measuredAt.trim() === '' ? null : measuredAt } as InBodyMeasurements
       for (const p of parsed) measurements[p.key] = p.value
       onApply(measurements)
     }
@@ -213,6 +216,24 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
           <div className="flex items-center justify-between">
             <p className="text-xs text-slate-500">읽은 값을 확인하고, 틀린 값은 직접 고쳐주세요.</p>
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.className}`}>{badge.text}</span>
+          </div>
+
+          <div className="rounded-2xl border border-slate-100 bg-white p-4">
+            <div className="mb-1 flex items-center justify-between">
+              <label htmlFor="inbody-measured-at" className="text-sm font-medium text-slate-700">
+                측정 날짜
+              </label>
+              {measuredAt === '' && (
+                <span className="text-[11px] font-medium text-amber-600">결과지에서 못 읽었어요 · 직접 선택</span>
+              )}
+            </div>
+            <input
+              id="inbody-measured-at"
+              type="date"
+              value={measuredAt}
+              onChange={(e) => setMeasuredAt(e.target.value)}
+              className="w-full rounded-xl border-2 border-slate-100 bg-white px-3 py-2.5 text-base font-semibold text-slate-900 outline-none focus:border-emerald-400"
+            />
           </div>
 
           {partial && (

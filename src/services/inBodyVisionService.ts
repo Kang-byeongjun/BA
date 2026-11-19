@@ -39,5 +39,6 @@ export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements
     proteinMass: extraction.proteinMassKg,
     mineralMass: extraction.mineralMassKg,
     basalMetabolicRate: extraction.basalMetabolicRateKcal,
+    measuredAt: extraction.testedAtDate,
   }
 }

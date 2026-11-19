@@ -36,6 +36,7 @@ Read the CURRENT measurement of each item. Labels may appear in Korean or Englis
 - mineralMassKg: 무기질 / Minerals (kg), one of the same four body-composition components as above.
 - bmi: BMI (kg/m2)
 - basalMetabolicRateKcal: 기초대사량 / Basal Metabolic Rate, BMR (kcal)
+- testedAtDate: 검사일시 / Date Tested / Test Date. Usually printed near the personal info at the top of the report, often together with a time (for example "2026.11.09. 17:31" or "2026-11-09 17:31"). Return only the date portion, as "YYYY-MM-DD". Do not read the facility's print timestamp or any other date on the page — only the test/measurement date. If no such date is visibly printed, return null.
 
 Ignore recommendation or target columns such as 체중조절 / 지방조절 / 근육조절 (Weight/Fat/Muscle Control), normal-range bars, and past-record trend values. Only read the latest measurement.
 </field_guide>
@@ -43,6 +44,7 @@ Ignore recommendation or target columns such as 체중조절 / 지방조절 / �
 <output_rules>
 - isInBodyReport: true only if the image is an InBody or similar body composition analysis report. If it is not (for example a food photo, a person, a screenshot of something else), set it to false and return null for every measurement.
 - Every measurement must be a plain number without units, or null when it is not clearly readable.
+- testedAtDate must be a valid "YYYY-MM-DD" string or null. Never guess a date that is not visibly printed.
 - confidence: your overall confidence from 0 to 1 that the returned values are read correctly. Use a low value when the photo is blurry, cropped, glared, or the digits are ambiguous.
 - warnings: short Korean sentences explaining anything unreadable or uncertain (for example "체지방률 숫자가 흐릿해서 읽지 못했어요."). Use an empty array when there is nothing to report.
 </output_rules>`

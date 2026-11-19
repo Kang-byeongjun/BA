@@ -38,7 +38,13 @@ interface AppState {
 }
 
 type Action =
-  | { type: 'COMPLETE_ONBOARDING'; profile: UserProfile; nutritionTarget: NutritionTarget; workoutProfile: WorkoutProfile }
+  | {
+      type: 'COMPLETE_ONBOARDING'
+      profile: UserProfile
+      nutritionTarget: NutritionTarget
+      workoutProfile: WorkoutProfile
+      measuredAt?: string | null
+    }
   | { type: 'LOAD_DEMO' }
   | { type: 'SET_AI_MODE'; aiMode: AiMode }
   | { type: 'UPDATE_NUTRITION_TARGET'; target: NutritionTarget }
@@ -57,11 +63,28 @@ type Action =
   | { type: 'SAVE_PENDING_WORKOUT' }
   | { type: 'DISCARD_PENDING_WORKOUT' }
   | { type: 'ADD_WORKOUT'; workout: Workout }
+  | { type: 'DELETE_INBODY_ENTRY'; id: string }
   | { type: 'RESET_APP' }
 
-function historyEntryFromProfile(profile: UserProfile, source: InBodySource): InBodyHistoryEntry {
+// "YYYY-MM-DD"를 그 날 정오(로컬 타임존)의 timestamp로 바꾼다. 자정 기준으로 하면 타임존에 따라
+// 하루 앞뒤로 밀릴 수 있어 정오를 쓴다. 형식이 안 맞으면 null.
+function parseMeasuredAtDate(measuredAt: string | null | undefined): number | null {
+  if (!measuredAt) return null
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(measuredAt)
+  if (!match) return null
+  const [, y, m, d] = match
+  const date = new Date(Number(y), Number(m) - 1, Number(d), 12, 0, 0)
+  return Number.isNaN(date.getTime()) ? null : date.getTime()
+}
+
+function historyEntryFromProfile(
+  profile: UserProfile,
+  source: InBodySource,
+  measuredAt?: string | null,
+): InBodyHistoryEntry {
   return {
-    timestamp: Date.now(),
+    id: generateId('inbody'),
+    timestamp: parseMeasuredAtDate(measuredAt) ?? Date.now(),
     source,
     weight: profile.weight,
     skeletalMuscleMass: profile.skeletalMuscleMass,
@@ -74,6 +97,11 @@ function historyEntryFromProfile(profile: UserProfile, source: InBodySource): In
   }
 }
 
+// 이 필드가 생기기 전에 저장된 기록은 id가 없으므로, 불러올 때 한 번 채워준다.
+function withIds(history: InBodyHistoryEntry[]): InBodyHistoryEntry[] {
+  return history.map((entry) => (entry.id ? entry : { ...entry, id: generateId('inbody') }))
+}
+
 function initState(): AppState {
   return {
     onboarded: loadFromStorage(STORAGE_KEYS.onboarded, false),
@@ -82,7 +110,7 @@ function initState(): AppState {
     profile: loadFromStorage<UserProfile | null>(STORAGE_KEYS.profile, null),
     nutritionTarget: loadFromStorage<NutritionTarget | null>(STORAGE_KEYS.nutritionTarget, null),
     workoutProfile: loadFromStorage<WorkoutProfile | null>(STORAGE_KEYS.workoutProfile, null),
-    inBodyHistory: loadFromStorage<InBodyHistoryEntry[]>(STORAGE_KEYS.inBodyHistory, []),
+    inBodyHistory: withIds(loadFromStorage<InBodyHistoryEntry[]>(STORAGE_KEYS.inBodyHistory, [])),
     meals: loadFromStorage<Meal[]>(STORAGE_KEYS.meals, []),
     waterLogs: loadFromStorage<WaterLog[]>(STORAGE_KEYS.waterLogs, []),
     workouts: loadFromStorage<Workout[]>(STORAGE_KEYS.workouts, []),
@@ -102,7 +130,10 @@ function reducer(state: AppState, action: Action): AppState {
         profile: action.profile,
         nutritionTarget: action.nutritionTarget,
         workoutProfile: action.workoutProfile,
-        inBodyHistory: [historyEntryFromProfile(action.profile, 'onboarding'), ...state.inBodyHistory],
+        inBodyHistory: [
+          historyEntryFromProfile(action.profile, 'onboarding', action.measuredAt),
+          ...state.inBodyHistory,
+        ],
       }
 
     case 'LOAD_DEMO':
@@ -135,7 +166,10 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         profile,
         nutritionTarget,
-        inBodyHistory: [historyEntryFromProfile(profile, action.source), ...state.inBodyHistory],
+        inBodyHistory: [
+          historyEntryFromProfile(profile, action.source, action.measurements.measuredAt),
+          ...state.inBodyHistory,
+        ],
       }
     }
 
@@ -222,6 +256,9 @@ function reducer(state: AppState, action: Action): AppState {
     // 운동 기록 화면(WorkoutLogger)에서 끝낸 운동을 바로 추가한다
     case 'ADD_WORKOUT':
       return { ...state, workouts: [action.workout, ...state.workouts] }
+
+    case 'DELETE_INBODY_ENTRY':
+      return { ...state, inBodyHistory: state.inBodyHistory.filter((e) => e.id !== action.id) }
 
     case 'RESET_APP':
       return {

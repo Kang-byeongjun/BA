@@ -40,6 +40,7 @@ const inbody: InBodyExtraction = {
   mineralMassKg: 4.5,
   bmi: 24.6,
   basalMetabolicRateKcal: 1702,
+  testedAtDate: '2026-11-09',
   confidence: 0.55,
   warnings: ['체지방량 숫자가 흐릿해서 읽지 못했어요.'],
 }
@@ -435,6 +436,7 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
       proteinMass: 13,
       mineralMass: 4.5,
       basalMetabolicRate: 1702,
+      measuredAt: '2026-11-09',
     })
   })
 

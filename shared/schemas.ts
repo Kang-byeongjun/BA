@@ -27,6 +27,7 @@ export const inBodyExtractionSchema = z.object({
   mineralMassKg: z.number().nullable(),
   bmi: z.number().nullable(),
   basalMetabolicRateKcal: z.number().nullable(),
+  testedAtDate: z.string().nullable(),
   confidence: z.number(),
   warnings: z.array(z.string()),
 }) satisfies z.ZodType<InBodyExtraction>

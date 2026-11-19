@@ -29,6 +29,8 @@ export interface InBodyExtraction {
   mineralMassKg: number | null
   bmi: number | null
   basalMetabolicRateKcal: number | null
+  // 결과지에 찍힌 검사일시(검사일만, YYYY-MM-DD). 안 보이면 null
+  testedAtDate: string | null
   // 0~1
   confidence: number
   warnings: string[]

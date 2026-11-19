@@ -43,6 +43,8 @@ export interface InBodyMeasurements {
   proteinMass: number | null
   mineralMass: number | null
   basalMetabolicRate: number | null
+  // 결과지에서 읽은 검사일(YYYY-MM-DD). 못 읽었거나 수동 입력이면 null — 이 경우 "지금"을 측정 시점으로 쓴다.
+  measuredAt: string | null
 }
 
 // 측정 시점의 InBody 스냅샷. "이전 측정 대비 변화"를 보여주기 위해 최신 값 위에 쌓아간다(최신이 배열 앞).
@@ -53,6 +55,7 @@ export type InBodySource =
   | 'estimated' // InBody 없이 간편 온보딩, 체성분 항목 없음
 
 export interface InBodyHistoryEntry {
+  id: string
   timestamp: number
   source: InBodySource
   weight: number | null

@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Minus, Sparkles } from 'lucide-react'
+import { ArrowDown, ArrowUp, Minus, Sparkles, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
@@ -55,6 +55,12 @@ function AddMeasurementButton({ onClick }: { onClick: () => void }) {
 export default function InBodyTrend({ history }: Props) {
   const { aiMode, isDemo, dispatch } = useApp()
   const [scanOpen, setScanOpen] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+  const deleteEntry = (id: string) => {
+    dispatch({ type: 'DELETE_INBODY_ENTRY', id })
+    setConfirmDeleteId(null)
+  }
 
   if (scanOpen) {
     return (
@@ -144,19 +150,32 @@ export default function InBodyTrend({ history }: Props) {
 
       <p className="mb-2 text-xs font-medium text-slate-500">전체 측정 기록</p>
       <div className="max-h-44 space-y-1.5 overflow-y-auto">
-        {history.map((entry, i) => (
-          <div
-            key={`${entry.timestamp}-${i}`}
-            className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs"
-          >
+        {history.map((entry) => (
+          <div key={entry.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs">
             <div>
               <span className="font-medium text-slate-700">{formatRelativeDate(entry.timestamp)}</span>
               <span className="ml-2 text-slate-400">{IN_BODY_SOURCE_LABELS[entry.source]}</span>
             </div>
-            <span className="text-slate-600">
-              {entry.weight !== null ? `${entry.weight}kg` : '—'}
-              {entry.bodyFatPercentage !== null ? ` · 체지방 ${entry.bodyFatPercentage}%` : ''}
-            </span>
+            {confirmDeleteId === entry.id ? (
+              <div className="flex items-center gap-2">
+                <button onClick={() => deleteEntry(entry.id)} className="font-semibold text-rose-500">
+                  삭제
+                </button>
+                <button onClick={() => setConfirmDeleteId(null)} className="text-slate-400">
+                  취소
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-slate-600">
+                  {entry.weight !== null ? `${entry.weight}kg` : '—'}
+                  {entry.bodyFatPercentage !== null ? ` · 체지방 ${entry.bodyFatPercentage}%` : ''}
+                </span>
+                <button onClick={() => setConfirmDeleteId(entry.id)} className="text-slate-300 hover:text-rose-400">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

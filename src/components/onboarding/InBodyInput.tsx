@@ -15,6 +15,8 @@ export interface InBodyFormValues {
   proteinMass: string
   mineralMass: string
   basalMetabolicRate: string
+  // 결과지 스캔으로 읽은 검사일(YYYY-MM-DD). 직접 입력이면 null — 이 경우 온보딩 시점을 측정일로 쓴다.
+  measuredAt: string | null
 }
 
 export type InBodyEntryMode = 'full' | 'lite'
@@ -80,6 +82,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
             ...(scanned.proteinMass !== null && { proteinMass: String(scanned.proteinMass) }),
             ...(scanned.mineralMass !== null && { mineralMass: String(scanned.mineralMass) }),
             ...(scanned.basalMetabolicRate !== null && { basalMetabolicRate: String(scanned.basalMetabolicRate) }),
+            measuredAt: scanned.measuredAt,
           }))
           // 스캔으로 결과를 받았다는 건 InBody가 있다는 뜻이므로 정식 모드로 전환한다.
           setMode('full')
