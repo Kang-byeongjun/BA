@@ -1,9 +1,13 @@
-import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Minus, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { useApp } from '../../context/AppContext'
+import { resolveAnalysisMode } from '../../lib/aiMode'
 import { daysBetween, findComparisonEntry } from '../../lib/inBodyTrend'
 import { formatRelativeDate } from '../../lib/time'
-import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry } from '../../types'
+import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry, type InBodyMeasurements } from '../../types'
 import ExampleInBodyGrid from '../calendar/ExampleInBodyGrid'
 import WeightTrendChart from '../calendar/WeightTrendChart'
+import InBodyScanFlow from '../onboarding/InBodyScanFlow'
 
 interface Props {
   history: InBodyHistoryEntry[]
@@ -39,7 +43,32 @@ function DeltaBadge({ delta, decimals }: { delta: number; decimals: number }) {
   )
 }
 
+function AddMeasurementButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+      <Sparkles size={14} />
+      새 측정 추가
+    </button>
+  )
+}
+
 export default function InBodyTrend({ history }: Props) {
+  const { aiMode, isDemo, dispatch } = useApp()
+  const [scanOpen, setScanOpen] = useState(false)
+
+  if (scanOpen) {
+    return (
+      <InBodyScanFlow
+        mode={resolveAnalysisMode(isDemo, aiMode)}
+        onApply={(measurements: InBodyMeasurements) => {
+          dispatch({ type: 'UPDATE_INBODY', measurements, source: 'scan' })
+          setScanOpen(false)
+        }}
+        onClose={() => setScanOpen(false)}
+      />
+    )
+  }
+
   if (history.length === 0) return null
 
   const latest = history[0]
@@ -49,7 +78,10 @@ export default function InBodyTrend({ history }: Props) {
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-800">인바디 추이</p>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">예시</span>
+          <div className="flex items-center gap-3">
+            <AddMeasurementButton onClick={() => setScanOpen(true)} />
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">예시</span>
+          </div>
         </div>
         <WeightTrendChart history={history} />
         <div className="mb-3 rounded-xl bg-slate-50 p-3 opacity-60">
@@ -67,7 +99,10 @@ export default function InBodyTrend({ history }: Props) {
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4">
-      <p className="mb-3 text-sm font-semibold text-slate-800">인바디 추이</p>
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-sm font-semibold text-slate-800">인바디 추이</p>
+        <AddMeasurementButton onClick={() => setScanOpen(true)} />
+      </div>
 
       <WeightTrendChart history={history} />
 
