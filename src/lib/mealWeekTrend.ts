@@ -17,6 +17,17 @@ export function recentWeekDays(now: number = Date.now()): number[] {
   return Array.from({ length: 7 }, (_, i) => start - (6 - i) * DAY_MS)
 }
 
+// 이번 주(월요일 시작, 캘린더 기준)를 월 -> 일 순서로 돌려준다. getDay()는 일요일이 0이라
+// 월요일까지 거슬러 올라가는 일수를 따로 계산한다(일요일이면 6일 전).
+export function currentWeekDays(now: number = Date.now()): number[] {
+  const startOfToday = new Date(now)
+  startOfToday.setHours(0, 0, 0, 0)
+  const dow = startOfToday.getDay()
+  const daysSinceMonday = dow === 0 ? 6 : dow - 1
+  const monday = startOfToday.getTime() - daysSinceMonday * DAY_MS
+  return Array.from({ length: 7 }, (_, i) => monday + i * DAY_MS)
+}
+
 function sumDay(dayMeals: Meal[], dayStart: number): DayNutrition {
   return {
     date: dayStart,
@@ -39,10 +50,11 @@ export function getSlotWeekSeries(meals: Meal[], slot: MealSlot, now: number = D
   })
 }
 
-// 끼니 구분 없이, 최근 7일치 하루 전체 영양소 합계를 오래된 날 -> 오늘 순서로 돌려준다.
-// NutritionTarget이 끼니별이 아니라 하루 전체 기준이라, 목표와 비교하려면 끼니를 합쳐야 한다.
+// 끼니 구분 없이, 이번 주(월요일 시작) 하루 전체 영양소 합계를 월 -> 일 순서로 돌려준다.
+// "주간 목표"는 월요일에 리셋되는 개념이라 롤링 7일이 아니라 캘린더 주를 쓴다 — 아직 지나지
+// 않은 요일은 자연히 0으로 채워진다(기록이 없는 게 아니라 아직 안 온 날).
 export function getDayWeekSeries(meals: Meal[], now: number = Date.now()): DayNutrition[] {
-  const days = recentWeekDays(now)
+  const days = currentWeekDays(now)
   return days.map((dayStart) => {
     const dayEnd = dayStart + DAY_MS
     const dayMeals = meals.filter((m) => m.timestamp >= dayStart && m.timestamp < dayEnd)
