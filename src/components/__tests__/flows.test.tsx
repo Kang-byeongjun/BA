@@ -15,6 +15,11 @@ vi.mock('../../lib/imagePrep', () => ({
     thumbnail: 'data:image/jpeg;base64,THUMB',
     preview: 'data:image/jpeg;base64,PREVIEW',
   })),
+  prepareCroppedRegion: vi.fn(async () => ({
+    base64: 'Q1JPUA==',
+    thumbnail: 'data:image/jpeg;base64,CROP',
+    preview: 'data:image/jpeg;base64,CROP',
+  })),
 }))
 
 const food: FoodExtraction = {
@@ -46,6 +51,7 @@ const inbody: InBodyExtraction = {
   weightStandardRange: null,
   skeletalMuscleMassStandardRange: '32-40',
   bodyFatMassStandardRange: '10-18',
+  muscleFatAnalysisBox: null,
   confidence: 0.55,
   warnings: ['체지방량 숫자가 흐릿해서 읽지 못했어요.'],
 }
@@ -449,6 +455,62 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
         bodyFatMass: { min: 10, max: 18 },
       },
     })
+  })
+
+  it('표준범위를 못 읽으면 막대그래프 구역을 잘라 자동으로 한 번 더 분석해서 채운다', async () => {
+    const firstPass: InBodyExtraction = {
+      ...inbody,
+      weightStandardRange: null,
+      skeletalMuscleMassStandardRange: null,
+      bodyFatMassStandardRange: null,
+      muscleFatAnalysisBox: '0.1,0.4,0.9,0.7',
+    }
+    const retryPass: InBodyExtraction = {
+      ...inbody,
+      weightKg: null,
+      ageYears: null,
+      heightCm: null,
+      skeletalMuscleMassKg: null,
+      bodyFatMassKg: null,
+      bodyFatPercentage: null,
+      bodyWaterL: null,
+      proteinMassKg: null,
+      mineralMassKg: null,
+      bmi: null,
+      basalMetabolicRateKcal: null,
+      testedAtDate: null,
+      weightStandardRange: '70-80',
+      skeletalMuscleMassStandardRange: '32-40',
+      bodyFatMassStandardRange: '10-18',
+      muscleFatAnalysisBox: null,
+    }
+    fetchMock.mockResolvedValueOnce(ok(firstPass)).mockResolvedValueOnce(ok(retryPass))
+    const onApply = vi.fn()
+    render(
+      <AppProvider>
+        <InBodyScanFlow mode="real" onApply={onApply} onClose={vi.fn()} />
+      </AppProvider>,
+    )
+    uploadPhoto()
+
+    expect(await screen.findByText('AI가 분석한 InBody 정보', undefined, wait)).toBeTruthy()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const secondCallInit = (fetchMock.mock.calls[1] as [string, RequestInit])[1]
+    expect(JSON.parse(secondCallInit.body as string).focus).toBe('inbody_standard_range')
+
+    fireEvent.change(screen.getByLabelText('체지방량'), { target: { value: '13.8' } })
+    fireEvent.click(screen.getByText('확인하고 적용'))
+    expect(onApply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bodyType: 'I',
+        standardRanges: {
+          weight: { min: 70, max: 80 },
+          skeletalMuscleMass: { min: 32, max: 40 },
+          bodyFatMass: { min: 10, max: 18 },
+        },
+      }),
+    )
   })
 
   it('잘못된 값이 있으면 적용할 수 없고, 다시 분석하면 같은 이미지로 API를 다시 호출한다', async () => {

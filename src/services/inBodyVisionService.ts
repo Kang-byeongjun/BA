@@ -27,6 +27,12 @@ export async function analyzeInBodyImage(image: PreparedImage, { mode, signal }:
   return requestAnalysis<InBodyExtraction>('inbody', image.base64, isInBodyExtraction, signal)
 }
 
+// 1차 분석에서 표준범위를 못 읽었을 때, 막대그래프 구역만 잘라 확대한 이미지로 그 부분만 다시 읽는다.
+// mock 모드에서는 쓰지 않는다(데모 데이터는 애초에 표준범위가 없어서 재시도할 의미가 없다).
+export async function analyzeInBodyStandardRangeCrop(image: PreparedImage, signal?: AbortSignal): Promise<InBodyExtraction> {
+  return requestAnalysis<InBodyExtraction>('inbody', image.base64, isInBodyExtraction, signal, 'inbody_standard_range')
+}
+
 /** API 응답 형식(…Kg 등)을 앱의 체성분 측정값 형식으로 변환한다. null은 null로 유지한다. */
 export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements {
   const weightRange = toStandardRange(extraction.weightStandardRange)

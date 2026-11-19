@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import type { InBodyExtraction } from '../../../shared/analysis'
 import { AnalysisError, isRetryable, type AnalysisErrorCode } from '../../../shared/errors'
 import { classifyBodyType, toStandardRange } from '../../lib/inBodyBodyType'
-import { prepareImage, type PreparedImage } from '../../lib/imagePrep'
+import { prepareCroppedRegion, prepareImage, type PreparedImage } from '../../lib/imagePrep'
+import { hasMissingStandardRange, mergeStandardRanges, parseBoxFraction } from '../../lib/inBodyStandardRangeRetry'
 import { sleep } from '../../lib/sleep'
 import type { AnalysisMode } from '../../services/foodVisionService'
-import { analyzeInBodyImage, toMeasurements } from '../../services/inBodyVisionService'
+import { analyzeInBodyImage, analyzeInBodyStandardRangeCrop, toMeasurements } from '../../services/inBodyVisionService'
 import type { InBodyMeasurements } from '../../types'
 import AnalysisErrorView from '../common/AnalysisErrorView'
 import AnalyzingLoader from '../common/AnalyzingLoader'
@@ -76,8 +77,12 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
   const [measuredAt, setMeasuredAt] = useState('')
   const [missing, setMissing] = useState<Set<FieldKey>>(new Set())
   const [error, setError] = useState<{ code: AnalysisErrorCode; message: string; canRetry: boolean } | null>(null)
+  // 표준범위 재시도(막대그래프 구역 크롭) 중인지 — 분석 로딩 화면 문구를 바꾸는 데만 쓴다.
+  const [retrying, setRetrying] = useState(false)
 
   const preparedRef = useRef<PreparedImage | null>(null)
+  // 리사이즈 전 원본 — 표준범위를 못 읽었을 때 막대그래프 구역만 잘라 확대하는 데 쓴다.
+  const rawDataUrlRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => () => abortRef.current?.abort(), [])
@@ -94,6 +99,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
   }
 
   // 준비된(리사이즈된) 이미지를 서버 API로 보내 분석한다. 다시 분석할 때도 같은 이미지를 재사용한다.
+  // 표준범위를 못 읽었으면, 원본에서 막대그래프 구역만 잘라 확대해 한 번 더(자동으로) 시도한다.
   const analyze = async (prepared: PreparedImage) => {
     abortRef.current?.abort()
     const controller = new AbortController()
@@ -101,9 +107,26 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
 
     setStep('analyzing')
     setStage(1)
+    setRetrying(false)
     try {
-      const result = await analyzeInBodyImage(prepared, { mode, signal: controller.signal })
+      let result = await analyzeInBodyImage(prepared, { mode, signal: controller.signal })
       setStage(2)
+
+      const box = parseBoxFraction(result.muscleFatAnalysisBox)
+      const rawDataUrl = rawDataUrlRef.current
+      if (mode === 'real' && hasMissingStandardRange(result) && box && rawDataUrl) {
+        try {
+          setRetrying(true)
+          const cropped = await prepareCroppedRegion(rawDataUrl, box, 'inbody')
+          const retryResult = await analyzeInBodyStandardRangeCrop(cropped, controller.signal)
+          result = mergeStandardRanges(result, retryResult)
+        } catch {
+          // 재시도가 실패해도 1차 결과는 그대로 쓴다 — 조용히 넘어간다.
+        } finally {
+          setRetrying(false)
+        }
+      }
+
       await sleep(250, 'inbody', controller.signal)
       const measurements = toMeasurements(result)
       setExtraction(result)
@@ -129,6 +152,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       const prepared = await prepareImage(dataUrl, 'inbody')
       if (controller.signal.aborted) return
       preparedRef.current = prepared
+      rawDataUrlRef.current = dataUrl
       // 신체 정보가 담긴 사진이므로 분석 화면 미리보기에만 쓰고 어디에도 저장하지 않는다.
       setPreview(prepared.preview)
       await analyze(prepared)
@@ -145,6 +169,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
   const retakePhoto = () => {
     abortRef.current?.abort()
     preparedRef.current = null
+    rawDataUrlRef.current = null
     setPreview(null)
     setStep('capture')
   }
@@ -157,7 +182,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
     return (
       <AnalyzingLoader
         image={preview}
-        message="AI가 InBody 결과를 읽고 있어요."
+        message={retrying ? '표준범위를 더 정확히 읽고 있어요.' : 'AI가 InBody 결과를 읽고 있어요.'}
         steps={STEPS}
         activeStep={stage}
         demo={mode === 'mock'}

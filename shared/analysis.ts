@@ -11,6 +11,8 @@ export interface AnalyzeRequestBody {
   // data URL 접두사가 없는 순수 base64
   image: string
   mediaType?: ImageMediaType
+  // InBody 표준범위를 못 읽었을 때, 막대그래프 구역만 잘라 확대한 이미지로 그 부분만 다시 읽어달라는 요청.
+  focus?: 'inbody_standard_range'
 }
 
 // ---------- InBody ----------
@@ -37,6 +39,10 @@ export interface InBodyExtraction {
   weightStandardRange: string | null
   skeletalMuscleMassStandardRange: string | null
   bodyFatMassStandardRange: string | null
+  // "골격근·지방분석" 막대그래프 섹션(막대 3개 + 눈금 전체)이 이 이미지 안에서 차지하는 위치.
+  // "xMin,yMin,xMax,yMax" 형태의 문자열(각 0~1, 이미지 너비/높이 대비 비율) — 표준범위를 못 읽었을 때
+  // 이 구역만 잘라서 확대해 다시 읽어보는 용도. 섹션 자체가 안 보이면 null.
+  muscleFatAnalysisBox: string | null
   // 0~1
   confidence: number
   warnings: string[]

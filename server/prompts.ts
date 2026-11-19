@@ -48,6 +48,8 @@ Return each bar's pair as a single "min-max" string (for example "30.8-37.5"), n
 Only return null for one of these if this whole section, or that specific bar and its axis, is not visible in the image at all (too cropped, blurry, or obstructed to make even a rough estimate) — not merely because no digit sits precisely at the boundary.
 
 Ignore recommendation or target columns such as 체중조절 / 지방조절 / 근육조절 (Weight/Fat/Muscle Control), the drawn bar lengths themselves, and past-record trend values. Only read the latest measurement.
+
+- muscleFatAnalysisBox: the bounding box of the entire "골격근·지방분석 / Muscle-Fat Analysis" section described above (all three bars together, including their column headers and printed axis tick numbers) within THIS image, as a single "xMin,yMin,xMax,yMax" string — four numbers from 0 to 1, each the fraction of the image's width (for x) or height (for y) measured from the top-left corner. Be generous rather than tight: pad the box a little so no bar or tick label is cut off. Return null if this section is not visible in the image at all.
 </field_guide>
 
 <output_rules>
@@ -55,12 +57,48 @@ Ignore recommendation or target columns such as 체중조절 / 지방조절 / �
 - Every measurement must be a plain number without units, or null when it is not clearly readable.
 - testedAtDate must be a valid "YYYY-MM-DD" string or null. Never guess a date that is not visibly printed.
 - Each …StandardRange must be formatted exactly as "min-max" with min less than max (for example "30.8-37.5"), or null. Base these on the 표준 zone's actual position on that bar's axis in this image (reading a printed tick directly, or interpolating between the nearest printed ticks as described above) — never on a typical/textbook normal range unrelated to what this image shows.
+- muscleFatAnalysisBox must be formatted exactly as "xMin,yMin,xMax,yMax" with four numbers between 0 and 1, xMin less than xMax and yMin less than yMax, or null.
 - confidence: your overall confidence from 0 to 1 that the returned values are read correctly. Use a low value when the photo is blurry, cropped, glared, or the digits are ambiguous.
 - warnings: short Korean sentences explaining anything unreadable or uncertain (for example "체지방률 숫자가 흐릿해서 읽지 못했어요."). Use an empty array when there is nothing to report.
 </output_rules>`
 
 export const INBODY_USER_PROMPT =
   'Extract the body composition measurements visible in this report image.'
+
+// 1차 분석에서 표준범위를 못 읽었을 때, "골격근·지방분석" 막대그래프 구역만 잘라 확대해서 다시 보내는
+// 재시도용 프롬프트. 이 이미지에는 그 구역만 있으므로 체중·나이 등 다른 항목은 묻지 않는다(물어봐도
+// 안 보여서 null이 나올 뿐만 아니라, 모델이 다른 걸 찾으려 하지 않고 이 구역 하나에 집중하게 한다).
+export const INBODY_STANDARD_RANGE_SYSTEM_PROMPT = `<role>
+You are a structured data extraction system for body composition reports.
+</role>
+
+<instructions>
+This image is a cropped, zoomed-in close-up of just the "골격근·지방분석 / Muscle-Fat Analysis" section of an InBody report — the three horizontal bar graphs (Weight / Skeletal Muscle Mass / Body Fat Mass) with their axis tick numbers, cropped out of a larger report. None of the report's other measurements (weight, age, height, etc.) are expected to be visible in this crop — leave every field other than the three …StandardRange fields as null, and focus entirely on reading these three bars as precisely as possible.
+
+Do not infer or fabricate missing measurements. Pay close attention to decimal points.
+</instructions>
+
+<field_guide>
+Below each bar is a row of small printed tick numbers (an axis), and above the three bars are column headers "표준이하 / Below Normal", "표준 / Normal", "표준이상 / Above Normal" marking where the middle "표준/Normal" zone sits over that axis — usually as a shaded band, or a pair of thin vertical divider lines, on each bar. For all three bars (each has its own scale, so read each one separately), find where the 표준 zone's left and right edges fall on that bar's own axis:
+- If a tick number is printed exactly at that edge, read it directly.
+- Otherwise, estimate it by interpolating between the two nearest printed tick numbers on that axis, based on where the edge sits between them (for example, if the edge sits about a third of the way from a tick at 30 to the next tick at 40, the boundary is about 33). This is a deliberate best-effort visual estimate, not a transcription error — do not refuse to answer just because no number is printed at the exact edge.
+Return each bar's pair as a single "min-max" string (for example "30.8-37.5"):
+- weightStandardRange: the 표준 zone's left/right edge on the Weight bar's axis
+- skeletalMuscleMassStandardRange: the 표준 zone's left/right edge on the Skeletal Muscle Mass bar's axis
+- bodyFatMassStandardRange: the 표준 zone's left/right edge on the Body Fat Mass bar's axis
+Only return null for one of these if that specific bar and its axis is not visible in this crop at all — not merely because no digit sits precisely at the boundary.
+</field_guide>
+
+<output_rules>
+- isInBodyReport: always true (this is a crop of a real InBody report).
+- weightKg, ageYears, heightCm, skeletalMuscleMassKg, bodyFatMassKg, bodyFatPercentage, bodyWaterL, proteinMassKg, mineralMassKg, bmi, basalMetabolicRateKcal, testedAtDate, muscleFatAnalysisBox: always null in this crop.
+- Each …StandardRange must be formatted exactly as "min-max" with min less than max, or null.
+- confidence: your confidence from 0 to 1 that the three standard ranges above are read correctly.
+- warnings: short Korean sentences explaining anything unreadable or uncertain. Use an empty array when there is nothing to report.
+</output_rules>`
+
+export const INBODY_STANDARD_RANGE_USER_PROMPT =
+  'This is a cropped close-up of the muscle-fat analysis bar graphs. Read the 표준(Normal) zone boundaries for each bar as precisely as possible.'
 
 export const FOOD_SYSTEM_PROMPT = `<role>
 You analyze meal photographs for a nutrition tracking application.

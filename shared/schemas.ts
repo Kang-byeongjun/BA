@@ -31,6 +31,7 @@ export const inBodyExtractionSchema = z.object({
   weightStandardRange: z.string().nullable(),
   skeletalMuscleMassStandardRange: z.string().nullable(),
   bodyFatMassStandardRange: z.string().nullable(),
+  muscleFatAnalysisBox: z.string().nullable(),
   confidence: z.number(),
   warnings: z.array(z.string()),
 }) satisfies z.ZodType<InBodyExtraction>
@@ -54,6 +55,7 @@ export const foodExtractionSchema = z.object({
 export const analyzeRequestSchema = z.object({
   image: z.string().min(1),
   mediaType: z.string().optional(),
+  focus: z.literal('inbody_standard_range').optional(),
 })
 
 // 식사 추천 코칭 문구 요청/응답 검증

@@ -28,6 +28,7 @@ const goodInBody: InBodyExtraction = {
   weightStandardRange: '70-80',
   skeletalMuscleMassStandardRange: '32-40',
   bodyFatMassStandardRange: '10-18',
+  muscleFatAnalysisBox: '0.08,0.42,0.95,0.68',
   confidence: 0.93,
   warnings: [],
 }
@@ -177,6 +178,54 @@ describe('InBody 분석 결과 검증', () => {
     const res = await handleAnalysis('inbody', { image: validImage }, { env, client })
     if (!res.body.ok) throw new Error('expected success')
     expect((res.body.data as InBodyExtraction).warnings.join(' ')).toContain('서로 맞지 않아요')
+  })
+
+  it('막대그래프 구역 박스를 형식에 맞으면 그대로 반환한다', async () => {
+    const { client } = fakeClient(goodInBody)
+    const res = await handleAnalysis('inbody', { image: validImage }, { env, client })
+    if (!res.body.ok) throw new Error('expected success')
+    expect((res.body.data as InBodyExtraction).muscleFatAnalysisBox).toBe('0.08,0.42,0.95,0.68')
+  })
+
+  it('막대그래프 구역 박스가 범위를 벗어나거나 너무 작으면 null로 버린다', async () => {
+    const { client } = fakeClient({ ...goodInBody, muscleFatAnalysisBox: '0.5,0.5,0.501,0.501' })
+    const res = await handleAnalysis('inbody', { image: validImage }, { env, client })
+    if (!res.body.ok) throw new Error('expected success')
+    expect((res.body.data as InBodyExtraction).muscleFatAnalysisBox).toBeNull()
+  })
+})
+
+describe('InBody 표준범위 재시도 (focus: inbody_standard_range)', () => {
+  it('크롭 전용 프롬프트로 호출하고, 다른 수치가 전부 null이어도 UNREADABLE을 내지 않는다', async () => {
+    const { client, parseStructured } = fakeClient({
+      ...goodInBody,
+      weightKg: null,
+      ageYears: null,
+      heightCm: null,
+      skeletalMuscleMassKg: null,
+      bodyFatMassKg: null,
+      bodyFatPercentage: null,
+      bodyWaterL: null,
+      proteinMassKg: null,
+      mineralMassKg: null,
+      bmi: null,
+      basalMetabolicRateKcal: null,
+      muscleFatAnalysisBox: null,
+    })
+    const res = await handleAnalysis('inbody', { image: validImage, focus: 'inbody_standard_range' }, { env, client })
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({
+      ok: true,
+      data: {
+        weightKg: null,
+        skeletalMuscleMassKg: null,
+        weightStandardRange: '70-80',
+        skeletalMuscleMassStandardRange: '32-40',
+        bodyFatMassStandardRange: '10-18',
+      },
+    })
+    const call = parseStructured.mock.calls[0]?.[0] as { prompt: string } | undefined
+    expect(call?.prompt).toContain('cropped close-up')
   })
 })
 

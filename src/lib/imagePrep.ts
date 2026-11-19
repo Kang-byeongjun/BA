@@ -37,23 +37,92 @@ function loadImage(dataUrl: string, kind: AnalysisKind): Promise<HTMLImageElemen
   })
 }
 
+function blankCanvas(width: number, height: number, kind: AnalysisKind): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new AnalysisError('INVALID_IMAGE', kind)
+  // 투명 배경(PNG 등)이 검게 나오지 않도록 흰색으로 채운다.
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, width, height)
+  return { canvas, ctx }
+}
+
 function drawScaled(img: HTMLImageElement, maxEdge: number, kind: AnalysisKind): HTMLCanvasElement {
   const longEdge = Math.max(img.naturalWidth, img.naturalHeight)
   const scale = Math.min(1, maxEdge / longEdge)
   const width = Math.max(1, Math.round(img.naturalWidth * scale))
   const height = Math.max(1, Math.round(img.naturalHeight * scale))
 
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new AnalysisError('INVALID_IMAGE', kind)
-
-  // 투명 배경(PNG 등)이 검게 나오지 않도록 흰색으로 채운다.
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, width, height)
+  const { canvas, ctx } = blankCanvas(width, height, kind)
   ctx.drawImage(img, 0, 0, width, height)
   return canvas
+}
+
+// 이미지 중 (xMin,yMin)~(xMax,yMax) 구역(0~1 비율)만 잘라서 maxEdge 긴 변에 맞게 "키운다"(축소는 안 함).
+// 작은 눈금 숫자가 많은 구역을 전체 리사이즈 때보다 훨씬 크게 보내기 위한 용도라, 원본보다 더 커질 수 있다.
+const MAX_CROP_UPSCALE = 4
+
+function drawCropped(
+  img: HTMLImageElement,
+  box: { xMin: number; yMin: number; xMax: number; yMax: number },
+  maxEdge: number,
+  kind: AnalysisKind,
+): HTMLCanvasElement {
+  // 모델이 추정한 경계가 살짝 어긋나도 구역이 잘리지 않도록 여유를 더 둔다.
+  const padX = (box.xMax - box.xMin) * 0.15
+  const padY = (box.yMax - box.yMin) * 0.15
+  const xMin = Math.max(0, box.xMin - padX)
+  const yMin = Math.max(0, box.yMin - padY)
+  const xMax = Math.min(1, box.xMax + padX)
+  const yMax = Math.min(1, box.yMax + padY)
+
+  const sx = Math.round(xMin * img.naturalWidth)
+  const sy = Math.round(yMin * img.naturalHeight)
+  const sw = Math.max(1, Math.round((xMax - xMin) * img.naturalWidth))
+  const sh = Math.max(1, Math.round((yMax - yMin) * img.naturalHeight))
+
+  const longEdge = Math.max(sw, sh)
+  const scale = Math.min(MAX_CROP_UPSCALE, maxEdge / longEdge)
+  const width = Math.max(1, Math.round(sw * scale))
+  const height = Math.max(1, Math.round(sh * scale))
+
+  const { canvas, ctx } = blankCanvas(width, height, kind)
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, height)
+  return canvas
+}
+
+export interface BoxFraction {
+  xMin: number
+  yMin: number
+  xMax: number
+  yMax: number
+}
+
+// 원본(리사이즈 전) 사진에서 box 구역만 잘라 확대한 이미지를 준비한다. InBody 표준범위처럼 전체 사진
+// 리사이즈로는 뭉개지는 작은 글자를 다시 읽어보려는 재시도 전용 — prepareImage와 압축 로직은 같다.
+export async function prepareCroppedRegion(dataUrl: string, box: BoxFraction, kind: AnalysisKind): Promise<PreparedImage> {
+  const match = /^data:([^;,]*)[;,]/.exec(dataUrl)
+  if (!match) throw new AnalysisError('INVALID_IMAGE', kind)
+  const mime = match[1].toLowerCase()
+  if (!mime.startsWith('image/') || mime === 'image/svg+xml') {
+    throw new AnalysisError('UNSUPPORTED_IMAGE_TYPE', kind)
+  }
+
+  const img = await loadImage(dataUrl, kind)
+  if (!img.naturalWidth || !img.naturalHeight) throw new AnalysisError('INVALID_IMAGE', kind)
+
+  for (const edge of EDGE_STEPS) {
+    const canvas = drawCropped(img, box, edge, kind)
+    for (const quality of QUALITY_STEPS) {
+      const jpeg = canvas.toDataURL('image/jpeg', quality)
+      if (dataUrlBytes(jpeg) <= MAX_UPLOAD_BYTES) {
+        return { base64: jpeg.slice(jpeg.indexOf(',') + 1), thumbnail: jpeg, preview: jpeg }
+      }
+    }
+  }
+  throw new AnalysisError('IMAGE_TOO_LARGE', kind)
 }
 
 export async function prepareImage(dataUrl: string, kind: AnalysisKind): Promise<PreparedImage> {

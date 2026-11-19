@@ -111,6 +111,24 @@ function formatStandardRange(range: { min: number | null; max: number | null }):
   return range.min !== null && range.max !== null ? `${range.min}-${range.max}` : null
 }
 
+const BOUNDING_BOX_RE = /^(\d*\.?\d+),(\d*\.?\d+),(\d*\.?\d+),(\d*\.?\d+)$/
+const MIN_BOX_WIDTH = 0.03
+const MIN_BOX_HEIGHT = 0.02
+
+// "골격근·지방분석" 구역의 위치. 네 수 모두 0~1이고, 너비·높이가 너무 작지 않아야(=모델이 점 하나를
+// 찍은 게 아니라 실제로 그 구역을 가리킨 것으로 보여야) 크롭에 쓴다 — 잘못된 박스로 엉뚱한 곳을
+// 잘라내느니, 크롭을 포기하고 전체 이미지로 읽은 1차 결과를 그대로 쓰는 편이 낫다.
+function validateBoundingBox(raw: string | null): string | null {
+  if (raw === null) return null
+  const match = BOUNDING_BOX_RE.exec(raw.trim())
+  if (!match) return null
+  const [xMin, yMin, xMax, yMax] = match.slice(1, 5).map(Number)
+  if (![xMin, yMin, xMax, yMax].every(Number.isFinite)) return null
+  if (xMin < 0 || yMin < 0 || xMax > 1 || yMax > 1) return null
+  if (xMax - xMin < MIN_BOX_WIDTH || yMax - yMin < MIN_BOX_HEIGHT) return null
+  return `${round(xMin, 4)},${round(yMin, 4)},${round(xMax, 4)},${round(yMax, 4)}`
+}
+
 export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
   if (!raw.isInBodyReport) throw new AnalysisError('NOT_IN_BODY_REPORT', 'inbody')
 
@@ -175,8 +193,40 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     weightStandardRange: formatStandardRange(weightRange),
     skeletalMuscleMassStandardRange: formatStandardRange(muscleRange),
     bodyFatMassStandardRange: formatStandardRange(fatRange),
+    muscleFatAnalysisBox: validateBoundingBox(raw.muscleFatAnalysisBox),
     confidence: clamp01(raw.confidence),
     warnings: cleanWarnings(warnings),
+  }
+}
+
+// 표준범위 재시도(막대그래프 구역만 잘라 확대한 이미지)용. 이 패스는 그 구역 외엔 아무것도 안 보이는 게
+// 정상이라, normalizeInBody와 달리 "읽은 값이 하나도 없으면 에러"로 보지 않는다 — 표준범위 세 개만
+// 검증해서 돌려주고, 그마저도 다 null이면 호출한 쪽이 "재시도해도 못 읽었다"로 판단해 1차 결과를 쓴다.
+export function normalizeInBodyStandardRangeOnly(raw: InBodyExtraction): InBodyExtraction {
+  const weightRange = validateStandardRange(raw.weightStandardRange, 'weightKg', null)
+  const muscleRange = validateStandardRange(raw.skeletalMuscleMassStandardRange, 'skeletalMuscleMassKg', null)
+  const fatRange = validateStandardRange(raw.bodyFatMassStandardRange, 'bodyFatMassKg', null)
+
+  return {
+    isInBodyReport: true,
+    weightKg: null,
+    ageYears: null,
+    heightCm: null,
+    skeletalMuscleMassKg: null,
+    bodyFatMassKg: null,
+    bodyFatPercentage: null,
+    bodyWaterL: null,
+    proteinMassKg: null,
+    mineralMassKg: null,
+    bmi: null,
+    basalMetabolicRateKcal: null,
+    testedAtDate: null,
+    weightStandardRange: formatStandardRange(weightRange),
+    skeletalMuscleMassStandardRange: formatStandardRange(muscleRange),
+    bodyFatMassStandardRange: formatStandardRange(fatRange),
+    muscleFatAnalysisBox: null,
+    confidence: clamp01(raw.confidence),
+    warnings: cleanWarnings(raw.warnings),
   }
 }
 
