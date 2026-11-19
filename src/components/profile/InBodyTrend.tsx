@@ -67,7 +67,17 @@ const ADVICE_TONE_STYLES: Record<'good' | 'caution', string> = {
   caution: 'bg-amber-50 text-amber-800',
 }
 
-function BodyShapeChart({ entry, meals, nutritionTarget }: { entry: InBodyHistoryEntry; meals: Meal[]; nutritionTarget: NutritionTarget | null }) {
+function BodyShapeChart({
+  entry,
+  meals,
+  nutritionTarget,
+  onRemeasure,
+}: {
+  entry: InBodyHistoryEntry
+  meals: Meal[]
+  nutritionTarget: NutritionTarget | null
+  onRemeasure: (entryId: string) => void
+}) {
   const ranges = entry.standardRanges
   // 결과지에서 표준범위를 일부만 읽어도(예: 체중만 읽고 골격근량·체지방량은 못 읽음) 읽은 것만큼은 보여준다.
   // 측정값 자체가 하나도 없을 때만 그래프를 아예 숨긴다.
@@ -141,9 +151,17 @@ function BodyShapeChart({ entry, meals, nutritionTarget }: { entry: InBodyHistor
           </span>
         </p>
       ) : (
-        <p className="mt-3 rounded-lg bg-slate-100 px-2.5 py-2 text-xs text-slate-400">
-          결과지에서 골격근량·체지방량의 표준범위를 일부 읽지 못해 체형 판정은 생략했어요. 다시 스캔하면 나아질 수 있어요.
-        </p>
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-slate-100 px-2.5 py-2">
+          <p className="text-xs text-slate-400">
+            결과지에서 골격근량·체지방량의 표준범위를 일부 읽지 못해 체형 판정은 생략했어요.
+          </p>
+          <button
+            onClick={() => onRemeasure(entry.id)}
+            className="shrink-0 text-xs font-semibold text-emerald-600"
+          >
+            재측정
+          </button>
+        </div>
       )}
       <BodyTypeAdvice entry={entry} meals={meals} nutritionTarget={nutritionTarget} />
     </div>
@@ -181,6 +199,8 @@ function AddMeasurementButton({ onClick }: { onClick: () => void }) {
 export default function InBodyTrend({ history }: Props) {
   const { aiMode, isDemo, dispatch, meals, nutritionTarget } = useApp()
   const [scanOpen, setScanOpen] = useState(false)
+  // 체형 판정에 실패한 기록을 "재측정"으로 열었다면 그 기록의 id. null이면 "새 측정 추가"로 연 것.
+  const [remeasureId, setRemeasureId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const deleteEntry = (id: string) => {
@@ -188,15 +208,24 @@ export default function InBodyTrend({ history }: Props) {
     setConfirmDeleteId(null)
   }
 
+  const closeScan = () => {
+    setScanOpen(false)
+    setRemeasureId(null)
+  }
+
   if (scanOpen) {
     return (
       <InBodyScanFlow
         mode={resolveAnalysisMode(isDemo, aiMode)}
         onApply={(measurements: InBodyMeasurements) => {
-          dispatch({ type: 'UPDATE_INBODY', measurements, source: 'scan' })
-          setScanOpen(false)
+          if (remeasureId) {
+            dispatch({ type: 'REPLACE_INBODY_ENTRY', id: remeasureId, measurements, source: 'scan' })
+          } else {
+            dispatch({ type: 'UPDATE_INBODY', measurements, source: 'scan' })
+          }
+          closeScan()
         }}
-        onClose={() => setScanOpen(false)}
+        onClose={closeScan}
       />
     )
   }
@@ -215,7 +244,15 @@ export default function InBodyTrend({ history }: Props) {
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">예시</span>
           </div>
         </div>
-        <BodyShapeChart entry={latest} meals={meals} nutritionTarget={nutritionTarget} />
+        <BodyShapeChart
+          entry={latest}
+          meals={meals}
+          nutritionTarget={nutritionTarget}
+          onRemeasure={(id) => {
+            setRemeasureId(id)
+            setScanOpen(true)
+          }}
+        />
         <InBodyMetricChart history={history} />
         <div className="mb-3 rounded-xl bg-slate-50 p-3 opacity-60">
           <p className="mb-2 text-xs font-medium text-slate-500">14일 전 측정 대비</p>
@@ -237,7 +274,15 @@ export default function InBodyTrend({ history }: Props) {
         <AddMeasurementButton onClick={() => setScanOpen(true)} />
       </div>
 
-      <BodyShapeChart entry={latest} meals={meals} nutritionTarget={nutritionTarget} />
+      <BodyShapeChart
+        entry={latest}
+        meals={meals}
+        nutritionTarget={nutritionTarget}
+        onRemeasure={(id) => {
+          setRemeasureId(id)
+          setScanOpen(true)
+        }}
+      />
       <InBodyMetricChart history={history} />
 
       {comparison ? (

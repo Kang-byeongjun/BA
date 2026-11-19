@@ -3,8 +3,10 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FoodExtraction, InBodyExtraction } from '../../../shared/analysis'
 import { AppProvider, useApp } from '../../context/AppContext'
+import type { InBodyHistoryEntry, UserProfile } from '../../types'
 import FoodCaptureFlow from '../food/FoodCaptureFlow'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
+import InBodyTrend from '../profile/InBodyTrend'
 
 // 브라우저 전용 Canvas 리사이즈는 mock으로 대체하고, 나머지(업로드 → 서버 API → 확인/수정 → 저장)는 실제 코드로 실행한다.
 vi.mock('../../lib/imagePrep', () => ({
@@ -495,5 +497,73 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
     expect(await screen.findByText(/일시적인 문제가 있어요/, undefined, wait)).toBeTruthy()
     expect(screen.queryByLabelText('체중')).toBeNull()
     expect(screen.getByText('다시 시도')).toBeTruthy()
+  })
+})
+
+describe('인바디 재측정 (체형 판정 실패 기록 교체)', () => {
+  it('재측정을 적용하면 실패 기록은 사라지고 그 자리에 새 기록이 들어간다', async () => {
+    const profile: UserProfile = {
+      goal: 'fat_loss',
+      gender: 'male',
+      age: 30,
+      height: 175,
+      weight: 75,
+      skeletalMuscleMass: 34,
+      bodyFatMass: 14,
+      bodyFatPercentage: 18,
+      bodyWater: 42,
+      proteinMass: 13,
+      mineralMass: 4.5,
+      basalMetabolicRate: 1700,
+      basalMetabolicRateEstimated: false,
+    }
+    const failedEntry: InBodyHistoryEntry = {
+      id: 'fail-1',
+      timestamp: Date.now(),
+      source: 'scan',
+      weight: 75,
+      skeletalMuscleMass: 34,
+      bodyFatMass: null,
+      bodyFatPercentage: 18,
+      bodyWater: 42,
+      proteinMass: 13,
+      mineralMass: 4.5,
+      basalMetabolicRate: 1700,
+      bodyType: null, // 체형 판정 실패
+      standardRanges: null,
+    }
+    const olderOkEntry: InBodyHistoryEntry = {
+      ...failedEntry,
+      id: 'ok-1',
+      timestamp: Date.now() - 14 * 24 * 60 * 60 * 1000,
+      bodyType: 'D',
+      standardRanges: { weight: null, skeletalMuscleMass: { min: 30, max: 38 }, bodyFatMass: { min: 10, max: 18 } },
+    }
+    localStorage.setItem('ai-diet-app:profile', JSON.stringify(profile))
+    localStorage.setItem('ai-diet-app:inBodyHistory', JSON.stringify([failedEntry, olderOkEntry]))
+    fetchMock.mockResolvedValue(ok(inbody))
+
+    render(
+      <AppProvider>
+        <InBodyTrend history={[failedEntry, olderOkEntry]} />
+      </AppProvider>,
+    )
+
+    expect(screen.getByText(/체형 판정은 생략했어요/)).toBeTruthy()
+    fireEvent.click(screen.getByText('재측정'))
+
+    expect(screen.getByText(/분석 후 저장하지 않아요/)).toBeTruthy()
+    uploadPhoto()
+    await screen.findByText('AI가 분석한 InBody 정보', undefined, wait)
+    fireEvent.change(screen.getByLabelText('체지방량'), { target: { value: '13.8' } })
+    fireEvent.click(screen.getByText('확인하고 적용'))
+
+    await waitFor(() => {
+      const saved = JSON.parse(localStorage.getItem('ai-diet-app:inBodyHistory') ?? '[]') as InBodyHistoryEntry[]
+      expect(saved.some((e) => e.id === 'fail-1')).toBe(false) // 실패 기록은 남지 않는다
+      expect(saved.some((e) => e.id === 'ok-1')).toBe(true) // 다른 기록은 그대로
+      expect(saved.length).toBe(2) // 1개 교체 — 늘어나지 않는다
+      expect(saved.find((e) => e.id !== 'ok-1')?.bodyType).not.toBeNull()
+    })
   })
 })

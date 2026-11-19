@@ -39,12 +39,10 @@ function Sparkline({
 }) {
   const coords = layout(series)
   const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x},${c.y}`).join(' ')
-  const areaPath = `${linePath} L${coords[coords.length - 1].x},${HEIGHT - PAD_Y / 2} L${coords[0].x},${HEIGHT - PAD_Y / 2} Z`
   const accent = muted ? '#94a3b8' : ACCENT
 
   return (
     <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full" style={{ height: HEIGHT }}>
-      <path d={areaPath} fill={accent} fillOpacity={0.08} stroke="none" />
       <path d={linePath} fill="none" stroke={MUTED} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
       {coords.map((c, i) => {
         const isLast = i === coords.length - 1

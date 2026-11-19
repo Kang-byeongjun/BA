@@ -54,6 +54,8 @@ type Action =
   | { type: 'UPDATE_NUTRITION_TARGET'; target: NutritionTarget }
   | { type: 'UPDATE_PROFILE'; profile: UserProfile }
   | { type: 'UPDATE_INBODY'; measurements: InBodyMeasurements; source: InBodySource }
+  // 체형 판정(bodyType)에 실패한 기록을 재측정으로 대체한다 — 실패 기록은 남기지 않고 지운다.
+  | { type: 'REPLACE_INBODY_ENTRY'; id: string; measurements: InBodyMeasurements; source: InBodySource }
   | { type: 'SET_WORKOUT_PROFILE'; workoutProfile: WorkoutProfile }
   | { type: 'ADD_MEAL'; meal: Meal }
   | { type: 'DELETE_MEAL'; id: string }
@@ -190,6 +192,25 @@ function reducer(state: AppState, action: Action): AppState {
             standardRanges: action.measurements.standardRanges,
           }),
           ...state.inBodyHistory,
+        ],
+      }
+    }
+
+    case 'REPLACE_INBODY_ENTRY': {
+      if (!state.profile) return state
+      const profile = mergeInBodyMeasurements(state.profile, action.measurements)
+      const nutritionTarget = generateNutritionTarget(profile, state.workoutProfile)
+      return {
+        ...state,
+        profile,
+        nutritionTarget,
+        inBodyHistory: [
+          historyEntryFromProfile(profile, action.source, {
+            measuredAt: action.measurements.measuredAt,
+            bodyType: action.measurements.bodyType,
+            standardRanges: action.measurements.standardRanges,
+          }),
+          ...state.inBodyHistory.filter((e) => e.id !== action.id),
         ],
       }
     }
