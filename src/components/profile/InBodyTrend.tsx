@@ -57,7 +57,7 @@ export default function InBodyTrend({ history }: Props) {
           <ExampleInBodyGrid />
         </div>
         <p className="text-xs text-slate-400">
-          측정을 2회 이상 하면 위처럼 변화를 비교해드려요. 2주마다 InBody를 측정해보세요.
+          측정을 2회 이상 하면 위처럼 변화를 비교해드려요. 2주마다 InBody 결과지를 사진으로 올려보세요.
         </p>
       </div>
     )
