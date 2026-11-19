@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, Minus, Sparkles, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
-import { BODY_TYPE_LABELS, standardZonePosition, type InBodyBodyType } from '../../lib/inBodyBodyType'
+import { BODY_TYPE_LABELS, computeShapePositions, type InBodyBodyType } from '../../lib/inBodyBodyType'
 import { daysBetween, findComparisonEntry } from '../../lib/inBodyTrend'
 import { formatRelativeDate } from '../../lib/time'
 import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry, type InBodyMeasurements } from '../../types'
@@ -75,9 +75,10 @@ function BodyShapeChart({ entry }: { entry: InBodyHistoryEntry }) {
 
   const rows = SHAPE_ROWS.map((r) => ({ ...r, value: entry[r.key], range: ranges ? ranges[r.key] : null }))
   const chartHeight = ROW_H * rows.length
-  const points = rows.map((r, i) =>
-    r.value !== null && r.range ? { x: standardZonePosition(r.value, r.range) * 100, y: i * ROW_H + BAR_CENTER_Y } : null,
-  )
+  // 세 항목을 "표준 대비 비율"이라는 공통 축 위에 함께 놓는다 — 그래야 표준을 크게 벗어난 항목도
+  // 서로 다른 자리에 찍혀서, 점들을 이은 선의 기울기가 실제 체형 차이를 보여준다.
+  const shapePositions = computeShapePositions(rows)
+  const points = shapePositions.map((p, i) => (p && p.valuePos !== null ? { x: p.valuePos * 100, y: i * ROW_H + BAR_CENTER_Y } : null))
   const linePoints = points
     .filter((p): p is { x: number; y: number } => p !== null)
     .map((p) => `${p.x},${p.y}`)
@@ -86,22 +87,30 @@ function BodyShapeChart({ entry }: { entry: InBodyHistoryEntry }) {
   return (
     <div className="mb-3 rounded-xl bg-slate-50 p-3">
       <div className="relative" style={{ height: chartHeight }}>
-        {rows.map((r, i) => (
-          <div key={r.key} className="absolute inset-x-0" style={{ top: i * ROW_H, height: ROW_H }}>
-            <div className="flex items-baseline justify-between" style={{ height: LABEL_H }}>
-              <span className="text-xs text-slate-500">{r.label}</span>
-              <span className="text-xs font-semibold text-slate-700">{r.value !== null ? `${r.value}kg` : '측정 안 함'}</span>
+        {rows.map((r, i) => {
+          const sp = shapePositions[i]
+          return (
+            <div key={r.key} className="absolute inset-x-0" style={{ top: i * ROW_H, height: ROW_H }}>
+              <div className="flex items-baseline justify-between" style={{ height: LABEL_H }}>
+                <span className="text-xs text-slate-500">{r.label}</span>
+                <span className="text-xs font-semibold text-slate-700">{r.value !== null ? `${r.value}kg` : '측정 안 함'}</span>
+              </div>
+              <div className="relative rounded-full bg-slate-200" style={{ marginTop: LABEL_GAP, height: BAR_H }}>
+                {sp && (
+                  <div
+                    className="absolute inset-y-0 rounded-full bg-emerald-200"
+                    style={{ left: `${sp.zoneMinPos * 100}%`, right: `${100 - sp.zoneMaxPos * 100}%` }}
+                  />
+                )}
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-400" style={{ marginTop: BAR_GAP, height: ZONE_LABEL_H }}>
+                <span>표준이하</span>
+                <span>표준</span>
+                <span>표준이상</span>
+              </div>
             </div>
-            <div className="relative rounded-full bg-slate-200" style={{ marginTop: LABEL_GAP, height: BAR_H }}>
-              <div className="absolute inset-y-0 left-1/3 right-1/3 rounded-full bg-emerald-200" />
-            </div>
-            <div className="flex justify-between text-[10px] text-slate-400" style={{ marginTop: BAR_GAP, height: ZONE_LABEL_H }}>
-              <span>표준이하</span>
-              <span>표준</span>
-              <span>표준이상</span>
-            </div>
-          </div>
-        ))}
+          )
+        })}
         {linePoints && (
           <svg
             className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
