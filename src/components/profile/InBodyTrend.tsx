@@ -2,10 +2,11 @@ import { ArrowDown, ArrowUp, Minus, Sparkles, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
+import { buildInBodyAdvice } from '../../lib/inBodyAdvice'
 import { BODY_TYPE_LABELS, computeShapePositions, type InBodyBodyType } from '../../lib/inBodyBodyType'
 import { daysBetween, findComparisonEntry } from '../../lib/inBodyTrend'
 import { formatRelativeDate } from '../../lib/time'
-import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry, type InBodyMeasurements } from '../../types'
+import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry, type InBodyMeasurements, type Meal, type NutritionTarget } from '../../types'
 import ExampleInBodyGrid from '../calendar/ExampleInBodyGrid'
 import WeightTrendChart from '../calendar/WeightTrendChart'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
@@ -67,7 +68,12 @@ const ZONE_LABEL_H = 14
 const ROW_H = LABEL_H + LABEL_GAP + BAR_H + BAR_GAP + ZONE_LABEL_H
 const BAR_CENTER_Y = LABEL_H + LABEL_GAP + BAR_H / 2
 
-function BodyShapeChart({ entry }: { entry: InBodyHistoryEntry }) {
+const ADVICE_TONE_STYLES: Record<'good' | 'caution', string> = {
+  good: 'bg-emerald-50 text-emerald-700',
+  caution: 'bg-amber-50 text-amber-800',
+}
+
+function BodyShapeChart({ entry, meals, nutritionTarget }: { entry: InBodyHistoryEntry; meals: Meal[]; nutritionTarget: NutritionTarget | null }) {
   const ranges = entry.standardRanges
   // 결과지에서 표준범위를 일부만 읽어도(예: 체중만 읽고 골격근량·체지방량은 못 읽음) 읽은 것만큼은 보여준다.
   // 측정값 자체가 하나도 없을 때만 그래프를 아예 숨긴다.
@@ -145,6 +151,26 @@ function BodyShapeChart({ entry }: { entry: InBodyHistoryEntry }) {
           결과지에서 골격근량·체지방량의 표준범위를 일부 읽지 못해 체형 판정은 생략했어요. 다시 스캔하면 나아질 수 있어요.
         </p>
       )}
+      <BodyTypeAdvice entry={entry} meals={meals} nutritionTarget={nutritionTarget} />
+    </div>
+  )
+}
+
+// 체형 판정("C자형")만으로는 좋은 건지 나쁜 건지, 어떻게 해야 할지 알기 어렵다. 최근 식단 기록(실측값)과
+// 목표를 규칙으로 비교해 구체적인 방향을 제시한다 — AI 호출 없이 결정적으로 계산한다(체형 판정 자체가
+// 간이 추정이라, 조언까지 AI에 맡기면 오차가 두 번 겹친다).
+function BodyTypeAdvice({ entry, meals, nutritionTarget }: { entry: InBodyHistoryEntry; meals: Meal[]; nutritionTarget: NutritionTarget | null }) {
+  const advice = buildInBodyAdvice(entry.bodyType, meals, nutritionTarget)
+  if (!advice) return null
+
+  return (
+    <div className={`mt-2 rounded-lg px-2.5 py-2 text-xs ${ADVICE_TONE_STYLES[advice.tone]}`}>
+      <p className="font-medium">{advice.headline}</p>
+      {advice.tips.map((tip) => (
+        <p key={tip} className="mt-1 font-normal opacity-90">
+          {tip}
+        </p>
+      ))}
     </div>
   )
 }
@@ -159,7 +185,7 @@ function AddMeasurementButton({ onClick }: { onClick: () => void }) {
 }
 
 export default function InBodyTrend({ history }: Props) {
-  const { aiMode, isDemo, dispatch } = useApp()
+  const { aiMode, isDemo, dispatch, meals, nutritionTarget } = useApp()
   const [scanOpen, setScanOpen] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
@@ -195,7 +221,7 @@ export default function InBodyTrend({ history }: Props) {
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">예시</span>
           </div>
         </div>
-        <BodyShapeChart entry={latest} />
+        <BodyShapeChart entry={latest} meals={meals} nutritionTarget={nutritionTarget} />
         <WeightTrendChart history={history} />
         <div className="mb-3 rounded-xl bg-slate-50 p-3 opacity-60">
           <p className="mb-2 text-xs font-medium text-slate-500">14일 전 측정 대비</p>
@@ -217,7 +243,7 @@ export default function InBodyTrend({ history }: Props) {
         <AddMeasurementButton onClick={() => setScanOpen(true)} />
       </div>
 
-      <BodyShapeChart entry={latest} />
+      <BodyShapeChart entry={latest} meals={meals} nutritionTarget={nutritionTarget} />
       <WeightTrendChart history={history} />
 
       {comparison ? (
