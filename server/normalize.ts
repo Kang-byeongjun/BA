@@ -75,18 +75,21 @@ function round(value: number, decimals: number): number {
 // 체형(C/D자형) 판정에 쓰는 "표준" 구간용 상식적 범위. 이 값 자체가 "정상 범위"라서, 극단적인 개인
 // 실측치(IN_BODY_RANGES)보다 훨씬 좁다 — 예를 들어 체지방량 80~160kg은 실측치로도 말이 안 되고,
 // 하물며 "표준" 구간일 수는 없다. 이 좁은 범위를 넘어서면 AI가 다른 축이나 엉뚱한 숫자를 읽은 것으로 본다.
-const STANDARD_RANGE_BOUNDS: Record<'skeletalMuscleMassKg' | 'bodyFatMassKg', { min: number; max: number }> = {
+type StandardRangeKey = 'weightKg' | 'skeletalMuscleMassKg' | 'bodyFatMassKg'
+
+const STANDARD_RANGE_BOUNDS: Record<StandardRangeKey, { min: number; max: number }> = {
+  weightKg: { min: 25, max: 150 },
   skeletalMuscleMassKg: { min: 10, max: 55 },
   bodyFatMassKg: { min: 2, max: 45 },
 }
 
-// 체형(C/D자형) 판정에 쓰는 "표준" 구간. min<max이고 상식적인 범위 안에 있어야 하며, 그 항목의 실측치와
-// 비교해도 터무니없이 동떨어져 있지 않아야 한다(같은 축을 읽은 게 맞는지 교차 확인). 하나라도 못 믿으면
-// 둘 다 버린다 — 반쪽짜리 구간으로 잘못된 체형을 판정하지 않기 위해서다.
+// 체형(C/D자형) 판정과 체형 그래프에 쓰는 "표준" 구간. min<max이고 상식적인 범위 안에 있어야 하며, 그
+// 항목의 실측치와 비교해도 터무니없이 동떨어져 있지 않아야 한다(같은 축을 읽은 게 맞는지 교차 확인).
+// 하나라도 못 믿으면 둘 다 버린다 — 반쪽짜리 구간으로 잘못된 체형을 판정하지 않기 위해서다.
 function validateStandardRange(
   min: number | null,
   max: number | null,
-  key: Extract<InBodyValueKey, 'skeletalMuscleMassKg' | 'bodyFatMassKg'>,
+  key: StandardRangeKey,
   measuredValue: number | null,
 ): { min: number | null; max: number | null } {
   if (min === null || max === null) return { min: null, max: null }
@@ -151,6 +154,7 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     }
   }
 
+  const weightRange = validateStandardRange(raw.weightStandardMinKg, raw.weightStandardMaxKg, 'weightKg', values.weightKg)
   const muscleRange = validateStandardRange(
     raw.skeletalMuscleMassStandardMinKg,
     raw.skeletalMuscleMassStandardMaxKg,
@@ -168,6 +172,8 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     isInBodyReport: true,
     ...values,
     testedAtDate: validateTestedAtDate(raw.testedAtDate),
+    weightStandardMinKg: weightRange.min,
+    weightStandardMaxKg: weightRange.max,
     skeletalMuscleMassStandardMinKg: muscleRange.min,
     skeletalMuscleMassStandardMaxKg: muscleRange.max,
     bodyFatMassStandardMinKg: fatRange.min,

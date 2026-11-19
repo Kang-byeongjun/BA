@@ -25,6 +25,8 @@ const goodInBody: InBodyExtraction = {
   bmi: 24.6,
   basalMetabolicRateKcal: 1702,
   testedAtDate: null,
+  weightStandardMinKg: 70,
+  weightStandardMaxKg: 80,
   skeletalMuscleMassStandardMinKg: 32,
   skeletalMuscleMassStandardMaxKg: 40,
   bodyFatMassStandardMinKg: 10,

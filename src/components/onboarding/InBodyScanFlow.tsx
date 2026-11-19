@@ -193,6 +193,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       const measurements = {} as InBodyMeasurements
       for (const p of parsed) measurements[p.key] = p.value
       measurements.measuredAt = measuredAt.trim() === '' ? null : measuredAt
+      const weightRange = toStandardRange(extraction.weightStandardMinKg, extraction.weightStandardMaxKg)
       const skeletalMuscleMassRange = toStandardRange(
         extraction.skeletalMuscleMassStandardMinKg,
         extraction.skeletalMuscleMassStandardMaxKg,
@@ -205,7 +206,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
         skeletalMuscleMassRange,
         bodyFatMassRange,
       )
-      measurements.standardRanges = { skeletalMuscleMass: skeletalMuscleMassRange, bodyFatMass: bodyFatMassRange }
+      measurements.standardRanges = { weight: weightRange, skeletalMuscleMass: skeletalMuscleMassRange, bodyFatMass: bodyFatMassRange }
       onApply(measurements)
     }
 

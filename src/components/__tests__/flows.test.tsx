@@ -41,6 +41,8 @@ const inbody: InBodyExtraction = {
   bmi: 24.6,
   basalMetabolicRateKcal: 1702,
   testedAtDate: '2026-11-09',
+  weightStandardMinKg: null,
+  weightStandardMaxKg: null,
   skeletalMuscleMassStandardMinKg: 32,
   skeletalMuscleMassStandardMaxKg: 40,
   bodyFatMassStandardMinKg: 10,
@@ -443,6 +445,7 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
       measuredAt: '2026-11-09',
       bodyType: 'I',
       standardRanges: {
+        weight: null,
         skeletalMuscleMass: { min: 32, max: 40 },
         bodyFatMass: { min: 10, max: 18 },
       },

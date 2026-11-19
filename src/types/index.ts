@@ -1,7 +1,8 @@
 import type { InBodyBodyType, InBodyStandardRange } from '../lib/inBodyBodyType'
 
-// 체형 경향 판정에 쓰인 골격근량·체지방량 각자의 "표준" 구간. 결과지 막대그래프를 재현해 보여줄 때도 쓴다.
+// 체중·골격근량·체지방량 각자의 "표준" 구간. 체형 경향 판정과 결과지 막대그래프 재현에 쓴다.
 export interface InBodyStandardRanges {
+  weight: InBodyStandardRange | null
   skeletalMuscleMass: InBodyStandardRange | null
   bodyFatMass: InBodyStandardRange | null
 }

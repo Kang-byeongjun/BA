@@ -2,7 +2,7 @@ import { ArrowDown, ArrowUp, Minus, Sparkles, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
-import { BODY_TYPE_LABELS, standardZonePosition, type InBodyBodyType, type InBodyStandardRange } from '../../lib/inBodyBodyType'
+import { BODY_TYPE_LABELS, standardZonePosition, type InBodyBodyType } from '../../lib/inBodyBodyType'
 import { daysBetween, findComparisonEntry } from '../../lib/inBodyTrend'
 import { formatRelativeDate } from '../../lib/time'
 import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry, type InBodyMeasurements } from '../../types'
@@ -44,66 +44,91 @@ function DeltaBadge({ delta, decimals }: { delta: number; decimals: number }) {
   )
 }
 
-function StandardZoneBar({
-  label,
-  value,
-  unit,
-  range,
-}: {
-  label: string
-  value: number
-  unit: string
-  range: InBodyStandardRange
-}) {
-  const position = standardZonePosition(value, range) * 100
-  return (
-    <div>
-      <div className="mb-1 flex items-baseline justify-between">
-        <span className="text-xs text-slate-500">{label}</span>
-        <span className="text-xs font-semibold text-slate-700">
-          {value}
-          {unit}
-        </span>
-      </div>
-      <div className="relative h-2.5 rounded-full bg-slate-200">
-        <div className="absolute inset-y-0 left-1/3 right-1/3 rounded-full bg-emerald-200" />
-        <div
-          className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-700 shadow"
-          style={{ left: `${position}%` }}
-        />
-      </div>
-      <div className="mt-0.5 flex justify-between text-[10px] text-slate-400">
-        <span>표준이하</span>
-        <span>표준</span>
-        <span>표준이상</span>
-      </div>
-    </div>
-  )
-}
-
 const BODY_TYPE_COLORS: Record<InBodyBodyType, string> = {
   D: 'bg-emerald-50 text-emerald-700',
   I: 'bg-sky-50 text-sky-700',
   C: 'bg-amber-50 text-amber-700',
 }
 
-function BodyTypeSection({ entry }: { entry: InBodyHistoryEntry }) {
+type ShapeRowKey = 'weight' | 'skeletalMuscleMass' | 'bodyFatMass'
+
+const SHAPE_ROWS: { key: ShapeRowKey; label: string }[] = [
+  { key: 'weight', label: '체중' },
+  { key: 'skeletalMuscleMass', label: '골격근량' },
+  { key: 'bodyFatMass', label: '체지방량' },
+]
+
+// 행 레이아웃(px). 점의 세로 위치를 막대 중심과 픽셀 단위로 맞추기 위해 SVG 좌표를 이 상수들로 직접 계산한다.
+const LABEL_H = 16
+const LABEL_GAP = 4
+const BAR_H = 10
+const BAR_GAP = 4
+const ZONE_LABEL_H = 14
+const ROW_H = LABEL_H + LABEL_GAP + BAR_H + BAR_GAP + ZONE_LABEL_H
+const BAR_CENTER_Y = LABEL_H + LABEL_GAP + BAR_H / 2
+
+function BodyShapeChart({ entry }: { entry: InBodyHistoryEntry }) {
   const ranges = entry.standardRanges
   if (entry.bodyType === null || !ranges) return null
+
+  const rows = SHAPE_ROWS.map((r) => ({ ...r, value: entry[r.key], range: ranges[r.key] }))
+  const chartHeight = ROW_H * rows.length
+  const points = rows.map((r, i) =>
+    r.value !== null && r.range ? { x: standardZonePosition(r.value, r.range) * 100, y: i * ROW_H + BAR_CENTER_Y } : null,
+  )
+  const linePoints = points
+    .filter((p): p is { x: number; y: number } => p !== null)
+    .map((p) => `${p.x},${p.y}`)
+    .join(' ')
+
   return (
     <div className="mb-3 rounded-xl bg-slate-50 p-3">
-      <div className="space-y-2.5">
-        {ranges.skeletalMuscleMass && entry.skeletalMuscleMass !== null && (
-          <StandardZoneBar label="골격근량" value={entry.skeletalMuscleMass} unit="kg" range={ranges.skeletalMuscleMass} />
-        )}
-        {ranges.bodyFatMass && entry.bodyFatMass !== null && (
-          <StandardZoneBar label="체지방량" value={entry.bodyFatMass} unit="kg" range={ranges.bodyFatMass} />
+      <div className="relative" style={{ height: chartHeight }}>
+        {rows.map((r, i) => (
+          <div key={r.key} className="absolute inset-x-0" style={{ top: i * ROW_H, height: ROW_H }}>
+            <div className="flex items-baseline justify-between" style={{ height: LABEL_H }}>
+              <span className="text-xs text-slate-500">{r.label}</span>
+              <span className="text-xs font-semibold text-slate-700">{r.value !== null ? `${r.value}kg` : '측정 안 함'}</span>
+            </div>
+            <div className="relative rounded-full bg-slate-200" style={{ marginTop: LABEL_GAP, height: BAR_H }}>
+              <div className="absolute inset-y-0 left-1/3 right-1/3 rounded-full bg-emerald-200" />
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400" style={{ marginTop: BAR_GAP, height: ZONE_LABEL_H }}>
+              <span>표준이하</span>
+              <span>표준</span>
+              <span>표준이상</span>
+            </div>
+          </div>
+        ))}
+        {linePoints && (
+          <svg
+            className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+            viewBox={`0 0 100 ${chartHeight}`}
+            preserveAspectRatio="none"
+          >
+            <polyline points={linePoints} fill="none" stroke="#334155" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+            {points.map(
+              (p, i) =>
+                p && (
+                  <circle
+                    key={SHAPE_ROWS[i].key}
+                    cx={p.x}
+                    cy={p.y}
+                    r={4}
+                    fill="#334155"
+                    stroke="white"
+                    strokeWidth={1.5}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ),
+            )}
+          </svg>
         )}
       </div>
       <p className={`mt-3 rounded-lg px-2.5 py-2 text-xs font-medium ${BODY_TYPE_COLORS[entry.bodyType]}`}>
         {BODY_TYPE_LABELS[entry.bodyType]}
         <span className="ml-1 font-normal opacity-70">
-          · 골격근량·체지방량을 결과지의 표준범위와 비교한 간이 추정이에요
+          · 체중·골격근량·체지방량을 결과지의 표준범위와 비교한 간이 추정이에요
         </span>
       </p>
     </div>
@@ -156,7 +181,7 @@ export default function InBodyTrend({ history }: Props) {
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">예시</span>
           </div>
         </div>
-        <BodyTypeSection entry={latest} />
+        <BodyShapeChart entry={latest} />
         <WeightTrendChart history={history} />
         <div className="mb-3 rounded-xl bg-slate-50 p-3 opacity-60">
           <p className="mb-2 text-xs font-medium text-slate-500">14일 전 측정 대비</p>
@@ -178,7 +203,7 @@ export default function InBodyTrend({ history }: Props) {
         <AddMeasurementButton onClick={() => setScanOpen(true)} />
       </div>
 
-      <BodyTypeSection entry={latest} />
+      <BodyShapeChart entry={latest} />
       <WeightTrendChart history={history} />
 
       {comparison ? (

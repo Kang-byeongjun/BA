@@ -28,6 +28,8 @@ export const inBodyExtractionSchema = z.object({
   bmi: z.number().nullable(),
   basalMetabolicRateKcal: z.number().nullable(),
   testedAtDate: z.string().nullable(),
+  weightStandardMinKg: z.number().nullable(),
+  weightStandardMaxKg: z.number().nullable(),
   skeletalMuscleMassStandardMinKg: z.number().nullable(),
   skeletalMuscleMassStandardMaxKg: z.number().nullable(),
   bodyFatMassStandardMinKg: z.number().nullable(),
