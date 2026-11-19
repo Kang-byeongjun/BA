@@ -69,9 +69,11 @@ const BAR_CENTER_Y = LABEL_H + LABEL_GAP + BAR_H / 2
 
 function BodyShapeChart({ entry }: { entry: InBodyHistoryEntry }) {
   const ranges = entry.standardRanges
-  if (entry.bodyType === null || !ranges) return null
+  // 결과지에서 표준범위를 일부만 읽어도(예: 체중만 읽고 골격근량·체지방량은 못 읽음) 읽은 것만큼은 보여준다.
+  // 측정값 자체가 하나도 없을 때만 그래프를 아예 숨긴다.
+  if (!SHAPE_ROWS.some((r) => entry[r.key] !== null)) return null
 
-  const rows = SHAPE_ROWS.map((r) => ({ ...r, value: entry[r.key], range: ranges[r.key] }))
+  const rows = SHAPE_ROWS.map((r) => ({ ...r, value: entry[r.key], range: ranges ? ranges[r.key] : null }))
   const chartHeight = ROW_H * rows.length
   const points = rows.map((r, i) =>
     r.value !== null && r.range ? { x: standardZonePosition(r.value, r.range) * 100, y: i * ROW_H + BAR_CENTER_Y } : null,
@@ -125,12 +127,18 @@ function BodyShapeChart({ entry }: { entry: InBodyHistoryEntry }) {
           </svg>
         )}
       </div>
-      <p className={`mt-3 rounded-lg px-2.5 py-2 text-xs font-medium ${BODY_TYPE_COLORS[entry.bodyType]}`}>
-        {BODY_TYPE_LABELS[entry.bodyType]}
-        <span className="ml-1 font-normal opacity-70">
-          · 체중·골격근량·체지방량을 결과지의 표준범위와 비교한 간이 추정이에요
-        </span>
-      </p>
+      {entry.bodyType !== null ? (
+        <p className={`mt-3 rounded-lg px-2.5 py-2 text-xs font-medium ${BODY_TYPE_COLORS[entry.bodyType]}`}>
+          {BODY_TYPE_LABELS[entry.bodyType]}
+          <span className="ml-1 font-normal opacity-70">
+            · 체중·골격근량·체지방량을 결과지의 표준범위와 비교한 간이 추정이에요
+          </span>
+        </p>
+      ) : (
+        <p className="mt-3 rounded-lg bg-slate-100 px-2.5 py-2 text-xs text-slate-400">
+          결과지에서 골격근량·체지방량의 표준범위를 일부 읽지 못해 체형 판정은 생략했어요. 다시 스캔하면 나아질 수 있어요.
+        </p>
+      )}
     </div>
   )
 }
