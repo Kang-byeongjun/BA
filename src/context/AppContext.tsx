@@ -56,6 +56,7 @@ type Action =
   | { type: 'RESET_ACTIVE_WORKOUT' }
   | { type: 'SAVE_PENDING_WORKOUT' }
   | { type: 'DISCARD_PENDING_WORKOUT' }
+  | { type: 'ADD_WORKOUT'; workout: Workout }
   | { type: 'RESET_APP' }
 
 function historyEntryFromProfile(profile: UserProfile, source: InBodySource): InBodyHistoryEntry {
@@ -217,6 +218,10 @@ function reducer(state: AppState, action: Action): AppState {
 
     case 'DISCARD_PENDING_WORKOUT':
       return { ...state, pendingWorkout: null }
+
+    // 운동 기록 화면(WorkoutLogger)에서 끝낸 운동을 바로 추가한다
+    case 'ADD_WORKOUT':
+      return { ...state, workouts: [action.workout, ...state.workouts] }
 
     case 'RESET_APP':
       return {

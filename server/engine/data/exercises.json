@@ -1,0 +1,1877 @@
+[
+ {
+  "id": "C01",
+  "name": "머신 체스트 프레스",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "전체",
+  "secondary": [
+   "삼두",
+   "어깨"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "C06",
+  "note": ""
+ },
+ {
+  "id": "C02",
+  "name": "덤벨 벤치 프레스",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "전체",
+  "secondary": [
+   "삼두",
+   "어깨"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "덤벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "C06",
+  "note": ""
+ },
+ {
+  "id": "C03",
+  "name": "바벨 벤치 프레스",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "전체",
+  "secondary": [
+   "삼두",
+   "어깨"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "바벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "C06",
+  "note": ""
+ },
+ {
+  "id": "C04",
+  "name": "인클라인 덤벨 프레스",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "상부",
+  "secondary": [
+   "어깨",
+   "삼두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "덤벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "C06",
+  "note": ""
+ },
+ {
+  "id": "C05",
+  "name": "푸시업",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "전체",
+  "secondary": [
+   "삼두",
+   "어깨",
+   "복부"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "맨몸",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "C06",
+  "note": ""
+ },
+ {
+  "id": "C06",
+  "name": "펙덱 플라이",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "전체",
+  "secondary": [
+   "어깨"
+  ],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "어깨 통증 시 가슴 대체 종목"
+ },
+ {
+  "id": "C07",
+  "name": "케이블 크로스오버",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "하부·내측",
+  "secondary": [
+   "어깨"
+  ],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "케이블",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "C06",
+  "note": ""
+ },
+ {
+  "id": "S01",
+  "name": "머신 숄더 프레스",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "전면·측면",
+  "secondary": [
+   "삼두"
+  ],
+  "joint": "MULTI",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "S05",
+  "note": ""
+ },
+ {
+  "id": "S02",
+  "name": "덤벨 숄더 프레스",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "전면·측면",
+  "secondary": [
+   "삼두"
+  ],
+  "joint": "MULTI",
+  "size": "SMALL",
+  "equipment": "덤벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "S05",
+  "note": ""
+ },
+ {
+  "id": "S03",
+  "name": "바벨 오버헤드 프레스",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "전면·측면",
+  "secondary": [
+   "삼두",
+   "복부"
+  ],
+  "joint": "MULTI",
+  "size": "SMALL",
+  "equipment": "바벨",
+  "difficulty": 3,
+  "burden": {
+   "LOWBACK": "HIGH",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "S05",
+  "note": ""
+ },
+ {
+  "id": "S04",
+  "name": "덤벨 사이드 레터럴 레이즈",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "측면",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "덤벨",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "S05",
+  "note": ""
+ },
+ {
+  "id": "S05",
+  "name": "케이블 페이스 풀",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "후면",
+  "secondary": [
+   "등"
+  ],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "어깨 통증 시 어깨 대체 종목"
+ },
+ {
+  "id": "S06",
+  "name": "리버스 펙덱",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "후면",
+  "secondary": [
+   "등"
+  ],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": ""
+ },
+ {
+  "id": "B01",
+  "name": "랫 풀다운",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "광배",
+  "secondary": [
+   "이두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "B03",
+  "note": ""
+ },
+ {
+  "id": "B02",
+  "name": "시티드 케이블 로우",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "중부",
+  "secondary": [
+   "이두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "B03",
+  "note": ""
+ },
+ {
+  "id": "B03",
+  "name": "머신 로우 (가슴 지지형)",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "중부",
+  "secondary": [
+   "이두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "허리·어깨 통증 시 등 대체 종목"
+ },
+ {
+  "id": "B04",
+  "name": "원암 덤벨 로우",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "광배",
+  "secondary": [
+   "이두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "덤벨",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "B03",
+  "note": ""
+ },
+ {
+  "id": "B05",
+  "name": "바벨 로우",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "중부",
+  "secondary": [
+   "이두",
+   "허리"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "바벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "HIGH",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "B03",
+  "note": ""
+ },
+ {
+  "id": "B06",
+  "name": "풀업(턱걸이)",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "광배",
+  "secondary": [
+   "이두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "맨몸",
+  "difficulty": 3,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "B03",
+  "note": ""
+ },
+ {
+  "id": "B07",
+  "name": "어시스티드 풀업",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "광배",
+  "secondary": [
+   "이두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "B03",
+  "note": ""
+ },
+ {
+  "id": "B08",
+  "name": "스트레이트암 풀다운",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "광배",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "케이블",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "B03",
+  "note": ""
+ },
+ {
+  "id": "A01",
+  "name": "덤벨 바이셉 컬",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "이두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "덤벨",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "A03",
+  "note": ""
+ },
+ {
+  "id": "A02",
+  "name": "바벨 컬",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "이두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "바벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "A03",
+  "note": ""
+ },
+ {
+  "id": "A03",
+  "name": "해머 컬",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "이두",
+  "secondary": [
+   "전완"
+  ],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "덤벨",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "팔 대체 종목(이두)"
+ },
+ {
+  "id": "A04",
+  "name": "케이블 트라이셉 푸시다운",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "삼두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "A06",
+  "note": ""
+ },
+ {
+  "id": "A05",
+  "name": "오버헤드 트라이셉 익스텐션",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "삼두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "덤벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "A06",
+  "note": ""
+ },
+ {
+  "id": "A06",
+  "name": "머신 트라이셉 익스텐션",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "삼두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "팔 대체 종목(삼두)"
+ },
+ {
+  "id": "L01",
+  "name": "레그 프레스",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "대퇴사두",
+  "secondary": [
+   "둔근",
+   "햄스트링"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "MID",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": ""
+ },
+ {
+  "id": "L02",
+  "name": "바벨 스쿼트",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "대퇴사두",
+  "secondary": [
+   "둔근",
+   "햄스트링",
+   "복부"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "바벨",
+  "difficulty": 3,
+  "burden": {
+   "LOWBACK": "HIGH",
+   "KNEE": "HIGH",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": ""
+ },
+ {
+  "id": "L03",
+  "name": "고블렛 스쿼트",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "대퇴사두",
+  "secondary": [
+   "둔근",
+   "복부"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "덤벨",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "MID",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": ""
+ },
+ {
+  "id": "L04",
+  "name": "스미스머신 스쿼트",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "대퇴사두",
+  "secondary": [
+   "둔근",
+   "햄스트링"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "MID",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": ""
+ },
+ {
+  "id": "L05",
+  "name": "덤벨 런지",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "대퇴사두",
+  "secondary": [
+   "둔근",
+   "햄스트링"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "덤벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "HIGH",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": ""
+ },
+ {
+  "id": "L06",
+  "name": "레그 익스텐션",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "대퇴사두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "HIGH",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L08",
+  "note": ""
+ },
+ {
+  "id": "L07",
+  "name": "힙 쓰러스트",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "둔근",
+  "secondary": [
+   "햄스트링"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "바벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "고관절 중심 운동이나 실무상 다관절로 취급. 무릎·허리 통증 시 하체 대체 종목"
+ },
+ {
+  "id": "L08",
+  "name": "레그 컬",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "햄스트링",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "무릎 통증 시 하체 대체 종목"
+ },
+ {
+  "id": "L09",
+  "name": "루마니안 데드리프트",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "햄스트링",
+  "secondary": [
+   "둔근",
+   "허리"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "바벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "HIGH",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L08",
+  "note": ""
+ },
+ {
+  "id": "L10",
+  "name": "데드리프트",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "햄스트링",
+  "secondary": [
+   "둔근",
+   "등",
+   "허리"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "바벨",
+  "difficulty": 3,
+  "burden": {
+   "LOWBACK": "HIGH",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": ""
+ },
+ {
+  "id": "L11",
+  "name": "힙 어브덕션",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "둔근",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": ""
+ },
+ {
+  "id": "L12",
+  "name": "카프 레이즈",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "종아리",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "하체이나 소근육으로 분류(크기 예외)"
+ },
+ {
+  "id": "Ab01",
+  "name": "플랭크",
+  "type": "STRENGTH",
+  "group": "ABS",
+  "subArea": "코어",
+  "secondary": [
+   "허리",
+   "어깨"
+  ],
+  "joint": "ISOMETRIC",
+  "size": "SMALL",
+  "equipment": "맨몸",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "Ab03",
+  "note": "순서 규칙에서는 단관절과 동일하게 취급"
+ },
+ {
+  "id": "Ab02",
+  "name": "크런치",
+  "type": "STRENGTH",
+  "group": "ABS",
+  "subArea": "상부",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "맨몸",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "Ab03",
+  "note": ""
+ },
+ {
+  "id": "Ab03",
+  "name": "데드버그",
+  "type": "STRENGTH",
+  "group": "ABS",
+  "subArea": "코어",
+  "secondary": [],
+  "joint": "ISOMETRIC",
+  "size": "SMALL",
+  "equipment": "맨몸",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "복부 대체 종목. 순서 규칙에서는 단관절과 동일하게 취급"
+ },
+ {
+  "id": "Ab04",
+  "name": "행잉 니 레이즈",
+  "type": "STRENGTH",
+  "group": "ABS",
+  "subArea": "하부",
+  "secondary": [
+   "전완"
+  ],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "맨몸",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "Ab03",
+  "note": ""
+ },
+ {
+  "id": "Ab05",
+  "name": "케이블 크런치",
+  "type": "STRENGTH",
+  "group": "ABS",
+  "subArea": "상부",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "Ab03",
+  "note": ""
+ },
+ {
+  "id": "CA01",
+  "name": "트레드밀 경사 걷기",
+  "type": "CARDIO",
+  "group": "CARDIO",
+  "subArea": "-",
+  "secondary": [],
+  "joint": null,
+  "size": null,
+  "equipment": "유산소기구",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": ""
+ },
+ {
+  "id": "CA02",
+  "name": "실내 사이클",
+  "type": "CARDIO",
+  "group": "CARDIO",
+  "subArea": "-",
+  "secondary": [],
+  "joint": null,
+  "size": null,
+  "equipment": "유산소기구",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "무릎·허리 통증 시 유산소 대체 종목"
+ },
+ {
+  "id": "CA03",
+  "name": "트레드밀 조깅",
+  "type": "CARDIO",
+  "group": "CARDIO",
+  "subArea": "-",
+  "secondary": [],
+  "joint": null,
+  "size": null,
+  "equipment": "유산소기구",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "HIGH",
+   "SHOULDER": "NONE"
+  },
+  "altId": "CA02",
+  "note": ""
+ },
+ {
+  "id": "CA04",
+  "name": "일립티컬",
+  "type": "CARDIO",
+  "group": "CARDIO",
+  "subArea": "-",
+  "secondary": [],
+  "joint": null,
+  "size": null,
+  "equipment": "유산소기구",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": ""
+ },
+ {
+  "id": "CA05",
+  "name": "로잉머신",
+  "type": "CARDIO",
+  "group": "CARDIO",
+  "subArea": "-",
+  "secondary": [
+   "등",
+   "하체"
+  ],
+  "joint": null,
+  "size": null,
+  "equipment": "유산소기구",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "CA02",
+  "note": ""
+ },
+ {
+  "id": "C08",
+  "name": "레버리지 인클라인 체스트 프레스",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "상부",
+  "secondary": [
+   "어깨",
+   "삼두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "C06",
+  "note": "출처: free-exercise-db 'Leverage Incline Chest Press' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "C09",
+  "name": "케이블 체스트 프레스",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "전체",
+  "secondary": [
+   "어깨",
+   "삼두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "C06",
+  "note": "출처: free-exercise-db 'Cable Chest Press' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "C10",
+  "name": "로우 케이블 크로스오버",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "상부",
+  "secondary": [
+   "어깨"
+  ],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "C06",
+  "note": "출처: free-exercise-db 'Low Cable Crossover' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "C11",
+  "name": "스미스머신 벤치 프레스",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "전체",
+  "secondary": [
+   "어깨",
+   "삼두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "C06",
+  "note": "출처: free-exercise-db 'Smith Machine Bench Press' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "C12",
+  "name": "덤벨 플라이",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "전체",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "덤벨",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "C06",
+  "note": "출처: free-exercise-db 'Dumbbell Flyes' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "C13",
+  "name": "인클라인 푸시업",
+  "type": "STRENGTH",
+  "group": "CHEST",
+  "subArea": "하부",
+  "secondary": [
+   "어깨",
+   "삼두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "맨몸",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "C06",
+  "note": "출처: free-exercise-db 'Incline Push-Up' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "S07",
+  "name": "케이블 시티드 래터럴 레이즈",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "측면",
+  "secondary": [
+   "등"
+  ],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "S05",
+  "note": "출처: free-exercise-db 'Cable Seated Lateral Raise' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "S08",
+  "name": "케이블 리어 델트 플라이",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "후면",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Cable Rear Delt Fly' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "S09",
+  "name": "스미스머신 숄더 프레스",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "전면·측면",
+  "secondary": [
+   "삼두"
+  ],
+  "joint": "MULTI",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "S05",
+  "note": "출처: free-exercise-db 'Smith Machine Overhead Shoulder Press' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "S10",
+  "name": "시티드 덤벨 숄더 프레스",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "전면·측면",
+  "secondary": [
+   "삼두"
+  ],
+  "joint": "MULTI",
+  "size": "SMALL",
+  "equipment": "덤벨",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "HIGH"
+  },
+  "altId": "S05",
+  "note": "출처: free-exercise-db 'Seated Dumbbell Press' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "S11",
+  "name": "벤치 지지 덤벨 리어 델트 레이즈",
+  "type": "STRENGTH",
+  "group": "SHOULDER",
+  "subArea": "후면",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "덤벨",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Bent Over Dumbbell Rear Delt Raise With Head On Bench' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "B09",
+  "name": "클로즈 그립 랫 풀다운",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "광배",
+  "secondary": [
+   "이두",
+   "어깨"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "B03",
+  "note": "출처: free-exercise-db 'Close-Grip Front Lat Pulldown' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "B10",
+  "name": "레버리지 하이 로우",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "중부",
+  "secondary": [],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Leverage High Row' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "B11",
+  "name": "레버리지 아이소 로우",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "광배",
+  "secondary": [
+   "이두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Leverage Iso Row' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "B12",
+  "name": "라잉 T바 로우 (가슴 지지)",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "중부",
+  "secondary": [
+   "이두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Lying T-Bar Row' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "B13",
+  "name": "원암 랫 풀다운",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "광배",
+  "secondary": [
+   "이두"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "B03",
+  "note": "출처: free-exercise-db 'One Arm Lat Pulldown' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "B14",
+  "name": "벤트오버 덤벨 로우",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "중부",
+  "secondary": [
+   "이두",
+   "어깨"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "덤벨",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "B03",
+  "note": "출처: free-exercise-db 'Bent Over Two-Dumbbell Row' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "B15",
+  "name": "백 익스텐션",
+  "type": "STRENGTH",
+  "group": "BACK",
+  "subArea": "하부",
+  "secondary": [
+   "둔근",
+   "햄스트링"
+  ],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "기타",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "HIGH",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "B03",
+  "note": "출처: free-exercise-db 'Hyperextensions (Back Extensions)' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "A07",
+  "name": "머신 바이셉 컬",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "이두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Machine Bicep Curl' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "A08",
+  "name": "머신 프리처 컬",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "이두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "A03",
+  "note": "출처: free-exercise-db 'Machine Preacher Curls' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "A09",
+  "name": "케이블 바이셉 컬",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "이두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "A03",
+  "note": "출처: free-exercise-db 'Standing Biceps Cable Curl' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "A10",
+  "name": "케이블 로프 해머 컬",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "이두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Cable Hammer Curls - Rope Attachment' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "A11",
+  "name": "로프 트라이셉 푸시다운",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "삼두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "A06",
+  "note": "출처: free-exercise-db 'Triceps Pushdown - Rope Attachment' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "A12",
+  "name": "딥 머신",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "삼두",
+  "secondary": [
+   "가슴",
+   "어깨"
+  ],
+  "joint": "MULTI",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "A06",
+  "note": "출처: free-exercise-db 'Dip Machine' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "A13",
+  "name": "케이블 로프 오버헤드 트라이셉 익스텐션",
+  "type": "STRENGTH",
+  "group": "ARM",
+  "subArea": "삼두",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "A06",
+  "note": "출처: free-exercise-db 'Cable Rope Overhead Triceps Extension' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L13",
+  "name": "핵 스쿼트 머신",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "대퇴사두",
+  "secondary": [
+   "종아리",
+   "둔근",
+   "햄스트링"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "MID",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": "출처: free-exercise-db 'Hack Squat' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L14",
+  "name": "라잉 레그 컬",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "햄스트링",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Lying Leg Curls' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L15",
+  "name": "시티드 레그 컬",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "햄스트링",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Seated Leg Curl' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L16",
+  "name": "시티드 카프 레이즈",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "종아리",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Seated Calf Raise' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L17",
+  "name": "힙 어덕션 (내전근 머신)",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "내전근",
+  "secondary": [
+   "둔근",
+   "햄스트링"
+  ],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "머신",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Thigh Adductor' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L18",
+  "name": "케이블 풀스루",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "둔근",
+  "secondary": [
+   "햄스트링",
+   "허리"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": "출처: free-exercise-db 'Pull Through' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L19",
+  "name": "케이블 킥백",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "둔근",
+  "secondary": [
+   "햄스트링"
+  ],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "케이블",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'One-Legged Cable Kickback' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L20",
+  "name": "맨몸 스쿼트",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "대퇴사두",
+  "secondary": [
+   "둔근",
+   "햄스트링"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "맨몸",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "MID",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": "출처: free-exercise-db 'Bodyweight Squat' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L21",
+  "name": "글루트 브릿지",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "둔근",
+  "secondary": [
+   "햄스트링"
+  ],
+  "joint": "SINGLE",
+  "size": "LARGE",
+  "equipment": "맨몸",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Butt Lift (Bridge)' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "L22",
+  "name": "덤벨 스텝업",
+  "type": "STRENGTH",
+  "group": "LEGS",
+  "subArea": "대퇴사두",
+  "secondary": [
+   "종아리",
+   "둔근",
+   "햄스트링"
+  ],
+  "joint": "MULTI",
+  "size": "LARGE",
+  "equipment": "덤벨",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "MID",
+   "SHOULDER": "NONE"
+  },
+  "altId": "L07",
+  "note": "출처: free-exercise-db 'Dumbbell Step Ups' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "Ab06",
+  "name": "에브 크런치 머신",
+  "type": "STRENGTH",
+  "group": "ABS",
+  "subArea": "상부",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "머신",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "Ab03",
+  "note": "출처: free-exercise-db 'Ab Crunch Machine' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "Ab07",
+  "name": "팔로프 프레스",
+  "type": "STRENGTH",
+  "group": "ABS",
+  "subArea": "코어",
+  "secondary": [
+   "가슴",
+   "어깨",
+   "삼두"
+  ],
+  "joint": "ISOMETRIC",
+  "size": "SMALL",
+  "equipment": "케이블",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Pallof Press' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "Ab08",
+  "name": "사이드 플랭크",
+  "type": "STRENGTH",
+  "group": "ABS",
+  "subArea": "코어(옆구리)",
+  "secondary": [
+   "어깨"
+  ],
+  "joint": "ISOMETRIC",
+  "size": "SMALL",
+  "equipment": "맨몸",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "MID"
+  },
+  "altId": "Ab03",
+  "note": "출처: free-exercise-db 'Side Bridge' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "Ab09",
+  "name": "리버스 크런치",
+  "type": "STRENGTH",
+  "group": "ABS",
+  "subArea": "하부",
+  "secondary": [],
+  "joint": "SINGLE",
+  "size": "SMALL",
+  "equipment": "맨몸",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "MID",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": "Ab03",
+  "note": "출처: free-exercise-db 'Reverse Crunch' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "CA06",
+  "name": "스텝밀 (천국의 계단)",
+  "type": "CARDIO",
+  "group": "CARDIO",
+  "subArea": "-",
+  "secondary": [],
+  "joint": null,
+  "size": null,
+  "equipment": "유산소기구",
+  "difficulty": 2,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "MID",
+   "SHOULDER": "NONE"
+  },
+  "altId": "CA02",
+  "note": "출처: free-exercise-db 'Stairmaster' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "CA07",
+  "name": "리컴번트 바이크",
+  "type": "CARDIO",
+  "group": "CARDIO",
+  "subArea": "-",
+  "secondary": [],
+  "joint": null,
+  "size": null,
+  "equipment": "유산소기구",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Recumbent Bike' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ },
+ {
+  "id": "CA08",
+  "name": "트레드밀 걷기",
+  "type": "CARDIO",
+  "group": "CARDIO",
+  "subArea": "-",
+  "secondary": [],
+  "joint": null,
+  "size": null,
+  "equipment": "유산소기구",
+  "difficulty": 1,
+  "burden": {
+   "LOWBACK": "NONE",
+   "KNEE": "NONE",
+   "SHOULDER": "NONE"
+  },
+  "altId": null,
+  "note": "출처: free-exercise-db 'Walking, Treadmill' (난이도·관절유형·보조근육은 출처 값 / 부담부위·대체종목은 팀 초안)"
+ }
+]
