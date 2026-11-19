@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, Copy, History, Plus, X } from 'lucide-react'
+import { Check, ChevronLeft, Copy, History, Plus, Trash2, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { CatalogExercise } from '../../lib/exerciseCatalog'
 import { generateId } from '../../lib/id'
@@ -69,10 +69,11 @@ interface CardProps {
   onChange: (next: ExerciseLog) => void
   onSetCompleted: (log: ExerciseLog) => void
   onShowLast: (log: ExerciseLog) => void
+  onRequestDelete: (log: ExerciseLog) => void
   newId: () => number
 }
 
-function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, newId }: CardProps) {
+function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, onRequestDelete, newId }: CardProps) {
   const memoId = useId()
   const setRows = (sets: SetRow[]) => onChange({ ...log, sets })
   const patch = (id: number, p: Partial<SetRow>) => setRows(log.sets.map((s) => (s.id === id ? { ...s, ...p } : s)))
@@ -97,6 +98,13 @@ function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, newId }: Card
           <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
             볼륨 {formatKg(volumeOf(log.sets))}
           </span>
+          <button
+            aria-label={`${log.name} 종목 삭제`}
+            onClick={() => onRequestDelete(log)}
+            className="rounded-full p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500"
+          >
+            <Trash2 size={15} />
+          </button>
         </div>
       </div>
 
@@ -253,6 +261,7 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
   // "지난 기록"용. 기록 화면을 여는 동안에는 새 기록이 생기지 않으므로 처음 한 번만 읽는다.
   const [history] = useState(loadWorkoutHistory)
   const [lastFor, setLastFor] = useState<ExerciseLog | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<ExerciseLog | null>(null)
 
   // 타이머(setInterval) 안에서 최신 휴식 상태를 읽기 위해 ref에도 같이 둔다.
   const restRef = useRef(rest)
@@ -309,6 +318,12 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
     setPickerOpen(false)
   }
 
+  const deleteExercise = () => {
+    if (!deleteTarget) return
+    setLogs((ls) => ls.filter((l) => l.key !== deleteTarget.key))
+    setDeleteTarget(null)
+  }
+
   const remaining = rest.endsAt !== null ? restRemaining(rest, now) : null
   const total = totalVolumeOf(logs)
 
@@ -346,6 +361,7 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
             onChange={(next) => setLogs((ls) => ls.map((l) => (l.key === next.key ? next : l)))}
             onSetCompleted={onSetCompleted}
             onShowLast={setLastFor}
+            onRequestDelete={setDeleteTarget}
             newId={newId}
           />
         ))}
@@ -417,6 +433,17 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
           tone="primary"
           onCancel={() => setDialog(null)}
           onConfirm={() => setDialog(null)}
+        />
+      )}
+      {deleteTarget && (
+        <Modal
+          title="종목을 삭제할까요?"
+          message={`${deleteTarget.name}에 적은 세트가 모두 지워져요.`}
+          cancelLabel="취소"
+          confirmLabel="삭제하기"
+          tone="danger"
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={deleteExercise}
         />
       )}
     </div>

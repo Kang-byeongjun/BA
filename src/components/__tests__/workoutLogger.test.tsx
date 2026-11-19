@@ -403,4 +403,18 @@ describe('WorkoutLogger — 종목 추가', () => {
     expect(card('힙 쓰러스트')).toBeTruthy()
     expect(screen.queryByText('아직 기록할 종목이 없어요. 아래에서 직접 추가해보세요.')).toBeNull()
   })
+
+  it('확인 후에만 종목이 삭제되고, 취소하면 남는다', () => {
+    renderLogger()
+    expect(screen.queryByRole('region', { name: '벤치프레스' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: '벤치프레스 종목 삭제' }))
+    fireEvent.click(screen.getByRole('button', { name: '취소' }))
+    expect(screen.queryByRole('region', { name: '벤치프레스' })).toBeTruthy() // 취소하면 안 지워짐
+
+    fireEvent.click(screen.getByRole('button', { name: '벤치프레스 종목 삭제' }))
+    fireEvent.click(screen.getByRole('button', { name: '삭제하기' }))
+    expect(screen.queryByRole('region', { name: '벤치프레스' })).toBeNull()
+    expect(screen.queryByRole('region', { name: '바벨로우' })).toBeTruthy() // 다른 종목은 그대로
+  })
 })
