@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   adjustRest,
+  buildCustomLog,
   buildLogs,
+  CUSTOM_EXERCISE_DEFAULT_REPS,
+  CUSTOM_EXERCISE_DEFAULT_REST_SECONDS,
+  CUSTOM_EXERCISE_DEFAULT_SETS,
   formatRest,
   INITIAL_REST,
   isRestDoneShowing,
@@ -120,5 +124,32 @@ describe('휴식 타이머 계산', () => {
   it('formatRest', () => {
     expect(formatRest(45)).toBe('0:45')
     expect(formatRest(90)).toBe('1:30')
+  })
+})
+
+describe('buildCustomLog', () => {
+  it('기본 세트 3개짜리 기록을 만든다', () => {
+    let id = 1
+    const log = buildCustomLog('custom-1', 'C01', '머신 체스트 프레스', () => id++)
+    expect(log).toEqual({
+      key: 'custom-1',
+      exerciseId: 'C01',
+      name: '머신 체스트 프레스',
+      defaultReps: CUSTOM_EXERCISE_DEFAULT_REPS,
+      restSeconds: CUSTOM_EXERCISE_DEFAULT_REST_SECONDS,
+      memo: '',
+      sets: [
+        { id: 1, kg: '', kgFrom: null, reps: String(CUSTOM_EXERCISE_DEFAULT_REPS), done: false },
+        { id: 2, kg: '', kgFrom: null, reps: String(CUSTOM_EXERCISE_DEFAULT_REPS), done: false },
+        { id: 3, kg: '', kgFrom: null, reps: String(CUSTOM_EXERCISE_DEFAULT_REPS), done: false },
+      ],
+    })
+    expect(log.sets).toHaveLength(CUSTOM_EXERCISE_DEFAULT_SETS)
+  })
+
+  it('넘겨준 newSetId로 세트 id를 매긴다(겹치지 않게)', () => {
+    let id = 10
+    const log = buildCustomLog('custom-2', 'L02', '바벨 스쿼트', () => id++)
+    expect(log.sets.map((s) => s.id)).toEqual([10, 11, 12])
   })
 })

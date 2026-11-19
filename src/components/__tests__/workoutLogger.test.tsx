@@ -208,7 +208,7 @@ describe('WorkoutLogger — 세트 기록', () => {
     render(
       <WorkoutLogger initial={createWorkoutLog({ day: 2, label: '유산소', exercises: [day().exercises[2]!] }, Date.now())} onExit={() => {}} onFinish={() => {}} />,
     )
-    expect(screen.getByText('이 날은 기록할 근력 종목이 없어요.')).toBeTruthy()
+    expect(screen.getByText('아직 기록할 종목이 없어요. 아래에서 직접 추가해보세요.')).toBeTruthy()
   })
 })
 
@@ -370,5 +370,37 @@ describe('WorkoutLogger — 새로고침 복원', () => {
     expect(loadWorkoutLog()).toBeNull()
     localStorage.setItem(`ai-diet-app:${WORKOUT_LOG_STORAGE_KEY}`, 'not json')
     expect(loadWorkoutLog()).toBeNull()
+  })
+})
+
+describe('WorkoutLogger — 종목 추가', () => {
+  it('검색해서 고른 종목이 기본 세트 3개로 추가된다', () => {
+    renderLogger()
+    fireEvent.click(screen.getByRole('button', { name: '종목 추가' }))
+    fireEvent.change(screen.getByPlaceholderText('종목 이름으로 찾기'), { target: { value: '바벨 스쿼트' } })
+    fireEvent.click(screen.getByRole('button', { name: /바벨 스쿼트/ }))
+
+    const squat = card('바벨 스쿼트')
+    expect(within(squat).getAllByLabelText(/세트 kg/)).toHaveLength(3)
+    expect(input(squat, '1세트 회').value).toBe('10')
+  })
+
+  it('빈 운동(루틴 없음)에서도 종목을 추가해 기록할 수 있다', () => {
+    render(
+      <WorkoutLogger
+        initial={createWorkoutLog({ day: 0, label: '자유 운동', exercises: [] }, Date.now())}
+        onExit={() => {}}
+        onFinish={() => {}}
+      />,
+    )
+    expect(screen.getByText('아직 기록할 종목이 없어요. 아래에서 직접 추가해보세요.')).toBeTruthy()
+    expect(screen.getByText('자유 운동')).toBeTruthy() // 0일차는 숫자 없이 라벨만
+
+    fireEvent.click(screen.getByRole('button', { name: '종목 추가' }))
+    fireEvent.change(screen.getByPlaceholderText('종목 이름으로 찾기'), { target: { value: '힙 쓰러스트' } })
+    fireEvent.click(screen.getByRole('button', { name: /힙 쓰러스트/ }))
+
+    expect(card('힙 쓰러스트')).toBeTruthy()
+    expect(screen.queryByText('아직 기록할 종목이 없어요. 아래에서 직접 추가해보세요.')).toBeNull()
   })
 })

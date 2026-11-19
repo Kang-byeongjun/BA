@@ -21,7 +21,7 @@ export default function WorkoutSummary({ record, onConfirm }: Props) {
         <CircleCheck size={44} className="text-emerald-500" />
         <h1 className="text-xl font-bold text-slate-900">운동 완료!</h1>
         <p className="text-sm text-slate-500">
-          {record.day}일차 · {record.label} 기록을 저장했어요
+          {record.day > 0 ? `${record.day}일차 · ${record.label}` : record.label} 기록을 저장했어요
         </p>
       </div>
 

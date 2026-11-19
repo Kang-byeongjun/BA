@@ -1,5 +1,6 @@
 import { Check, ChevronLeft, Copy, History, Plus, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
+import type { CatalogExercise } from '../../lib/exerciseCatalog'
 import { generateId } from '../../lib/id'
 import { playRestAlarm, unlockRestAlarm } from '../../lib/restAlarm'
 import {
@@ -11,6 +12,7 @@ import {
 } from '../../lib/workoutHistory'
 import {
   adjustRest,
+  buildCustomLog,
   isRestDoneShowing,
   newSet,
   nextSetIdOf,
@@ -26,6 +28,7 @@ import {
   type RestState,
   type SetRow,
 } from '../../lib/workoutLog'
+import ExercisePicker from './ExercisePicker'
 import LastRecordSheet from './LastRecordSheet'
 import WorkoutLoggerBar from './WorkoutLoggerBar'
 import { saveWorkoutLog, type SavedWorkoutLog } from './workoutLogStorage'
@@ -246,6 +249,7 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
   const [now, setNow] = useState(() => Date.now())
   const [expanded, setExpanded] = useState(false)
   const [dialog, setDialog] = useState<Dialog>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
   // "지난 기록"용. 기록 화면을 여는 동안에는 새 기록이 생기지 않으므로 처음 한 번만 읽는다.
   const [history] = useState(loadWorkoutHistory)
   const [lastFor, setLastFor] = useState<ExerciseLog | null>(null)
@@ -300,6 +304,11 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
     onFinish(buildSessionRecord({ id: generateId('session'), day, startedAt, logs, now: Date.now() }))
   }
 
+  const addCustomExercise = (exercise: CatalogExercise) => {
+    setLogs((ls) => [...ls, buildCustomLog(generateId('ex'), exercise.id, exercise.name, newId)])
+    setPickerOpen(false)
+  }
+
   const remaining = rest.endsAt !== null ? restRemaining(rest, now) : null
   const total = totalVolumeOf(logs)
 
@@ -314,9 +323,7 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
           >
             <ChevronLeft size={22} />
           </button>
-          <h1 className="text-xl font-bold text-slate-900">
-            {day.day}일차 · {day.label}
-          </h1>
+          <h1 className="text-xl font-bold text-slate-900">{day.day > 0 ? `${day.day}일차 · ${day.label}` : day.label}</h1>
         </div>
 
         <div className="rounded-3xl bg-emerald-500 px-5 py-4 text-white">
@@ -327,20 +334,28 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
           <p className="mt-1 text-xs text-emerald-50">완료 체크한 세트의 kg × 회를 더한 값이에요</p>
         </div>
 
-        {logs.length === 0 ? (
-          <p className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">이 날은 기록할 근력 종목이 없어요.</p>
-        ) : (
-          logs.map((log) => (
-            <ExerciseCard
-              key={log.key}
-              log={log}
-              onChange={(next) => setLogs((ls) => ls.map((l) => (l.key === next.key ? next : l)))}
-              onSetCompleted={onSetCompleted}
-              onShowLast={setLastFor}
-              newId={newId}
-            />
-          ))
+        {logs.length === 0 && (
+          <p className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+            아직 기록할 종목이 없어요. 아래에서 직접 추가해보세요.
+          </p>
         )}
+        {logs.map((log) => (
+          <ExerciseCard
+            key={log.key}
+            log={log}
+            onChange={(next) => setLogs((ls) => ls.map((l) => (l.key === next.key ? next : l)))}
+            onSetCompleted={onSetCompleted}
+            onShowLast={setLastFor}
+            newId={newId}
+          />
+        ))}
+
+        <button
+          onClick={() => setPickerOpen(true)}
+          className="flex w-full items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-slate-200 py-3 text-sm font-semibold text-slate-500"
+        >
+          <Plus size={16} /> 종목 추가
+        </button>
       </div>
 
       <WorkoutLoggerBar
@@ -369,6 +384,8 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
       {lastFor && (
         <LastRecordSheet name={lastFor.name} last={lastRecordOf(history, lastFor.exerciseId)} onClose={() => setLastFor(null)} />
       )}
+
+      {pickerOpen && <ExercisePicker onPick={addCustomExercise} onClose={() => setPickerOpen(false)} />}
 
       {dialog === 'exit' && (
         <Modal

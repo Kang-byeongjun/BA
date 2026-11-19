@@ -74,6 +74,17 @@ export default function WorkoutScreen({ onLoggingChange }: Props) {
         }}
       />
 
+      <button
+        onClick={() => {
+          const created = createWorkoutLog({ day: 0, label: '자유 운동', exercises: [] }, Date.now())
+          saveWorkoutLog(created)
+          setSession(created)
+        }}
+        className="w-full rounded-2xl border-2 border-dashed border-slate-200 py-3 text-sm font-semibold text-slate-500"
+      >
+        추천 루틴 없이 직접 종목 골라서 운동 시작
+      </button>
+
       {/* 예전 버전에서 시작해 둔 스톱워치 세션이 남아 있을 때만 마무리할 수 있게 보여준다 */}
       {pendingWorkout ? (
         <WorkoutComplete
