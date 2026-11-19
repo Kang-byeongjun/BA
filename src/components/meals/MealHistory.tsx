@@ -10,6 +10,7 @@ import NutritionBar from '../dashboard/NutritionBar'
 import RecommendationCard from '../dashboard/RecommendationCard'
 import WaterBar from '../dashboard/WaterBar'
 import MealDetailModal from './MealDetailModal'
+import MealWeekTrend from './MealWeekTrend'
 
 export default function MealHistory() {
   const { meals, waterLogs, nutritionTarget, profile, dispatch } = useApp()
@@ -93,6 +94,8 @@ export default function MealHistory() {
       )}
       <FeedbackPanel feedback={feedback} />
       <RecommendationCard meals={recommendations} goal={recommendationProfile.goal} />
+
+      <MealWeekTrend meals={meals} />
 
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <button onClick={() => setHistoryOpen((v) => !v)} className="flex w-full items-center justify-between">
