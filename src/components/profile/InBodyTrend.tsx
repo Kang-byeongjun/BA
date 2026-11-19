@@ -3,26 +3,20 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
 import { buildInBodyAdvice } from '../../lib/inBodyAdvice'
+import { IN_BODY_METRIC_FIELDS } from '../../lib/inBodyChart'
 import { BODY_TYPE_LABELS, computeShapePositions, type InBodyBodyType } from '../../lib/inBodyBodyType'
 import { daysBetween, findComparisonEntry } from '../../lib/inBodyTrend'
 import { formatRelativeDate } from '../../lib/time'
 import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry, type InBodyMeasurements, type Meal, type NutritionTarget } from '../../types'
 import ExampleInBodyGrid from '../calendar/ExampleInBodyGrid'
-import WeightTrendChart from '../calendar/WeightTrendChart'
+import InBodyMetricChart from '../calendar/InBodyMetricChart'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
 
 interface Props {
   history: InBodyHistoryEntry[]
 }
 
-type TrendKey = 'weight' | 'skeletalMuscleMass' | 'bodyFatMass' | 'bodyFatPercentage'
-
-const TREND_FIELDS: { key: TrendKey; label: string; unit: string; decimals: number }[] = [
-  { key: 'weight', label: '체중', unit: 'kg', decimals: 1 },
-  { key: 'skeletalMuscleMass', label: '골격근량', unit: 'kg', decimals: 1 },
-  { key: 'bodyFatMass', label: '체지방량', unit: 'kg', decimals: 1 },
-  { key: 'bodyFatPercentage', label: '체지방률', unit: '%', decimals: 1 },
-]
+const TREND_FIELDS = IN_BODY_METRIC_FIELDS
 
 function DeltaBadge({ delta, decimals }: { delta: number; decimals: number }) {
   const factor = 10 ** decimals
@@ -222,7 +216,7 @@ export default function InBodyTrend({ history }: Props) {
           </div>
         </div>
         <BodyShapeChart entry={latest} meals={meals} nutritionTarget={nutritionTarget} />
-        <WeightTrendChart history={history} />
+        <InBodyMetricChart history={history} />
         <div className="mb-3 rounded-xl bg-slate-50 p-3 opacity-60">
           <p className="mb-2 text-xs font-medium text-slate-500">14일 전 측정 대비</p>
           <ExampleInBodyGrid />
@@ -244,7 +238,7 @@ export default function InBodyTrend({ history }: Props) {
       </div>
 
       <BodyShapeChart entry={latest} meals={meals} nutritionTarget={nutritionTarget} />
-      <WeightTrendChart history={history} />
+      <InBodyMetricChart history={history} />
 
       {comparison ? (
         <div className="mb-4 rounded-xl bg-slate-50 p-3">
