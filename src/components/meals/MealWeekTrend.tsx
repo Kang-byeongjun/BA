@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { getSlotWeekSeries, weekdayLabel, type DayNutrition } from '../../lib/mealWeekTrend'
+import { formatRelativeDate } from '../../lib/time'
 import { NUTRIENT_LABELS, NUTRIENT_UNITS, type Meal, type MealSlot, type NutrientKey } from '../../types'
 
 interface Props {
@@ -28,31 +29,46 @@ function SlotTabs({ slot, onSelect }: { slot: MealSlot; onSelect: (s: MealSlot) 
   )
 }
 
-function NutrientBarsRow({ nutrient, series }: { nutrient: NutrientKey; series: DayNutrition[] }) {
+function NutrientBarsRow({
+  nutrient,
+  series,
+  selectedIndex,
+  onSelect,
+}: {
+  nutrient: NutrientKey
+  series: DayNutrition[]
+  selectedIndex: number
+  onSelect: (i: number) => void
+}) {
   const values = series.map((d) => d[nutrient])
   const max = Math.max(...values, 0)
-  const today = values[values.length - 1]
+  const shown = values[selectedIndex]
 
   return (
     <div className="mb-2.5 last:mb-0">
       <div className="mb-1 flex items-baseline justify-between">
         <span className="text-xs text-slate-500">{NUTRIENT_LABELS[nutrient]}</span>
         <span className="text-xs font-semibold text-slate-700">
-          {Math.round(today)}{NUTRIENT_UNITS[nutrient]}
+          {Math.round(shown)}{NUTRIENT_UNITS[nutrient]}
         </span>
       </div>
       <div className="flex items-end gap-1" style={{ height: BAR_AREA_H }}>
         {series.map((d, i) => {
-          const isToday = i === series.length - 1
+          const isSelected = i === selectedIndex
           const value = d[nutrient]
           const heightPct = max > 0 ? (value / max) * 100 : 0
           return (
-            <div key={d.date} className="flex h-full flex-1 items-end">
+            <button
+              key={d.date}
+              onClick={() => onSelect(i)}
+              className="flex h-full flex-1 items-end"
+              aria-label={`${weekdayLabel(d.date)}요일 ${NUTRIENT_LABELS[nutrient]} ${Math.round(value)}${NUTRIENT_UNITS[nutrient]}`}
+            >
               <div
-                className={`w-full rounded-sm ${isToday ? 'bg-sky-500' : 'bg-slate-300'}`}
+                className={`w-full rounded-sm transition-colors ${isSelected ? 'bg-sky-500' : 'bg-slate-300'}`}
                 style={{ height: `${value > 0 ? Math.max(heightPct, 6) : 0}%` }}
               />
-            </div>
+            </button>
           )
         })}
       </div>
@@ -64,29 +80,39 @@ function NutrientBarsRow({ nutrient, series }: { nutrient: NutrientKey; series: 
 // 모든 끼니·영양소를 한 화면에 다 넣으면 너무 빽빽해서, 끼니 탭으로 먼저 좁힌다.
 export default function MealWeekTrend({ meals }: Props) {
   const [slot, setSlot] = useState<MealSlot>('아침')
+  const [selected, setSelected] = useState<number | null>(null)
   const series = getSlotWeekSeries(meals, slot)
   const hasAny = series.some((d) => NUTRIENTS.some((n) => d[n] > 0))
+  const selectedIndex = selected ?? series.length - 1
+
+  const selectSlot = (s: MealSlot) => {
+    setSlot(s)
+    setSelected(null)
+  }
+  const toggleDay = (i: number) => setSelected((cur) => (cur === i ? null : i))
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-800">최근 7일 식단 추이</h2>
-        <SlotTabs slot={slot} onSelect={setSlot} />
+        <SlotTabs slot={slot} onSelect={selectSlot} />
       </div>
       {!hasAny && <p className="mb-2.5 text-xs text-slate-400">최근 7일간 {slot} 기록이 없어요.</p>}
       {NUTRIENTS.map((n) => (
-        <NutrientBarsRow key={n} nutrient={n} series={series} />
+        <NutrientBarsRow key={n} nutrient={n} series={series} selectedIndex={selectedIndex} onSelect={toggleDay} />
       ))}
       <div className="mt-1 flex gap-1">
         {series.map((d, i) => (
-          <div
+          <button
             key={d.date}
-            className={`flex-1 text-center text-[10px] ${i === series.length - 1 ? 'font-semibold text-slate-600' : 'text-slate-400'}`}
+            onClick={() => toggleDay(i)}
+            className={`flex-1 text-center text-[10px] ${i === selectedIndex ? 'font-semibold text-slate-600' : 'text-slate-400'}`}
           >
             {weekdayLabel(d.date)}
-          </div>
+          </button>
         ))}
       </div>
+      <p className="mt-1.5 text-center text-xs text-slate-500">{formatRelativeDate(series[selectedIndex].date)}</p>
     </div>
   )
 }
