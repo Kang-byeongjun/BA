@@ -54,33 +54,46 @@ export interface ShapeRowPosition {
   valuePos: number | null
 }
 
-// 실제 InBody 결과지의 체중/골격근량/체지방량 막대는 항목마다 찍힌 kg 눈금은 달라도, 막대 길이 자체는
-// "표준 구간 중앙값 대비 비율"이라는 공통 척도로 그려진다. 그래서 세 막대 끝점을 이으면 그 사람이 표준보다
-// 얼마나, 그리고 어느 항목에서 더 벗어났는지가 기울기로 드러나 체형(C/D/I)을 시각적으로 보여줄 수 있다.
-// 항목별로 범위를 따로 0~1에 욱여넣으면(이전 버전의 방식) 표준을 크게 벗어난 값들이 전부 같은 끝자리에
-// 뭉개져서 모양을 구분할 수 없어진다 — 그래서 세 항목을 하나의 비율 축 위에 함께 놓는다.
+// 실제 InBody 결과지는 표준이하·표준·표준이상 세 칸의 위치/폭을 모든 항목에서 똑같이 고정해 두고(상단
+// 헤더가 세 줄 전체를 관통한다), 항목마다 찍힌 kg 눈금만 그 칸에 맞춰 다르게 표시한다. 표준 칸을 매번
+// 그래프마다 다른 위치/폭으로 그리면(이전 버전처럼 데이터에 따라 동적으로 계산하면) 볼 때마다 표준이 어디
+// 있는지 달라져 보여서 위화감이 든다 — 그래서 칸은 고정하고, 점의 위치만 "표준 대비 비율"로 그 칸 안
+// 어디에 해당하는지 계산한다. 표준을 벗어날수록 표준이하/표준이상 칸 안에서 더 가장자리로 밀려나므로,
+// 세 항목이 표준에서 벗어난 정도가 다르면 끝점도 서로 다른 자리에 찍혀 체형의 기울기가 드러난다.
+const ZONE_BELOW_END = 0.3
+const ZONE_STANDARD_END = 0.45
+// 표준이하/표준이상 칸이 담당하는 비율의 바깥쪽 한계. 이보다 더 벗어난 값은 칸 끝에서 멈춘다.
+const RATIO_FLOOR = 0.4
+const RATIO_CEIL = 3.0
+
+function ratioToPosition(ratio: number, zoneMinRatio: number, zoneMaxRatio: number): number {
+  if (ratio <= zoneMinRatio) {
+    if (zoneMinRatio <= RATIO_FLOOR) return 0
+    const t = (ratio - RATIO_FLOOR) / (zoneMinRatio - RATIO_FLOOR)
+    return clamp(t, 0, 1) * ZONE_BELOW_END
+  }
+  if (ratio >= zoneMaxRatio) {
+    if (RATIO_CEIL <= zoneMaxRatio) return 1
+    const t = (ratio - zoneMaxRatio) / (RATIO_CEIL - zoneMaxRatio)
+    return ZONE_STANDARD_END + clamp(t, 0, 1) * (1 - ZONE_STANDARD_END)
+  }
+  return ZONE_BELOW_END + ((ratio - zoneMinRatio) / (zoneMaxRatio - zoneMinRatio)) * (ZONE_STANDARD_END - ZONE_BELOW_END)
+}
+
 export function computeShapePositions(
   rows: { value: number | null; range: InBodyStandardRange | null }[],
 ): (ShapeRowPosition | null)[] {
-  const entries = rows.map((r) => {
+  return rows.map((r) => {
     if (!r.range) return null
     const zoneMin = ratioToStandard(r.range.min, r.range)
     const zoneMax = ratioToStandard(r.range.max, r.range)
     const value = r.value !== null ? ratioToStandard(r.value, r.range) : null
-    return { zoneMin, zoneMax, value }
+    return {
+      zoneMinPos: ZONE_BELOW_END,
+      zoneMaxPos: ZONE_STANDARD_END,
+      valuePos: value !== null ? ratioToPosition(value, zoneMin, zoneMax) : null,
+    }
   })
-
-  const allRatios = entries.flatMap((e) => (e ? [e.zoneMin, e.zoneMax, ...(e.value !== null ? [e.value] : [])] : []))
-  if (allRatios.length === 0) return rows.map(() => null)
-
-  // 양 끝에 여유를 둬서 점이 그래프 가장자리에 바짝 붙지 않게 한다.
-  const padding = 0.15
-  const lo = Math.min(...allRatios) - padding
-  const hi = Math.max(...allRatios) + padding
-  const span = hi - lo
-  const pos = (ratio: number) => (span > 0 ? clamp((ratio - lo) / span, 0, 1) : 0.5)
-
-  return entries.map((e) => (e ? { zoneMinPos: pos(e.zoneMin), zoneMaxPos: pos(e.zoneMax), valuePos: e.value !== null ? pos(e.value) : null } : null))
 }
 
 function clamp(n: number, min: number, max: number): number {

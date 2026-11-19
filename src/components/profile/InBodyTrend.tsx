@@ -118,22 +118,19 @@ function BodyShapeChart({ entry }: { entry: InBodyHistoryEntry }) {
             preserveAspectRatio="none"
           >
             <polyline points={linePoints} fill="none" stroke="#334155" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-            {points.map(
-              (p, i) =>
-                p && (
-                  <circle
-                    key={SHAPE_ROWS[i].key}
-                    cx={p.x}
-                    cy={p.y}
-                    r={4}
-                    fill="#334155"
-                    stroke="white"
-                    strokeWidth={1.5}
-                    vectorEffect="non-scaling-stroke"
-                  />
-                ),
-            )}
           </svg>
+        )}
+        {/* 점은 SVG 밖 일반 HTML로 그린다 — 위 SVG는 가로/세로 축척이 서로 달라서(preserveAspectRatio="none"),
+            그 안에 <circle>을 그리면 타원으로 찌그러진다. */}
+        {points.map(
+          (p, i) =>
+            p && (
+              <div
+                key={SHAPE_ROWS[i].key}
+                className="pointer-events-none absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-slate-700"
+                style={{ left: `${p.x}%`, top: p.y }}
+              />
+            ),
         )}
       </div>
       {entry.bodyType !== null ? (
