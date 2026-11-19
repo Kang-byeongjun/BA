@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { currentWeekDays, getDayWeekSeries, weekdayLabel } from '../mealWeekTrend'
+import { currentWeekDays, formatWeekRange, getDayWeekSeries, weekdayLabel } from '../mealWeekTrend'
 import type { Meal } from '../../types'
 
 // 2026-11-19는 목요일
@@ -65,5 +65,12 @@ describe('getDayWeekSeries', () => {
     const series = getDayWeekSeries([], THURSDAY_NOON)
     const sunday = series[6] // 목요일 기준으로 보면 이번 주 일요일은 아직 안 왔다
     expect(sunday.calories).toBe(0)
+  })
+})
+
+describe('formatWeekRange', () => {
+  it('"M월 D일 - M월 D일" 형태로 포맷한다', () => {
+    const days = currentWeekDays(THURSDAY_NOON)
+    expect(formatWeekRange(days[0], days[6])).toBe('11월 16일 - 11월 22일')
   })
 })

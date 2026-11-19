@@ -1,5 +1,7 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import { buildCheatDayCheck, type CheatDayTone } from '../../lib/cheatDayCheck'
-import { getDayWeekSeries, weekdayLabel, type DayNutrition } from '../../lib/mealWeekTrend'
+import { formatWeekRange, getDayWeekSeries, weekdayLabel, type DayNutrition } from '../../lib/mealWeekTrend'
 import { NUTRIENT_LABELS, NUTRIENT_UNITS, type Meal, type NutrientKey, type NutritionTarget } from '../../types'
 
 interface Props {
@@ -7,6 +9,8 @@ interface Props {
   nutritionTarget: NutritionTarget
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+const WEEK_MS = 7 * DAY_MS
 const NUTRIENTS: NutrientKey[] = ['calories', 'protein', 'carbohydrates', 'fat', 'fiber']
 
 const CHEAT_TONE_STYLES: Record<CheatDayTone, string> = {
@@ -91,16 +95,34 @@ function WeeklyBudgetBar({ nutrient, series, target }: { nutrient: NutrientKey; 
   )
 }
 
-// 끼니 구분 없이 하루 전체를 더해서, 영양소별로 "이번 주 목표 중 얼마나 채웠는지"를 가로 막대 하나로 보여준다.
-// 막대 안의 각 구간은 요일(월 -> 일, 점점 진해짐)이고, 목표(점선)를 넘기면 그 초과분만 빨간 구간으로 이어
-// 붙인다. 맨 위 배너는 "오늘 치팅해도 되는지"를 지금까지 쌓인 칼로리 여유/부족으로 바로 알려준다.
+// 끼니 구분 없이 하루 전체를 더해서, 영양소별로 "그 주 목표 중 얼마나 채웠는지"를 가로 막대 하나로
+// 보여준다. 막대 안의 각 구간은 요일(월 -> 일, 점점 진해짐)이고, 목표(점선)를 넘기면 그 초과분만
+// 빨간 구간으로 이어 붙인다. 화살표로 지난 주들을 돌아볼 수 있고, "오늘 치팅해도 되는지" 배너는
+// 이번 주를 볼 때만 뜬다(지난 주는 이미 끝난 주라 "오늘" 개념이 없다).
 export default function MealWeekTrend({ meals, nutritionTarget }: Props) {
-  const series = getDayWeekSeries(meals)
+  const [weekOffset, setWeekOffset] = useState(0) // 0 = 이번 주, 1 = 지난 주, ...
+  const isCurrentWeek = weekOffset === 0
+  const refNow = Date.now() - weekOffset * WEEK_MS
+  const series = getDayWeekSeries(meals, refNow)
+  const changeWeek = (delta: number) => setWeekOffset((w) => Math.max(0, w - delta))
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-slate-800">이번 주 영양소 합계</h2>
-      <CheatDayBanner meals={meals} nutritionTarget={nutritionTarget} />
+      <div className="mb-3 flex items-center justify-between">
+        <button onClick={() => changeWeek(-1)} aria-label="이전 주" className="p-1 text-slate-400">
+          <ChevronLeft size={20} />
+        </button>
+        <p className="text-sm font-semibold text-slate-800">{formatWeekRange(series[0].date, series[6].date)}</p>
+        <button
+          onClick={() => changeWeek(1)}
+          disabled={isCurrentWeek}
+          aria-label="다음 주"
+          className="p-1 text-slate-400 disabled:opacity-30"
+        >
+          <ChevronRight size={20} />
+        </button>
+      </div>
+      {isCurrentWeek && <CheatDayBanner meals={meals} nutritionTarget={nutritionTarget} />}
       <WeekdayLegend series={series} />
       {NUTRIENTS.map((n) => (
         <WeeklyBudgetBar key={n} nutrient={n} series={series} target={nutritionTarget[n]} />

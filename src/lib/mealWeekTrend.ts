@@ -42,3 +42,10 @@ export function getDayWeekSeries(meals: Meal[], now: number = Date.now()): DayNu
     return sumDay(dayMeals, dayStart)
   })
 }
+
+// "11월 16일 - 11월 22일" 형태로 주간 범위를 표시한다.
+export function formatWeekRange(mondayTs: number, sundayTs: number): string {
+  const m = new Date(mondayTs)
+  const s = new Date(sundayTs)
+  return `${m.getMonth() + 1}월 ${m.getDate()}일 - ${s.getMonth() + 1}월 ${s.getDate()}일`
+}
