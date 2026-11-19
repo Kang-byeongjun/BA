@@ -1,4 +1,10 @@
-import type { InBodyBodyType } from '../lib/inBodyBodyType'
+import type { InBodyBodyType, InBodyStandardRange } from '../lib/inBodyBodyType'
+
+// 체형 경향 판정에 쓰인 골격근량·체지방량 각자의 "표준" 구간. 결과지 막대그래프를 재현해 보여줄 때도 쓴다.
+export interface InBodyStandardRanges {
+  skeletalMuscleMass: InBodyStandardRange | null
+  bodyFatMass: InBodyStandardRange | null
+}
 
 // ---------- 온보딩 / 사용자 프로필 ----------
 
@@ -49,6 +55,8 @@ export interface InBodyMeasurements {
   measuredAt: string | null
   // 골격근량·체지방량의 표준 구간 대비 비교로 판정한 체형 경향(공식 InBody 판정 아님). 계산 불가하면 null.
   bodyType: InBodyBodyType | null
+  // bodyType 판정에 쓴 표준 구간. 그래프 재현에 쓴다. 계산 불가하면 null.
+  standardRanges: InBodyStandardRanges | null
 }
 
 // 측정 시점의 InBody 스냅샷. "이전 측정 대비 변화"를 보여주기 위해 최신 값 위에 쌓아간다(최신이 배열 앞).
@@ -71,6 +79,7 @@ export interface InBodyHistoryEntry {
   mineralMass: number | null
   basalMetabolicRate: number | null
   bodyType: InBodyBodyType | null
+  standardRanges: InBodyStandardRanges | null
 }
 
 export const IN_BODY_SOURCE_LABELS: Record<InBodySource, string> = {

@@ -1,6 +1,6 @@
 import type { InBodyExtraction } from '../../shared/analysis'
 import { getMockInBodyExtraction } from '../data/mockData'
-import { classifyBodyType } from '../lib/inBodyBodyType'
+import { classifyBodyType, toStandardRange } from '../lib/inBodyBodyType'
 import type { PreparedImage } from '../lib/imagePrep'
 import { sleep } from '../lib/sleep'
 import type { InBodyMeasurements } from '../types'
@@ -29,6 +29,11 @@ export async function analyzeInBodyImage(image: PreparedImage, { mode, signal }:
 
 /** API 응답 형식(…Kg 등)을 앱의 체성분 측정값 형식으로 변환한다. null은 null로 유지한다. */
 export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements {
+  const skeletalMuscleMassRange = toStandardRange(
+    extraction.skeletalMuscleMassStandardMinKg,
+    extraction.skeletalMuscleMassStandardMaxKg,
+  )
+  const bodyFatMassRange = toStandardRange(extraction.bodyFatMassStandardMinKg, extraction.bodyFatMassStandardMaxKg)
   return {
     weight: extraction.weightKg,
     age: extraction.ageYears,
@@ -41,15 +46,7 @@ export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements
     mineralMass: extraction.mineralMassKg,
     basalMetabolicRate: extraction.basalMetabolicRateKcal,
     measuredAt: extraction.testedAtDate,
-    bodyType: classifyBodyType(
-      extraction.skeletalMuscleMassKg,
-      extraction.bodyFatMassKg,
-      extraction.skeletalMuscleMassStandardMinKg !== null && extraction.skeletalMuscleMassStandardMaxKg !== null
-        ? { min: extraction.skeletalMuscleMassStandardMinKg, max: extraction.skeletalMuscleMassStandardMaxKg }
-        : null,
-      extraction.bodyFatMassStandardMinKg !== null && extraction.bodyFatMassStandardMaxKg !== null
-        ? { min: extraction.bodyFatMassStandardMinKg, max: extraction.bodyFatMassStandardMaxKg }
-        : null,
-    ),
+    bodyType: classifyBodyType(extraction.skeletalMuscleMassKg, extraction.bodyFatMassKg, skeletalMuscleMassRange, bodyFatMassRange),
+    standardRanges: { skeletalMuscleMass: skeletalMuscleMassRange, bodyFatMass: bodyFatMassRange },
   }
 }

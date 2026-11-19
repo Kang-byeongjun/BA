@@ -16,6 +16,7 @@ function entry(timestamp: number, weight: number | null): InBodyHistoryEntry {
     mineralMass: null,
     basalMetabolicRate: null,
     bodyType: null,
+    standardRanges: null,
   }
 }
 

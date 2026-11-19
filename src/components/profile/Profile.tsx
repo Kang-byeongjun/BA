@@ -129,6 +129,7 @@ export default function Profile() {
       basalMetabolicRate: inBodyDraft.basalMetabolicRate.trim() === '' ? null : Number(inBodyDraft.basalMetabolicRate),
       measuredAt: null,
       bodyType: null,
+      standardRanges: null,
     }
     dispatch({ type: 'UPDATE_INBODY', measurements, source: 'manual' })
     setDraftTarget(null)

@@ -10,6 +10,7 @@ import type {
   InBodyHistoryEntry,
   InBodyMeasurements,
   InBodySource,
+  InBodyStandardRanges,
   Meal,
   NutritionTarget,
   UserProfile,
@@ -46,6 +47,7 @@ type Action =
       workoutProfile: WorkoutProfile
       measuredAt?: string | null
       bodyType?: InBodyBodyType | null
+      standardRanges?: InBodyStandardRanges | null
     }
   | { type: 'LOAD_DEMO' }
   | { type: 'SET_AI_MODE'; aiMode: AiMode }
@@ -79,15 +81,16 @@ function parseMeasuredAtDate(measuredAt: string | null | undefined): number | nu
   return Number.isNaN(date.getTime()) ? null : date.getTime()
 }
 
-function historyEntryFromProfile(
-  profile: UserProfile,
-  source: InBodySource,
-  measuredAt?: string | null,
-  bodyType?: InBodyBodyType | null,
-): InBodyHistoryEntry {
+interface InBodyHistoryExtras {
+  measuredAt?: string | null
+  bodyType?: InBodyBodyType | null
+  standardRanges?: InBodyStandardRanges | null
+}
+
+function historyEntryFromProfile(profile: UserProfile, source: InBodySource, extras: InBodyHistoryExtras = {}): InBodyHistoryEntry {
   return {
     id: generateId('inbody'),
-    timestamp: parseMeasuredAtDate(measuredAt) ?? Date.now(),
+    timestamp: parseMeasuredAtDate(extras.measuredAt) ?? Date.now(),
     source,
     weight: profile.weight,
     skeletalMuscleMass: profile.skeletalMuscleMass,
@@ -97,7 +100,8 @@ function historyEntryFromProfile(
     proteinMass: profile.proteinMass,
     mineralMass: profile.mineralMass,
     basalMetabolicRate: profile.basalMetabolicRate,
-    bodyType: bodyType ?? null,
+    bodyType: extras.bodyType ?? null,
+    standardRanges: extras.standardRanges ?? null,
   }
 }
 
@@ -107,6 +111,7 @@ function withIds(history: InBodyHistoryEntry[]): InBodyHistoryEntry[] {
     ...entry,
     id: entry.id ?? generateId('inbody'),
     bodyType: entry.bodyType ?? null,
+    standardRanges: entry.standardRanges ?? null,
   }))
 }
 
@@ -139,7 +144,11 @@ function reducer(state: AppState, action: Action): AppState {
         nutritionTarget: action.nutritionTarget,
         workoutProfile: action.workoutProfile,
         inBodyHistory: [
-          historyEntryFromProfile(action.profile, 'onboarding', action.measuredAt, action.bodyType),
+          historyEntryFromProfile(action.profile, 'onboarding', {
+            measuredAt: action.measuredAt,
+            bodyType: action.bodyType,
+            standardRanges: action.standardRanges,
+          }),
           ...state.inBodyHistory,
         ],
       }
@@ -175,7 +184,11 @@ function reducer(state: AppState, action: Action): AppState {
         profile,
         nutritionTarget,
         inBodyHistory: [
-          historyEntryFromProfile(profile, action.source, action.measurements.measuredAt, action.measurements.bodyType),
+          historyEntryFromProfile(profile, action.source, {
+            measuredAt: action.measurements.measuredAt,
+            bodyType: action.measurements.bodyType,
+            standardRanges: action.measurements.standardRanges,
+          }),
           ...state.inBodyHistory,
         ],
       }

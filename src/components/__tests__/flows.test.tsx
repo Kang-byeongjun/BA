@@ -441,7 +441,11 @@ describe('InBody 사진 흐름 (Test A / D)', () => {
       mineralMass: 4.5,
       basalMetabolicRate: 1702,
       measuredAt: '2026-11-09',
-      bodyType: 'C',
+      bodyType: 'I',
+      standardRanges: {
+        skeletalMuscleMass: { min: 32, max: 40 },
+        bodyFatMass: { min: 10, max: 18 },
+      },
     })
   })
 

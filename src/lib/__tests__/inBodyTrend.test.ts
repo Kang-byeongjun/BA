@@ -18,6 +18,7 @@ function entry(daysAgo: number, overrides: Partial<InBodyHistoryEntry> = {}): In
     mineralMass: 4,
     basalMetabolicRate: 1600,
     bodyType: null,
+    standardRanges: null,
     ...overrides,
   }
 }
