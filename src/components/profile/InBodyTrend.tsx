@@ -217,6 +217,10 @@ export default function InBodyTrend({ history }: Props) {
   // 체형 판정에 실패한 기록을 "재측정"으로 열었다면 그 기록의 id. null이면 "새 측정 추가"로 연 것.
   const [remeasureId, setRemeasureId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  // 마이 탭(Profile.tsx)의 InBody 직접 수정과 같은 안내 — 여기서 측정해도 개인 영양 목표가
+  // 똑같이 자동 재계산되는데(UPDATE_INBODY/REPLACE_INBODY_ENTRY 리듀서), 눈에 보이는 변화가
+  // 없어서 안 바뀐 줄 아는 사용자가 있어 명시적으로 알려준다.
+  const [notice, setNotice] = useState<string | null>(null)
 
   const deleteEntry = (id: string) => {
     dispatch({ type: 'DELETE_INBODY_ENTRY', id })
@@ -238,6 +242,7 @@ export default function InBodyTrend({ history }: Props) {
           } else {
             dispatch({ type: 'UPDATE_INBODY', measurements, source: 'scan' })
           }
+          setNotice('InBody 정보가 바뀌어 마이 탭의 개인 영양 목표도 자동으로 다시 계산했어요.')
           closeScan()
         }}
         onClose={closeScan}
@@ -259,6 +264,7 @@ export default function InBodyTrend({ history }: Props) {
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">예시</span>
           </div>
         </div>
+        {notice && <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{notice}</p>}
         <CollapsibleSection title="체형 분석" defaultOpen>
           <BodyShapeChart
             entry={latest}
@@ -291,6 +297,7 @@ export default function InBodyTrend({ history }: Props) {
         <AddMeasurementButton onClick={() => setScanOpen(true)} />
       </div>
 
+      {notice && <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{notice}</p>}
       <CollapsibleSection title="체형 분석" defaultOpen>
         <BodyShapeChart
           entry={latest}

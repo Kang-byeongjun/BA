@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppProvider } from '../../context/AppContext'
 import { buildDemoMeals, DEMO_NUTRITION_TARGET, DEMO_PROFILE } from '../../data/mockData'
 import { createRowsFromExtraction, buildMeal } from '../../services/mealService'
@@ -28,7 +28,7 @@ describe('식사 저장 → 대시보드 (Test B 마지막 단계)', () => {
     const meal = buildMeal({ title: '달걀', slot: '간식', rows, thumbnail: null })
     render(
       <AppProvider>
-        <Dashboard onOpenCamera={() => {}} recentMeal={meal} onDismissRecentMeal={() => {}} />
+        <Dashboard onOpenCamera={() => {}} recentMeal={meal} onDismissRecentMeal={() => {}} onNavigateTab={() => {}} />
       </AppProvider>,
     )
     expect(screen.getByText(/방금 기록했어요 · 달걀/)).toBeTruthy()
@@ -40,12 +40,41 @@ describe('홈 탭 구성 (캘린더는 홈으로, 영양 밸런스·촬영·오�
   it('캘린더를 보여주고, 영양 밸런스·촬영 버튼·오늘의 식단은 더 이상 보여주지 않는다', () => {
     render(
       <AppProvider>
-        <Dashboard onOpenCamera={() => {}} recentMeal={null} onDismissRecentMeal={() => {}} />
+        <Dashboard onOpenCamera={() => {}} recentMeal={null} onDismissRecentMeal={() => {}} onNavigateTab={() => {}} />
       </AppProvider>,
     )
     expect(screen.getByLabelText('이전 달')).toBeTruthy()
     expect(screen.queryByText('오늘의 영양 밸런스')).toBeNull()
     expect(screen.queryByText('음식 촬영하고 기록하기')).toBeNull()
     expect(screen.queryByText('오늘의 식단')).toBeNull()
+  })
+})
+
+describe('캘린더에서 선택한 날 식단/운동 기록이 비어있으면 등록 버튼으로 해당 탭으로 이동할 수 있다', () => {
+  it('식단 기록이 없는 날을 선택하면 "식단 등록하기" 버튼이 식단 탭으로 보낸다', () => {
+    const onNavigateTab = vi.fn()
+    render(
+      <AppProvider>
+        <Dashboard onOpenCamera={() => {}} recentMeal={null} onDismissRecentMeal={() => {}} onNavigateTab={onNavigateTab} />
+      </AppProvider>,
+    )
+    // 데모 데이터는 오늘(아침·점심 기록)만 채워져 있으니, 기록 없는 다른 날을 고른다.
+    const emptyDayButtons = screen.getAllByLabelText(/기록 없음/)
+    fireEvent.click(emptyDayButtons[0])
+    fireEvent.click(screen.getByText('식단 등록하기'))
+    expect(onNavigateTab).toHaveBeenCalledWith('meals')
+  })
+
+  it('운동 기록이 없는 날을 선택하면 "운동 등록하기" 버튼이 운동 탭으로 보낸다', () => {
+    const onNavigateTab = vi.fn()
+    render(
+      <AppProvider>
+        <Dashboard onOpenCamera={() => {}} recentMeal={null} onDismissRecentMeal={() => {}} onNavigateTab={onNavigateTab} />
+      </AppProvider>,
+    )
+    const emptyDayButtons = screen.getAllByLabelText(/기록 없음/)
+    fireEvent.click(emptyDayButtons[0])
+    fireEvent.click(screen.getByText('운동 등록하기'))
+    expect(onNavigateTab).toHaveBeenCalledWith('workout')
   })
 })

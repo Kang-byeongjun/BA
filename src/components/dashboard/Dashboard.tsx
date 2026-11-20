@@ -19,9 +19,11 @@ interface Props {
   // 방금 기록한 식사 (기록 직후 얼마나 더해졌는지 보여준다)
   recentMeal: Meal | null
   onDismissRecentMeal: () => void
+  // 캘린더에서 선택한 날 식단/운동 기록이 비어있을 때 "등록하기" 버튼으로 쓴다
+  onNavigateTab: (tab: 'meals' | 'workout') => void
 }
 
-export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMeal }: Props) {
+export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMeal, onNavigateTab }: Props) {
   const { meals, waterLogs, nutritionTarget, profile, dispatch } = useApp()
   const [updatesPanelOpen, setUpdatesPanelOpen] = useState(false)
 
@@ -108,7 +110,7 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
 
       {recommendations[0] && <HomeCoach meal={recommendations[0]} goal={recommendationProfile.goal} />}
 
-      <NutritionCalendar />
+      <NutritionCalendar onNavigateTab={onNavigateTab} />
 
       {updatesPanelOpen && <UpdatesPanel onClose={() => setUpdatesPanelOpen(false)} />}
     </div>

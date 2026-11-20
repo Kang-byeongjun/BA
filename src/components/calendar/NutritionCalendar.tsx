@@ -40,7 +40,13 @@ const LEGEND: { status: DayStatus; label: string }[] = [
   { status: 'none', label: '기록 없음' },
 ]
 
-export default function NutritionCalendar() {
+interface Props {
+  // 선택한 날의 식단/운동 기록이 비어있을 때 "등록하기" 버튼에서 쓴다. 특정 날짜로 바로 기록하는
+  // 기능은 없으므로(식단 촬영·운동 기록 모두 "지금" 기준), 탭만 옮겨준다.
+  onNavigateTab: (tab: 'meals' | 'workout') => void
+}
+
+export default function NutritionCalendar({ onNavigateTab }: Props) {
   const { meals, nutritionTarget, workouts } = useApp()
   const now = new Date()
   const [cursor, setCursor] = useState({ year: now.getFullYear(), month: now.getMonth() })
@@ -187,7 +193,15 @@ export default function NutritionCalendar() {
           <div className="mt-2.5">
             <p className="text-xs font-medium text-slate-500">식단</p>
             {selected.status === 'none' ? (
-              <p className="mt-1 text-xs text-slate-400">기록된 식사가 없어요.</p>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <p className="text-xs text-slate-400">기록된 식사가 없어요.</p>
+                <button
+                  onClick={() => onNavigateTab('meals')}
+                  className="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
+                >
+                  식단 등록하기
+                </button>
+              </div>
             ) : (
               <>
                 <p className="mt-1 text-xs text-slate-600">
@@ -226,7 +240,15 @@ export default function NutritionCalendar() {
             {(() => {
               const daySessions = sessions.filter((s) => isSameDay(s.startTime, selected.date))
               return daySessions.length === 0 ? (
-                <p className="mt-1 text-xs text-slate-400">운동 기록이 없어요.</p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="text-xs text-slate-400">운동 기록이 없어요.</p>
+                  <button
+                    onClick={() => onNavigateTab('workout')}
+                    className="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
+                  >
+                    운동 등록하기
+                  </button>
+                </div>
               ) : (
                 <div className="mt-2 space-y-1.5">
                   {daySessions.map((s) => (

@@ -631,6 +631,8 @@ describe('인바디 재측정 (체형 판정 실패 기록 교체)', () => {
       expect(saved.length).toBe(2) // 1개 교체 — 늘어나지 않는다
       expect(saved.find((e) => e.id !== 'ok-1')?.bodyType).not.toBeNull()
     })
+    // 대시보드에서 측정해도 마이 탭의 영양 목표가 자동으로 재계산됐다는 걸 알려준다
+    expect(screen.getByText(/마이 탭의 개인 영양 목표도 자동으로 다시 계산했어요/)).toBeTruthy()
   })
 
   it('"체형 분석"은 기본으로 펼쳐져 있고, "전체 측정 기록"은 기본으로 접혀 있으며, 둘 다 클릭해서 열고 닫을 수 있다', () => {

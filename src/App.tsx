@@ -42,7 +42,12 @@ function MainApp() {
   return (
     <MobileShell footer={tab === 'workout' && logging ? undefined : <BottomNav active={tab} onChange={setTab} />}>
       {tab === 'home' && (
-        <Dashboard onOpenCamera={(slot) => setCameraSlot(slot)} recentMeal={recentMeal} onDismissRecentMeal={dismissRecentMeal} />
+        <Dashboard
+          onOpenCamera={(slot) => setCameraSlot(slot)}
+          recentMeal={recentMeal}
+          onDismissRecentMeal={dismissRecentMeal}
+          onNavigateTab={setTab}
+        />
       )}
       {tab === 'meals' && <MealHistory onOpenCamera={(slot) => setCameraSlot(slot)} />}
       {tab === 'dashboard' && <DashboardScreen />}
