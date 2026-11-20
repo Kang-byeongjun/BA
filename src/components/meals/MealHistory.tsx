@@ -6,9 +6,8 @@ import { isSameDay } from '../../lib/time'
 import { getTodayWaterTotal } from '../../lib/water'
 import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
 import CalorieSummary from '../dashboard/CalorieSummary'
-import FeedbackPanel from '../dashboard/FeedbackPanel'
 import NutritionBar from '../dashboard/NutritionBar'
-import RecommendationCard from '../dashboard/RecommendationCard'
+import NutritionFeedbackCard from '../dashboard/NutritionFeedbackCard'
 import TodayMealsSection from '../dashboard/TodayMealsSection'
 import WaterBar from '../dashboard/WaterBar'
 import MealDetailModal from './MealDetailModal'
@@ -108,8 +107,7 @@ export default function MealHistory({ onOpenCamera }: Props) {
           오늘 기록 중 AI가 자신 없어했던 양이 그대로 포함돼 있어요. 아래 % 숫자는 참고용으로 봐주세요.
         </p>
       )}
-      <FeedbackPanel feedback={feedback} />
-      <RecommendationCard meals={recommendations} goal={recommendationProfile.goal} />
+      <NutritionFeedbackCard feedback={feedback} recommendedMeals={recommendations} goal={recommendationProfile.goal} />
 
       <MealHistoryAccordion meals={meals} onSelectMeal={setSelected} onDeleteMeal={handleDelete} />
 
