@@ -215,7 +215,7 @@ describe('RoutineSection', () => {
 })
 
 describe('WorkoutScreen', () => {
-  it('맨 위에 추천 루틴이 있고, 운동 종류 선택·스톱워치는 접혀 있고 최근 기록은 보여준다', async () => {
+  it('맨 위에 추천 루틴이 있고, 운동 종류 선택·스톱워치·최근 기록은 숨긴다', async () => {
     localStorage.setItem('ai-diet-app:workoutProfile', JSON.stringify(profile()))
     render(
       <AppProvider>
@@ -227,7 +227,8 @@ describe('WorkoutScreen', () => {
     expect(screen.queryByRole('button', { name: '운동 시작' })).toBeNull()
     expect(screen.queryByText('00:00:00')).toBeNull()
     expect(screen.queryByText('운동 종류')).toBeNull()
-    expect(screen.getByText('최근 운동 기록')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /유산소 운동 시작/ })).toBeTruthy()
+    expect(screen.queryByText('최근 운동 기록')).toBeNull()
     await waitFor(() => expect(fetchMock).not.toHaveBeenCalled())
   })
 
@@ -247,7 +248,8 @@ describe('WorkoutScreen', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '뒤로' }))
     expect(screen.queryByText('운동 종류')).toBeNull()
-    expect(screen.getByText('최근 운동 기록')).toBeTruthy()
+    expect(screen.queryByText('최근 운동 기록')).toBeNull()
+    expect(screen.getByRole('button', { name: /유산소 운동 시작/ })).toBeTruthy()
   })
 
   it('운동 종류를 골라 시작하면 스톱워치가 뜨고, 마치면 저장/버리기로 이어진다', () => {

@@ -2,7 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { WorkoutResult } from '../../../server/engine/types'
 import { AnalysisError } from '../../../shared/errors'
 import { DEFAULT_WORKOUT_PROFILE, type WorkoutProfile } from '../../types'
-import { getCachedWorkoutRoutine, getWorkoutRoutine, WORKOUT_ROUTINE_STORAGE_KEY } from '../workoutService'
+import {
+  clearEditedWorkoutRoutine,
+  getCachedWorkoutRoutine,
+  getWorkoutRoutine,
+  saveEditedWorkoutRoutine,
+  WORKOUT_ROUTINE_EDIT_STORAGE_KEY,
+  WORKOUT_ROUTINE_STORAGE_KEY,
+} from '../workoutService'
 
 // 실제 /api/workout(=AI)은 부르지 않는다. fetch와 localStorage를 가짜로 바꿔서 검증한다.
 
@@ -161,5 +168,59 @@ describe('에러는 한국어 메시지의 AnalysisError로 던진다', () => {
     const p = getWorkoutRoutine(profile()).catch((e: unknown) => e)
     await vi.advanceTimersByTimeAsync(150_000)
     expect(await p).toMatchObject({ code: 'TIMEOUT', message: expect.stringContaining('시간이 너무 오래') })
+  })
+})
+
+describe('직접 바꾼 루틴(편집본)', () => {
+  const edited = () => ({ ...fakeResult('바꾼 루틴'), source: 'llm' as const })
+
+  it('저장하면 AI 저장값과 별도 키에 두고, 읽을 때 편집본을 먼저 돌려준다', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true, data: fakeResult('AI 추천') }))
+    await getWorkoutRoutine(profile())
+    saveEditedWorkoutRoutine(profile(), edited())
+
+    expect(storage.getItem('ai-diet-app:' + WORKOUT_ROUTINE_EDIT_STORAGE_KEY)).toContain('바꾼 루틴')
+    expect(storage.getItem('ai-diet-app:' + WORKOUT_ROUTINE_STORAGE_KEY)).toContain('AI 추천') // AI 저장값은 그대로
+    expect(getCachedWorkoutRoutine(profile())).toMatchObject({ edited: true, result: { summary: '바꾼 루틴' } })
+    const again = await getWorkoutRoutine(profile())
+    expect(again).toMatchObject({ edited: true, fromCache: true })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('AI 저장값만 있으면 edited가 없다(예전 저장값도 그대로 동작)', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true, data: fakeResult() }))
+    await getWorkoutRoutine(profile())
+    expect(getCachedWorkoutRoutine(profile())?.edited).toBeUndefined()
+  })
+
+  it('프로필이 달라지면 편집본은 무시한다', () => {
+    saveEditedWorkoutRoutine(profile({ goal: 'fat_loss' }), edited())
+    expect(getCachedWorkoutRoutine(profile({ goal: 'muscle_gain' }))).toBeNull()
+  })
+
+  it('깨진 편집본은 무시한다', () => {
+    storage.setItem('ai-diet-app:' + WORKOUT_ROUTINE_EDIT_STORAGE_KEY, '{깨진 값')
+    expect(getCachedWorkoutRoutine(profile())).toBeNull()
+  })
+
+  it('다시 만들기(force)가 성공하면 편집본을 지우고, 실패하면 남긴다', async () => {
+    saveEditedWorkoutRoutine(profile(), edited())
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await expect(getWorkoutRoutine(profile(), { force: true })).rejects.toBeInstanceOf(AnalysisError)
+    expect(getCachedWorkoutRoutine(profile())?.edited).toBe(true)
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true, data: fakeResult('새 AI 추천') }))
+    const r = await getWorkoutRoutine(profile(), { force: true })
+    expect(r.edited).toBeUndefined()
+    expect(getCachedWorkoutRoutine(profile())).toMatchObject({ result: { summary: '새 AI 추천' } })
+    expect(storage.getItem('ai-diet-app:' + WORKOUT_ROUTINE_EDIT_STORAGE_KEY)).toBeNull()
+  })
+
+  it('clearEditedWorkoutRoutine은 편집본만 지운다', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ ok: true, data: fakeResult('AI 추천') }))
+    await getWorkoutRoutine(profile())
+    saveEditedWorkoutRoutine(profile(), edited())
+    clearEditedWorkoutRoutine()
+    expect(getCachedWorkoutRoutine(profile())).toMatchObject({ result: { summary: 'AI 추천' } })
   })
 })

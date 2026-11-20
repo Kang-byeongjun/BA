@@ -6,7 +6,6 @@ import { appendWorkoutHistory, type WorkoutSessionRecord } from '../../lib/worko
 import type { WorkoutType } from '../../types'
 import WorkoutComplete from './WorkoutComplete'
 import RoutineSection from './RoutineSection'
-import WorkoutHistory from './WorkoutHistory'
 import WorkoutLogger from './WorkoutLogger'
 import WorkoutSummary from './WorkoutSummary'
 import WorkoutTypeSelect from './WorkoutTypeSelect'
@@ -128,8 +127,6 @@ export default function WorkoutScreen({ onLoggingChange }: Props) {
           유산소 운동 시작 (러닝·걷기·자전거 등)
         </button>
       )}
-
-      {!pendingWorkout && !activeWorkout && !startingCardio && <WorkoutHistory />}
     </div>
   )
 }

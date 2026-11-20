@@ -105,6 +105,8 @@ export interface RoutineExercise {
   /** 주의 문구(시스템이 부착). 있으면 화면에 ⚠ 표시 */
   caution: { parts: PainPart[]; text: string; alternativeId: string | null } | null;
   prescription: Pick<Prescription, 'setsMin' | 'setsMax' | 'repsMin' | 'repsMax' | 'rirMin' | 'rirMax' | 'restMin' | 'restMax'> | null;
+  /** 사용자가 화면에서 직접 고르거나 바꾼 종목이면 true (엔진은 붙이지 않는다. 예전 저장값엔 없다) */
+  custom?: true;
 }
 export interface WorkoutResult {
   resolvedGoal: ResolvedGoal;
