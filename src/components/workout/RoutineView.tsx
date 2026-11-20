@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { RoutineExercise, WorkoutResult } from '../../../server/engine/types'
-import { addExercise, removeExercise, replaceExercise, type EditContext } from '../../lib/routineEdit'
+import { addExercise, addTypedExercise, isTypedExercise, removeExercise, replaceExercise, takenIdsOf, type EditContext } from '../../lib/routineEdit'
 import ExercisePicker from './ExercisePicker'
 
 /**
@@ -16,8 +16,11 @@ interface Props {
   onStart?: (day: RoutineDay) => void
   /** 있으면 종목 "바꾸기 / 삭제 / 추가" 버튼을 보여준다. 바뀐 결과를 onChange로 알려준다(AI는 부르지 않음) */
   edit?: { context: EditContext; onChange: (next: WorkoutResult) => void }
+  /** true면 사용자가 종목을 직접 바꾼 루틴 → AI가 쓴 요약 대신 안내 문구를 보여준다 */
+  edited?: boolean
 }
 
+export const EDITED_NOTICE = '직접 바꾼 루틴이에요. 다시 만들기를 누르면 AI 추천으로 돌아가요.'
 export const FALLBACK_NOTICE = 'AI가 연결되지 않아 규칙 기반 기본 루틴으로 구성했어요'
 
 const range = (min: number, max: number) => (min === max ? `${min}` : `${min}~${max}`)
@@ -46,7 +49,11 @@ function ExerciseItem({ exercise, showReason, actions }: { exercise: RoutineExer
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-slate-900">
             {exercise.name}
-            {exercise.custom && <span className="ml-2 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">직접 고름</span>}
+            {exercise.custom && (
+              <span className="ml-2 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">
+                {isTypedExercise(exercise) ? '직접 입력' : '직접 고름'}
+              </span>
+            )}
           </p>
           {showReason && <p className="mt-1 text-sm text-slate-500">{exercise.reason}</p>}
           <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-medium">
@@ -91,7 +98,7 @@ function ExerciseItem({ exercise, showReason, actions }: { exercise: RoutineExer
 
 type PickerState = { mode: 'replace'; order: number } | { mode: 'add' } | null
 
-export default function RoutineView({ result, onStart, edit }: Props) {
+export default function RoutineView({ result, onStart, edit, edited = false }: Props) {
   const [dayIndex, setDayIndex] = useState(0)
   const [picker, setPicker] = useState<PickerState>(null)
   // 일차의 마지막 종목을 지우려 할 때 한 번 확인받는다
@@ -108,7 +115,7 @@ export default function RoutineView({ result, onStart, edit }: Props) {
         <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{result.goalReason}</p>
       )}
 
-      <p className="text-sm text-slate-600">{isFallback ? FALLBACK_NOTICE : result.summary}</p>
+      <p className="text-sm text-slate-600">{edited ? EDITED_NOTICE : isFallback ? FALLBACK_NOTICE : result.summary}</p>
 
       {days.length > 1 && (
         <div role="tablist" aria-label="운동 일차" className="flex gap-2 overflow-x-auto pb-1">
@@ -201,7 +208,8 @@ export default function RoutineView({ result, onStart, edit }: Props) {
           group={picker.mode === 'replace' ? current.exercises.find((e) => e.order === picker.order)?.group : undefined}
           currentId={picker.mode === 'replace' ? current.exercises.find((e) => e.order === picker.order)?.id : undefined}
           pain={edit.context.pain}
-          takenIds={new Set(current.exercises.map((e) => e.id))}
+          takenIds={takenIdsOf(current)}
+          existingNames={current.exercises.map((e) => e.name)}
           onPick={(id) => {
             edit.onChange(
               picker.mode === 'replace'
@@ -210,6 +218,14 @@ export default function RoutineView({ result, onStart, edit }: Props) {
             )
             setPicker(null)
           }}
+          onPickTyped={
+            picker.mode === 'add'
+              ? (group, name) => {
+                  edit.onChange(addTypedExercise(result, current.day, group, name, edit.context))
+                  setPicker(null)
+                }
+              : undefined
+          }
           onClose={() => setPicker(null)}
         />
       )}

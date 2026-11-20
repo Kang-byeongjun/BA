@@ -1,4 +1,5 @@
 import { EXERCISES, getPrescription } from '../../server/engine/data'
+import { generateId } from './id'
 import type {
   BurdenLevel,
   Exercise,
@@ -25,6 +26,14 @@ export interface EditContext {
 
 /** 직접 고른 종목에 붙는 이유 문구. AI가 쓴 예전 이유가 새 종목에 남지 않게 한다. */
 export const CUSTOM_REASON = '직접 고른 종목이에요'
+/** 이름을 직접 입력해 추가한 종목의 이유 문구 */
+export const TYPED_REASON = '직접 입력한 종목이에요'
+
+/** 직접 입력 종목의 id 접두사. exercises.json의 id(C01, L02, CA01 …)와 절대 겹치지 않는다. */
+export const TYPED_ID_PREFIX = 'custom-'
+export const isTypedExercise = (e: Pick<RoutineExercise, 'id'>): boolean => e.id.startsWith(TYPED_ID_PREFIX)
+
+export const TYPED_NAME_MAX = 30
 
 /** "종목 추가"에서 고를 수 있는 부위 순서 */
 export const EDIT_GROUPS: MuscleGroup[] = ['CHEST', 'SHOULDER', 'BACK', 'ARM', 'LEGS', 'ABS', 'CARDIO']
@@ -129,8 +138,8 @@ type Rx = NonNullable<RoutineExercise['prescription']>
  * 같은 일차의 근력 종목 처방 → 다른 일차의 근력 종목 처방 → 처방표(목표·경험) 순으로 찾는다.
  * (엔진은 한 루틴의 근력 종목에 모두 같은 처방을 붙이므로 복사하면 일치한다)
  */
-export function prescriptionFor(ex: Exercise, result: WorkoutResult, day: RoutineDay, experience: Experience): Rx | null {
-  if (ex.type !== 'STRENGTH') return null
+export function prescriptionFor(type: Exercise['type'], result: WorkoutResult, day: RoutineDay, experience: Experience): Rx | null {
+  if (type !== 'STRENGTH') return null
   const found =
     day.exercises.find((e) => e.prescription)?.prescription ??
     result.days.flatMap((d) => d.exercises).find((e) => e.prescription)?.prescription
@@ -143,6 +152,20 @@ export function prescriptionFor(ex: Exercise, result: WorkoutResult, day: Routin
 }
 
 // ---------- 바꾸기 / 추가 / 삭제 ----------
+
+/** 이름 비교용: 대소문자·공백 차이는 같은 이름으로 본다 */
+export const normalizeName = (name: string): string => name.replace(/\s+/g, '').toLowerCase()
+const sameName = (a: string, b: string) => normalizeName(a) === normalizeName(b)
+
+/**
+ * 그 일차에서 고를 수 없는 목록 종목 id: 이미 있는 종목 + 이름이 같은 종목(직접 입력한 이름 포함).
+ */
+export function takenIdsOf(day: RoutineDay): Set<string> {
+  const names = new Set(day.exercises.map((e) => normalizeName(e.name)))
+  const taken = new Set(day.exercises.map((e) => e.id))
+  for (const e of EXERCISES) if (names.has(normalizeName(e.name))) taken.add(e.id)
+  return taken
+}
 
 const renumber = (list: RoutineExercise[]): RoutineExercise[] => list.map((e, i) => ({ ...e, order: i + 1 }))
 
@@ -162,7 +185,7 @@ function customExercise(ex: Exercise, order: number, result: WorkoutResult, day:
     group: ex.group,
     reason: CUSTOM_REASON,
     caution: cautionFor(ex, ctx.pain),
-    prescription: prescriptionFor(ex, result, day, ctx.experience),
+    prescription: prescriptionFor(ex.type, result, day, ctx.experience),
     custom: true,
   }
 }
@@ -173,7 +196,7 @@ export function replaceExercise(result: WorkoutResult, dayNo: number, order: num
   if (!ex) return result
   return withDay(result, dayNo, (day) => {
     const idx = day.exercises.findIndex((e) => e.order === order)
-    if (idx < 0 || day.exercises.some((e, i) => i !== idx && e.id === newId)) return null
+    if (idx < 0 || day.exercises.some((e, i) => i !== idx && (e.id === newId || sameName(e.name, ex.name)))) return null
     const next = [...day.exercises]
     next[idx] = customExercise(ex, order, result, day, ctx)
     return next
@@ -185,7 +208,7 @@ export function addExercise(result: WorkoutResult, dayNo: number, newId: string,
   const ex = BY_ID.get(newId)
   if (!ex) return result
   return withDay(result, dayNo, (day) => {
-    if (day.exercises.some((e) => e.id === newId)) return null
+    if (day.exercises.some((e) => e.id === newId || sameName(e.name, ex.name))) return null
     const added = customExercise(ex, day.exercises.length + 1, result, day, ctx)
     const firstCardio = day.exercises.findIndex((e) => e.group === 'CARDIO')
     const at = ex.type === 'STRENGTH' && firstCardio >= 0 ? firstCardio : day.exercises.length
@@ -198,5 +221,46 @@ export function removeExercise(result: WorkoutResult, dayNo: number, order: numb
   return withDay(result, dayNo, (day) => {
     if (!day.exercises.some((e) => e.order === order)) return null
     return day.exercises.filter((e) => e.order !== order)
+  })
+}
+
+// ---------- 직접 입력 종목 ----------
+
+export type NameCheck = { ok: true; name: string } | { ok: false; reason: 'empty' | 'tooLong' | 'duplicate' }
+
+/** 앞뒤 공백을 지우고 1~30자인지, 같은 일차에 같은 이름이 없는지 확인한다(대소문자·공백 차이는 같은 이름). */
+export function checkTypedName(existingNames: readonly string[], raw: string): NameCheck {
+  const name = raw.trim()
+  if (name.length === 0) return { ok: false, reason: 'empty' }
+  if ([...name].length > TYPED_NAME_MAX) return { ok: false, reason: 'tooLong' }
+  if (existingNames.some((n) => sameName(n, name))) return { ok: false, reason: 'duplicate' }
+  return { ok: true, name }
+}
+
+/**
+ * 우리 종목 목록에 없는 종목을 이름으로 추가한다. 부위(group)는 꼭 정해야 한다(부위별 볼륨 계산에 쓰임).
+ * - id는 'custom-…'로 새로 만들어 exercises.json과 겹치지 않는다(저장된 루틴에 함께 들어가 새로고침해도 유지).
+ * - 처방(세트·횟수·휴식)은 그 일차의 기존 처방을 복사한다. 유산소는 처방 없음.
+ * - 통증 경고(caution)는 붙이지 않는다: 우리 데이터(exercises.json)에 없는 종목이라 부위별 부담 정보를 모른다.
+ * 이름이 잘못됐거나 부위·일차가 없으면 result를 그대로 돌려준다.
+ */
+export function addTypedExercise(result: WorkoutResult, dayNo: number, group: MuscleGroup, rawName: string, ctx: EditContext): WorkoutResult {
+  if (!EDIT_GROUPS.includes(group)) return result
+  return withDay(result, dayNo, (day) => {
+    const check = checkTypedName(day.exercises.map((e) => e.name), rawName)
+    if (!check.ok) return null
+    const added: RoutineExercise = {
+      order: day.exercises.length + 1,
+      id: generateId(TYPED_ID_PREFIX.slice(0, -1)),
+      name: check.name,
+      group,
+      reason: TYPED_REASON,
+      caution: null,
+      prescription: prescriptionFor(group === 'CARDIO' ? 'CARDIO' : 'STRENGTH', result, day, ctx.experience),
+      custom: true,
+    }
+    const firstCardio = day.exercises.findIndex((e) => e.group === 'CARDIO')
+    const at = group !== 'CARDIO' && firstCardio >= 0 ? firstCardio : day.exercises.length
+    return [...day.exercises.slice(0, at), added, ...day.exercises.slice(at)]
   })
 }

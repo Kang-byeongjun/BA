@@ -4,7 +4,6 @@ import { generateId } from '../../lib/id'
 import { appendWorkoutHistory, type WorkoutSessionRecord } from '../../lib/workoutHistory'
 import WorkoutComplete from './WorkoutComplete'
 import RoutineSection from './RoutineSection'
-import WorkoutHistory from './WorkoutHistory'
 import WorkoutLogger from './WorkoutLogger'
 import WorkoutSummary from './WorkoutSummary'
 import { clearWorkoutLog, createWorkoutLog, loadWorkoutLog, saveWorkoutLog, type SavedWorkoutLog } from './workoutLogStorage'
@@ -91,8 +90,6 @@ export default function WorkoutScreen({ onLoggingChange }: Props) {
           />
         )
       )}
-
-      {!pendingWorkout && !activeWorkout && <WorkoutHistory />}
     </div>
   )
 }

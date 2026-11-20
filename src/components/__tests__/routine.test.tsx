@@ -215,7 +215,7 @@ describe('RoutineSection', () => {
 })
 
 describe('WorkoutScreen', () => {
-  it('맨 위에 추천 루틴이 있고, 운동 종류 선택·스톱워치는 숨기고 최근 기록은 보여준다', async () => {
+  it('맨 위에 추천 루틴이 있고, 운동 종류 선택·스톱워치·최근 기록은 숨긴다', async () => {
     localStorage.setItem('ai-diet-app:workoutProfile', JSON.stringify(profile()))
     render(
       <AppProvider>
@@ -228,7 +228,7 @@ describe('WorkoutScreen', () => {
     expect(screen.queryByText('00:00:00')).toBeNull()
     expect(screen.queryByText('운동 종류')).toBeNull()
     expect(screen.queryByRole('button', { name: /러닝/ })).toBeNull()
-    expect(screen.getByText('최근 운동 기록')).toBeTruthy()
+    expect(screen.queryByText('최근 운동 기록')).toBeNull()
     await waitFor(() => expect(fetchMock).not.toHaveBeenCalled())
   })
 

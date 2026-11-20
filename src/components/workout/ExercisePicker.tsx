@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { MuscleGroup, PainPart } from '../../../server/engine/types'
-import { EDIT_GROUPS, GROUP_LABELS, optionsForGroup, type PickOption } from '../../lib/routineEdit'
+import { checkTypedName, EDIT_GROUPS, GROUP_LABELS, optionsForGroup, TYPED_NAME_MAX, type PickOption } from '../../lib/routineEdit'
 
 /**
  * ExercisePicker — "바꾸기 / 종목 추가"에서 종목을 고르는 창.
@@ -21,7 +21,11 @@ interface Props {
   takenIds: ReadonlySet<string>
   /** replace일 때 지금 그 자리의 종목 id (목록에서 뺀다) */
   currentId?: string
+  /** 그 일차에 있는 종목 이름들. 직접 입력한 이름이 겹치는지 확인하는 데 쓴다 */
+  existingNames?: readonly string[]
   onPick: (exerciseId: string) => void
+  /** 있으면(종목 추가일 때) "목록에 없나요? 직접 입력" 영역을 보여준다. 고른 부위와 이름을 넘긴다 */
+  onPickTyped?: (group: MuscleGroup, name: string) => void
   onClose: () => void
 }
 
@@ -55,7 +59,53 @@ function OptionRow({ option, onSelect }: { option: PickOption; onSelect: () => v
   )
 }
 
-export default function ExercisePicker({ mode, group: fixedGroup, pain, takenIds, currentId, onPick, onClose }: Props) {
+const NAME_ERRORS = {
+  tooLong: `이름은 ${TYPED_NAME_MAX}자 이하로 입력해주세요`,
+  duplicate: '이 일차에 같은 이름의 종목이 이미 있어요',
+} as const
+
+/** 목록에 없는 종목을 이름으로 직접 추가하는 입력칸. 부위는 이미 골라 둔 상태에서만 보인다. */
+function TypedForm({ group, existingNames, onSubmit }: { group: MuscleGroup; existingNames: readonly string[]; onSubmit: (name: string) => void }) {
+  const [raw, setRaw] = useState('')
+  const check = checkTypedName(existingNames, raw)
+  const error = !check.ok && check.reason !== 'empty' ? NAME_ERRORS[check.reason] : null
+  return (
+    <form
+      aria-label="직접 입력"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (check.ok) onSubmit(check.name)
+      }}
+      className="space-y-2 rounded-2xl border border-slate-200 bg-white p-3"
+    >
+      <p className="text-sm font-semibold text-slate-700">목록에 없나요? 직접 입력</p>
+      <p className="text-xs text-slate-500">{GROUP_LABELS[group]} 종목으로 들어가요. 부담 부위 경고는 붙지 않아요.</p>
+      <div className="flex gap-2">
+        <input
+          value={raw}
+          onChange={(e) => setRaw(e.target.value)}
+          aria-label="종목 이름"
+          placeholder="종목 이름"
+          className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+        />
+        <button
+          type="submit"
+          disabled={!check.ok}
+          className="shrink-0 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+        >
+          직접 추가
+        </button>
+      </div>
+      {error && (
+        <p role="alert" className="text-xs text-rose-600">
+          {error}
+        </p>
+      )}
+    </form>
+  )
+}
+
+export default function ExercisePicker({ mode, group: fixedGroup, pain, takenIds, currentId, existingNames = [], onPick, onPickTyped, onClose }: Props) {
   const [group, setGroup] = useState<MuscleGroup | null>(mode === 'replace' ? (fixedGroup ?? null) : null)
   // 부담이 큰 종목을 골랐을 때 "그래도 담을까요?"를 물어볼 대상
   const [confirming, setConfirming] = useState<PickOption | null>(null)
@@ -114,6 +164,7 @@ export default function ExercisePicker({ mode, group: fixedGroup, pain, takenIds
                 ← 부위 다시 고르기
               </button>
             )}
+            {mode === 'add' && onPickTyped && <TypedForm group={group} existingNames={existingNames} onSubmit={(name) => onPickTyped(group, name)} />}
             {options.length === 0 ? (
               <p className="rounded-2xl bg-white px-4 py-6 text-center text-sm text-slate-500">고를 수 있는 다른 종목이 없어요</p>
             ) : (

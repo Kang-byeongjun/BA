@@ -167,7 +167,7 @@ describe('App — 운동 완료 흐름', () => {
     ])
   })
 
-  it('팀원 "최근 운동 기록"에 헬스·운동 시간으로 남고, "확인"을 누르면 추천 루틴으로 돌아가며 진행 중 기록을 지운다', () => {
+  it('팀원 운동 기록에 헬스·운동 시간으로 남고, "확인"을 누르면 추천 루틴으로 돌아가며 진행 중 기록을 지운다', () => {
     finishWithTwoSets()
     const teamWorkouts = JSON.parse(localStorage.getItem('ai-diet-app:workouts')!)
     expect(teamWorkouts).toHaveLength(1)
@@ -178,9 +178,9 @@ describe('App — 운동 완료 흐름', () => {
     expect(screen.getByRole('navigation')).toBeTruthy()
     expect(loadWorkoutLog()).toBeNull()
 
-    const list = screen.getByText('최근 운동 기록').parentElement!
-    expect(text(list)).toContain('헬스')
-    expect(text(list)).toContain('30분')
+    // 운동 탭에는 최근 운동 기록 목록이 없다(기록 데이터는 그대로 저장돼 있다)
+    expect(screen.queryByText('최근 운동 기록')).toBeNull()
+    expect(JSON.parse(localStorage.getItem('ai-diet-app:workouts')!)).toHaveLength(1)
   })
 
   it('요약 화면에서 새로고침해도 요약이 다시 보이고, 같은 운동이 두 번 저장되지 않는다', () => {

@@ -121,6 +121,7 @@ export default function RoutineSection({ profile, onStart }: Props) {
             <RoutineView
               result={data.result}
               onStart={onStart}
+              edited={data.edited}
               edit={editContext && !loading ? { context: editContext, onChange: onEdit } : undefined}
             />
           ) : (
