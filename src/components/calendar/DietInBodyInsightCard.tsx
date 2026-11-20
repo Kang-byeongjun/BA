@@ -9,7 +9,7 @@ interface Props {
   target: NutritionTarget
 }
 
-// 식단 준수(적정 섭취일 수)와 인바디 체중 변화를 한 문장으로 엮어서, 식단 노력이 실제 결과로
+// 식단 준수(목표를 지킨 날 수)와 인바디 체중 변화를 한 문장으로 엮어서, 식단 노력이 실제 결과로
 // 이어지고 있는지 보여준다. 측정이 2회 이상 쌓여야 비교할 수 있다.
 export default function DietInBodyInsightCard({ history, meals, target }: Props) {
   if (history.length === 0) return null
@@ -35,7 +35,7 @@ export default function DietInBodyInsightCard({ history, meals, target }: Props)
         <p className="mt-2 text-sm text-emerald-900">{insight.message}</p>
       ) : (
         <>
-          <p className="mt-2 text-sm text-emerald-900/50">예시: 이 기간 적정 섭취일이 10/14일이었고, 체중이 0.8kg 줄었어요.</p>
+          <p className="mt-2 text-sm text-emerald-900/50">예시: 이 기간 목표를 지킨 날이 10/14일이었고, 체중이 0.8kg 줄었어요.</p>
           <p className="mt-1 text-xs text-emerald-700">측정이 2회 이상 쌓이면 실제 데이터로 보여드려요.</p>
         </>
       )}

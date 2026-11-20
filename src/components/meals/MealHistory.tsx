@@ -1,26 +1,30 @@
-import { ChevronDown, ChevronUp, Trash2, UtensilsCrossed } from 'lucide-react'
+import { Camera } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import { generateFeedback, getRecommendedMeals, sumMeals } from '../../lib/nutrition'
-import { formatRelativeDate, formatTimeOfDay, isSameDay } from '../../lib/time'
+import { generateFeedback, getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
+import { isSameDay } from '../../lib/time'
 import { getTodayWaterTotal } from '../../lib/water'
-import { DEFAULT_WATER_TARGET_ML, type Meal } from '../../types'
-import FeedbackPanel from '../dashboard/FeedbackPanel'
+import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
+import CalorieSummary from '../dashboard/CalorieSummary'
 import NutritionBar from '../dashboard/NutritionBar'
-import RecommendationCard from '../dashboard/RecommendationCard'
+import NutritionFeedbackCard from '../dashboard/NutritionFeedbackCard'
+import TodayMealsSection from '../dashboard/TodayMealsSection'
 import WaterBar from '../dashboard/WaterBar'
 import MealDetailModal from './MealDetailModal'
+import MealHistoryAccordion from './MealHistoryAccordion'
 
-export default function MealHistory() {
+interface Props {
+  // slot을 넘기면 그 칸으로 바로 기록된다. 하단 촬영 버튼처럼 어느 칸인지 모를 때는 생략한다.
+  onOpenCamera: (slot?: MealSlot) => void
+}
+
+export default function MealHistory({ onOpenCamera }: Props) {
   const { meals, waterLogs, nutritionTarget, profile, dispatch } = useApp()
   const [selected, setSelected] = useState<Meal | null>(null)
-  // 보조 정보라 기본은 접어두고, 눌렀을 때만 펼친다(위 영양 현황이 먼저 보이게).
-  const [historyOpen, setHistoryOpen] = useState(false)
-
-  const sorted = [...meals].sort((a, b) => b.timestamp - a.timestamp)
 
   const todayMeals = useMemo(() => meals.filter((m) => isSameDay(m.timestamp, Date.now())), [meals])
   const consumed = useMemo(() => sumMeals(todayMeals), [todayMeals])
+  const streakDays = useMemo(() => getStreakDays(meals), [meals])
   const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
   const hasUncertainPortionsToday = todayMeals.some((m) => m.hasLowConfidencePortions)
   const todayWaterLogs = useMemo(() => waterLogs.filter((w) => isSameDay(w.timestamp, Date.now())), [waterLogs])
@@ -44,6 +48,18 @@ export default function MealHistory() {
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
       <h1 className="text-xl font-bold text-slate-900">식단</h1>
+
+      <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} streakDays={streakDays} />
+
+      <button
+        onClick={() => onOpenCamera()}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 font-semibold text-white shadow-lg shadow-slate-300 active:scale-[0.98]"
+      >
+        <Camera size={20} />
+        음식 촬영하고 기록하기
+      </button>
+
+      <TodayMealsSection meals={todayMeals} onSelect={setSelected} onAdd={onOpenCamera} />
 
       <div className="space-y-4 rounded-2xl border border-slate-100 bg-white p-4">
         <NutritionBar
@@ -91,71 +107,9 @@ export default function MealHistory() {
           오늘 기록 중 AI가 자신 없어했던 양이 그대로 포함돼 있어요. 아래 % 숫자는 참고용으로 봐주세요.
         </p>
       )}
-      <FeedbackPanel feedback={feedback} />
-      <RecommendationCard meals={recommendations} goal={recommendationProfile.goal} />
+      <NutritionFeedbackCard feedback={feedback} recommendedMeals={recommendations} goal={recommendationProfile.goal} />
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-4">
-        <button onClick={() => setHistoryOpen((v) => !v)} className="flex w-full items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-              <UtensilsCrossed size={14} />
-            </span>
-            <h2 className="text-sm font-semibold text-slate-800">
-              식사 기록{sorted.length > 0 && ` (${sorted.length})`}
-            </h2>
-          </div>
-          {historyOpen ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
-        </button>
-        {!historyOpen && <p className="mt-1 text-xs text-slate-400">지금까지 기록한 식사를 모아봐요. 눌러서 펼쳐보세요.</p>}
-
-        {historyOpen &&
-          (sorted.length === 0 ? (
-            <div className="mt-3 flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-200 py-16 text-center">
-              <UtensilsCrossed className="text-slate-300" size={32} />
-              <p className="text-sm text-slate-400">아직 기록된 식사가 없어요.</p>
-            </div>
-          ) : (
-            <div className="mt-3 space-y-3">
-              {sorted.map((meal) => (
-                <button
-                  key={meal.id}
-                  onClick={() => setSelected(meal)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4 text-left"
-                >
-                  {meal.image ? (
-                    <img src={meal.image} alt={meal.title} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
-                  ) : (
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-xl">
-                      🍽️
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                      <span>{formatRelativeDate(meal.timestamp)}</span>
-                      <span>·</span>
-                      <span>{formatTimeOfDay(meal.timestamp)}</span>
-                      <span className="rounded-full bg-slate-100 px-1.5 py-0.5 font-medium text-slate-500">
-                        {meal.slot}
-                      </span>
-                    </div>
-                    <p className="truncate font-semibold text-slate-800">{meal.title}</p>
-                    <p className="text-sm text-slate-500">{meal.calories} kcal</p>
-                  </div>
-                  <span
-                    role="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDelete(meal.id)
-                    }}
-                    className="shrink-0 rounded-full p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-500"
-                  >
-                    <Trash2 size={16} />
-                  </span>
-                </button>
-              ))}
-            </div>
-          ))}
-      </div>
+      <MealHistoryAccordion meals={meals} onSelectMeal={setSelected} onDeleteMeal={handleDelete} />
 
       {selected && (
         <MealDetailModal meal={selected} onClose={() => setSelected(null)} onDelete={handleDelete} />

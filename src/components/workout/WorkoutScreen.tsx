@@ -1,16 +1,19 @@
+import { ChevronLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { generateId } from '../../lib/id'
 import { appendWorkoutHistory, type WorkoutSessionRecord } from '../../lib/workoutHistory'
+import type { WorkoutType } from '../../types'
 import WorkoutComplete from './WorkoutComplete'
 import RoutineSection from './RoutineSection'
 import WorkoutLogger from './WorkoutLogger'
 import WorkoutSummary from './WorkoutSummary'
+import WorkoutTypeSelect from './WorkoutTypeSelect'
 import { clearWorkoutLog, createWorkoutLog, loadWorkoutLog, saveWorkoutLog, type SavedWorkoutLog } from './workoutLogStorage'
 import WorkoutTimerView from './WorkoutTimerView'
 
-// 운동 종류는 화면에서 고르지 않고 항상 '헬스'로 본다.
-// (WorkoutType 타입과 기존 기록 데이터는 그대로 둔다. 종류 선택·스톱워치 시작 화면만 숨김)
+// '헬스'는 세트 단위로 기록하는 WorkoutLogger(추천 루틴/직접 종목 추가)를 쓰고, 러닝·걷기·
+// 자전거 같은 유산소·기타 활동은 시간만 재는 WorkoutTypeSelect+스톱워치를 쓴다.
 
 interface Props {
   /** 기록 화면이 열리고 닫힐 때 알려준다(App이 하단 메뉴를 숨기는 데 쓴다) */
@@ -21,6 +24,8 @@ export default function WorkoutScreen({ onLoggingChange }: Props) {
   const { activeWorkout, pendingWorkout, workoutProfile, dispatch } = useApp()
   // 저장된 기록이 있으면(새로고침 등) 그대로 이어서 연다.
   const [session, setSession] = useState<SavedWorkoutLog | null>(loadWorkoutLog)
+  const [startingCardio, setStartingCardio] = useState(false)
+  const [cardioType, setCardioType] = useState<WorkoutType>('러닝')
 
   const logging = session !== null
   useEffect(() => {
@@ -73,22 +78,54 @@ export default function WorkoutScreen({ onLoggingChange }: Props) {
         }}
       />
 
-      {/* 예전 버전에서 시작해 둔 스톱워치 세션이 남아 있을 때만 마무리할 수 있게 보여준다 */}
+      <button
+        onClick={() => {
+          const created = createWorkoutLog({ day: 0, label: '자유 운동', exercises: [] }, Date.now())
+          saveWorkoutLog(created)
+          setSession(created)
+        }}
+        className="w-full rounded-2xl border-2 border-dashed border-slate-200 py-3 text-sm font-semibold text-slate-500"
+      >
+        추천 루틴 없이 직접 종목 골라서 운동 시작
+      </button>
+
       {pendingWorkout ? (
         <WorkoutComplete
           workout={pendingWorkout}
           onSave={() => dispatch({ type: 'SAVE_PENDING_WORKOUT' })}
           onDiscard={() => dispatch({ type: 'DISCARD_PENDING_WORKOUT' })}
         />
-      ) : (
-        activeWorkout && (
-          <WorkoutTimerView
-            session={activeWorkout}
-            onPause={() => dispatch({ type: 'PAUSE_WORKOUT' })}
-            onResume={() => dispatch({ type: 'RESUME_WORKOUT' })}
-            onFinish={() => dispatch({ type: 'FINISH_WORKOUT' })}
+      ) : activeWorkout ? (
+        <WorkoutTimerView
+          session={activeWorkout}
+          onPause={() => dispatch({ type: 'PAUSE_WORKOUT' })}
+          onResume={() => dispatch({ type: 'RESUME_WORKOUT' })}
+          onFinish={() => dispatch({ type: 'FINISH_WORKOUT' })}
+        />
+      ) : startingCardio ? (
+        <div className="space-y-3">
+          <button
+            onClick={() => setStartingCardio(false)}
+            className="-ml-2 flex items-center gap-1 rounded-full p-2 text-sm font-semibold text-slate-500 hover:bg-slate-100"
+          >
+            <ChevronLeft size={18} /> 뒤로
+          </button>
+          <WorkoutTypeSelect
+            value={cardioType}
+            onChange={setCardioType}
+            onStart={() => {
+              dispatch({ type: 'START_WORKOUT', workoutType: cardioType })
+              setStartingCardio(false)
+            }}
           />
-        )
+        </div>
+      ) : (
+        <button
+          onClick={() => setStartingCardio(true)}
+          className="w-full rounded-2xl border-2 border-dashed border-slate-200 py-3 text-sm font-semibold text-slate-500"
+        >
+          유산소 운동 시작 (러닝·걷기·자전거 등)
+        </button>
       )}
     </div>
   )

@@ -1,3 +1,12 @@
+import type { InBodyBodyType, InBodyStandardRange } from '../lib/inBodyBodyType'
+
+// 체중·골격근량·체지방량 각자의 "표준" 구간. 체형 경향 판정과 결과지 막대그래프 재현에 쓴다.
+export interface InBodyStandardRanges {
+  weight: InBodyStandardRange | null
+  skeletalMuscleMass: InBodyStandardRange | null
+  bodyFatMass: InBodyStandardRange | null
+}
+
 // ---------- 온보딩 / 사용자 프로필 ----------
 
 export type Goal = 'fat_loss' | 'muscle_gain' | 'weight_maintain' | 'health_care'
@@ -43,6 +52,12 @@ export interface InBodyMeasurements {
   proteinMass: number | null
   mineralMass: number | null
   basalMetabolicRate: number | null
+  // 결과지에서 읽은 검사일(YYYY-MM-DD). 못 읽었거나 수동 입력이면 null — 이 경우 "지금"을 측정 시점으로 쓴다.
+  measuredAt: string | null
+  // 골격근량·체지방량의 표준 구간 대비 비교로 판정한 체형 경향(공식 InBody 판정 아님). 계산 불가하면 null.
+  bodyType: InBodyBodyType | null
+  // bodyType 판정에 쓴 표준 구간. 그래프 재현에 쓴다. 계산 불가하면 null.
+  standardRanges: InBodyStandardRanges | null
 }
 
 // 측정 시점의 InBody 스냅샷. "이전 측정 대비 변화"를 보여주기 위해 최신 값 위에 쌓아간다(최신이 배열 앞).
@@ -53,6 +68,7 @@ export type InBodySource =
   | 'estimated' // InBody 없이 간편 온보딩, 체성분 항목 없음
 
 export interface InBodyHistoryEntry {
+  id: string
   timestamp: number
   source: InBodySource
   weight: number | null
@@ -63,6 +79,8 @@ export interface InBodyHistoryEntry {
   proteinMass: number | null
   mineralMass: number | null
   basalMetabolicRate: number | null
+  bodyType: InBodyBodyType | null
+  standardRanges: InBodyStandardRanges | null
 }
 
 export const IN_BODY_SOURCE_LABELS: Record<InBodySource, string> = {

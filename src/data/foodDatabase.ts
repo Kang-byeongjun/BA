@@ -1853,7 +1853,8 @@ export const FOOD_DATABASE: FoodDbEntry[] = [
   // ---------------------------------------------------------------------
   // 분식
   // ---------------------------------------------------------------------
-  { id: 'ramen-instant', name: '라면', category: '분식', caloriesPer100g: 138, proteinPer100g: 3, carbsPer100g: 20, fatPer100g: 5, fiberPer100g: 1 },
+  // 봉지라면 1인분(1봉지) = 120g 기준(제품 영양정보 표기 기준 — 끓인 뒤 국물 포함 중량이 아니다).
+  { id: 'ramen-instant', name: '라면', category: '분식', caloriesPer100g: 420, proteinPer100g: 8, carbsPer100g: 65, fatPer100g: 14, fiberPer100g: 2, servingUnit: { label: '봉지', grams: 120 } },
   { id: 'twigim', name: '튀김모둠', category: '분식', caloriesPer100g: 250, proteinPer100g: 6, carbsPer100g: 25, fatPer100g: 14, fiberPer100g: 1.5 },
   { id: 'gimmari', name: '김말이튀김', category: '분식', caloriesPer100g: 220, proteinPer100g: 5, carbsPer100g: 22, fatPer100g: 12, fiberPer100g: 1 },
   { id: 'eomuk-tang', name: '어묵탕', category: '분식', caloriesPer100g: 80, proteinPer100g: 7, carbsPer100g: 8, fatPer100g: 2, fiberPer100g: 0.5 },

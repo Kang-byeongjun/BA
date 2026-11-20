@@ -11,6 +11,8 @@ export interface AnalyzeRequestBody {
   // data URL 접두사가 없는 순수 base64
   image: string
   mediaType?: ImageMediaType
+  // InBody 표준범위를 못 읽었을 때, 막대그래프 구역만 잘라 확대한 이미지로 그 부분만 다시 읽어달라는 요청.
+  focus?: 'inbody_standard_range'
 }
 
 // ---------- InBody ----------
@@ -29,6 +31,20 @@ export interface InBodyExtraction {
   mineralMassKg: number | null
   bmi: number | null
   basalMetabolicRateKcal: number | null
+  // 결과지에 찍힌 검사일시(검사일만, YYYY-MM-DD). 안 보이면 null
+  testedAtDate: string | null
+  // "골격근·지방분석" 막대그래프의 "표준" 구간과, 이 사람 측정값이 그 축 위에서 차지하는 위치.
+  // 이 그래프의 가로축은 kg이 아니라 "표준 대비 %"다(100 = 그 사람의 표준치). "표준Min-표준Max"
+  // 또는 측정값 위치까지 읽었으면 "표준Min-표준Max@측정값위치" 형태의 문자열(예: "90-110@97")로
+  // 받는다 — Anthropic 구조화 출력 스키마는 nullable 파라미터 개수에 상한이 있어서(18개에서 실패),
+  // 숫자마다 별도 필드로 두지 않고 하나로 합친다.
+  weightStandardRange: string | null
+  skeletalMuscleMassStandardRange: string | null
+  bodyFatMassStandardRange: string | null
+  // "골격근·지방분석" 막대그래프 섹션(막대 3개 + 눈금 전체)이 이 이미지 안에서 차지하는 위치.
+  // "xMin,yMin,xMax,yMax" 형태의 문자열(각 0~1, 이미지 너비/높이 대비 비율) — 표준범위를 못 읽었을 때
+  // 이 구역만 잘라서 확대해 다시 읽어보는 용도. 섹션 자체가 안 보이면 null.
+  muscleFatAnalysisBox: string | null
   // 0~1
   confidence: number
   warnings: string[]

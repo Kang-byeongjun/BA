@@ -1,7 +1,7 @@
-import { Bell, Camera, Sparkles, X } from 'lucide-react'
+import { Bell, Sparkles, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import MealDetailModal from '../meals/MealDetailModal'
+import NutritionCalendar from '../calendar/NutritionCalendar'
 import { getDayStatus } from '../../lib/calendar'
 import { buildHomeGreeting } from '../../lib/greeting'
 import { getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
@@ -9,9 +9,7 @@ import { getHomeNudge } from '../../lib/nudge'
 import { isSameDay } from '../../lib/time'
 import { getTodayWaterTotal } from '../../lib/water'
 import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
-import CalorieSummary from './CalorieSummary'
 import HomeCoach from './HomeCoach'
-import TodayMealsSection from './TodayMealsSection'
 import UpdatesPanel from './UpdatesPanel'
 
 interface Props {
@@ -21,11 +19,12 @@ interface Props {
   // 방금 기록한 식사 (기록 직후 얼마나 더해졌는지 보여준다)
   recentMeal: Meal | null
   onDismissRecentMeal: () => void
+  // 캘린더에서 선택한 날 식단/운동 기록이 비어있을 때 "등록하기" 버튼으로 쓴다
+  onNavigateTab: (tab: 'meals' | 'workout') => void
 }
 
-export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMeal }: Props) {
+export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMeal, onNavigateTab }: Props) {
   const { meals, waterLogs, nutritionTarget, profile, dispatch } = useApp()
-  const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null)
   const [updatesPanelOpen, setUpdatesPanelOpen] = useState(false)
 
   useEffect(() => {
@@ -111,28 +110,7 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
 
       {recommendations[0] && <HomeCoach meal={recommendations[0]} goal={recommendationProfile.goal} />}
 
-      <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} streakDays={streakDays} />
-
-      <button
-        onClick={() => onOpenCamera()}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 font-semibold text-white shadow-lg shadow-slate-300 active:scale-[0.98]"
-      >
-        <Camera size={20} />
-        음식 촬영하고 기록하기
-      </button>
-
-      <TodayMealsSection meals={todayMeals} onSelect={setSelectedMeal} onAdd={onOpenCamera} />
-
-      {selectedMeal && (
-        <MealDetailModal
-          meal={selectedMeal}
-          onClose={() => setSelectedMeal(null)}
-          onDelete={(id) => {
-            dispatch({ type: 'DELETE_MEAL', id })
-            setSelectedMeal(null)
-          }}
-        />
-      )}
+      <NutritionCalendar onNavigateTab={onNavigateTab} />
 
       {updatesPanelOpen && <UpdatesPanel onClose={() => setUpdatesPanelOpen(false)} />}
     </div>

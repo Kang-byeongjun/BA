@@ -11,8 +11,15 @@ import {
 import { generateCoachMessage } from './coach.js'
 import type { Env } from './config.js'
 import { validateImage } from './image.js'
-import { normalizeFood, normalizeInBody, normalizeNutritionEstimate } from './normalize.js'
-import { FOOD_SYSTEM_PROMPT, FOOD_USER_PROMPT, INBODY_SYSTEM_PROMPT, INBODY_USER_PROMPT } from './prompts.js'
+import { normalizeFood, normalizeInBody, normalizeInBodyStandardRangeOnly, normalizeNutritionEstimate } from './normalize.js'
+import {
+  FOOD_SYSTEM_PROMPT,
+  FOOD_USER_PROMPT,
+  INBODY_STANDARD_RANGE_SYSTEM_PROMPT,
+  INBODY_STANDARD_RANGE_USER_PROMPT,
+  INBODY_SYSTEM_PROMPT,
+  INBODY_USER_PROMPT,
+} from './prompts.js'
 import { generateNutritionEstimate } from './nutritionEstimate.js'
 import { createVisionClient, describeCause, extractStructured, mapVisionError, type VisionClient } from './vision.js'
 
@@ -28,7 +35,7 @@ export interface HandlerResult {
   body: ApiResponse<unknown>
 }
 
-function parseRequestBody(raw: unknown, kind: AnalysisKind): { image: string } {
+function parseRequestBody(raw: unknown, kind: AnalysisKind): { image: string; focus?: 'inbody_standard_range' } {
   let value: unknown = raw
   if (Buffer.isBuffer(value)) value = value.toString('utf8')
   if (typeof value === 'string') {
@@ -54,20 +61,22 @@ export async function handleAnalysis(kind: AnalysisKind, rawBody: unknown, deps:
   try {
     // API Key 설정 여부를 가장 먼저 확인한다.
     const client = deps.client ?? createVisionClient(env, kind)
-    const { image } = parseRequestBody(rawBody, kind)
+    const { image, focus } = parseRequestBody(rawBody, kind)
     const validated = validateImage(image, kind)
 
     if (kind === 'inbody') {
+      const isStandardRangeRetry = focus === 'inbody_standard_range'
       const raw = await extractStructured({
         client,
         env,
         kind,
         schema: inBodyExtractionSchema,
-        system: INBODY_SYSTEM_PROMPT,
-        prompt: INBODY_USER_PROMPT,
+        system: isStandardRangeRetry ? INBODY_STANDARD_RANGE_SYSTEM_PROMPT : INBODY_SYSTEM_PROMPT,
+        prompt: isStandardRangeRetry ? INBODY_STANDARD_RANGE_USER_PROMPT : INBODY_USER_PROMPT,
         image: validated,
       })
-      return { status: 200, body: { ok: true, data: normalizeInBody(raw) } }
+      const normalized = isStandardRangeRetry ? normalizeInBodyStandardRangeOnly(raw) : normalizeInBody(raw)
+      return { status: 200, body: { ok: true, data: normalized } }
     }
 
     const raw = await extractStructured({

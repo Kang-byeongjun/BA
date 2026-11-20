@@ -5,7 +5,7 @@ import InBodyTrend from '../profile/InBodyTrend'
 import WorkoutSummaryCard from '../workout/WorkoutSummaryCard'
 import DashboardPreviewModal from './DashboardPreviewModal'
 import DietInBodyInsightCard from './DietInBodyInsightCard'
-import NutritionCalendar from './NutritionCalendar'
+import MealWeekTrend from './MealWeekTrend'
 
 const PREVIEW_SEEN_KEY = 'dashboardPreviewSeen'
 
@@ -26,8 +26,7 @@ export default function DashboardScreen() {
       {nutritionTarget && <DietInBodyInsightCard history={inBodyHistory} meals={meals} target={nutritionTarget} />}
       <WorkoutSummaryCard />
       <InBodyTrend history={inBodyHistory} />
-
-      <NutritionCalendar />
+      {nutritionTarget && <MealWeekTrend meals={meals} nutritionTarget={nutritionTarget} />}
 
       {previewOpen && <DashboardPreviewModal onClose={closePreview} />}
     </div>

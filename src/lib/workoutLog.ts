@@ -75,6 +75,25 @@ export function buildLogs(exercises: RoutineExercise[]): ExerciseLog[] {
     })
 }
 
+// 루틴에 없는 종목을 직접 추가할 때 쓰는 기본값. prescription.json의 처방 범위(2~4세트·8~12회
+// 안팎)를 벗어나지 않는 무난한 값으로 잡았다 — 세트별 kg·회는 어차피 직접 입력해서 고칠 수 있다.
+export const CUSTOM_EXERCISE_DEFAULT_SETS = 3
+export const CUSTOM_EXERCISE_DEFAULT_REPS = 10
+export const CUSTOM_EXERCISE_DEFAULT_REST_SECONDS = 90
+
+/** "종목 추가"로 고른 종목 하나를 기본 세트 3개짜리 기록으로 만든다 */
+export function buildCustomLog(key: string, exerciseId: string, name: string, newSetId: () => number): ExerciseLog {
+  return {
+    key,
+    exerciseId,
+    name,
+    defaultReps: CUSTOM_EXERCISE_DEFAULT_REPS,
+    restSeconds: CUSTOM_EXERCISE_DEFAULT_REST_SECONDS,
+    memo: '',
+    sets: Array.from({ length: CUSTOM_EXERCISE_DEFAULT_SETS }, () => newSet(newSetId(), '', String(CUSTOM_EXERCISE_DEFAULT_REPS))),
+  }
+}
+
 const toNum = (s: string) => {
   const n = Number(s)
   return Number.isFinite(n) && n > 0 ? n : 0

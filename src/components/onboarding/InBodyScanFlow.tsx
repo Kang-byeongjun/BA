@@ -2,10 +2,12 @@ import { AlertTriangle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { InBodyExtraction } from '../../../shared/analysis'
 import { AnalysisError, isRetryable, type AnalysisErrorCode } from '../../../shared/errors'
-import { prepareImage, type PreparedImage } from '../../lib/imagePrep'
+import { classifyBodyType, toStandardRange } from '../../lib/inBodyBodyType'
+import { prepareCroppedRegion, prepareImage, type PreparedImage } from '../../lib/imagePrep'
+import { hasMissingStandardRange, mergeStandardRanges, parseBoxFraction } from '../../lib/inBodyStandardRangeRetry'
 import { sleep } from '../../lib/sleep'
 import type { AnalysisMode } from '../../services/foodVisionService'
-import { analyzeInBodyImage, toMeasurements } from '../../services/inBodyVisionService'
+import { analyzeInBodyImage, analyzeInBodyStandardRangeCrop, toMeasurements } from '../../services/inBodyVisionService'
 import type { InBodyMeasurements } from '../../types'
 import AnalysisErrorView from '../common/AnalysisErrorView'
 import AnalyzingLoader from '../common/AnalyzingLoader'
@@ -19,7 +21,8 @@ interface Props {
   onClose: () => void
 }
 
-type FieldKey = keyof InBodyMeasurements
+// measuredAt·bodyType·standardRanges은 숫자 필드가 아니라 별도로 다룬다(날짜 입력 / 계산된 값).
+type FieldKey = Exclude<keyof InBodyMeasurements, 'measuredAt' | 'bodyType' | 'standardRanges'>
 
 const FIELDS: { key: FieldKey; label: string; unit: string }[] = [
   { key: 'weight', label: '체중', unit: 'kg' },
@@ -66,12 +69,20 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       proteinMass: null,
       mineralMass: null,
       basalMetabolicRate: null,
+      measuredAt: null,
+      bodyType: null,
+      standardRanges: null,
     }),
   )
+  const [measuredAt, setMeasuredAt] = useState('')
   const [missing, setMissing] = useState<Set<FieldKey>>(new Set())
   const [error, setError] = useState<{ code: AnalysisErrorCode; message: string; canRetry: boolean } | null>(null)
+  // 표준범위 재시도(막대그래프 구역 크롭) 중인지 — 분석 로딩 화면 문구를 바꾸는 데만 쓴다.
+  const [retrying, setRetrying] = useState(false)
 
   const preparedRef = useRef<PreparedImage | null>(null)
+  // 리사이즈 전 원본 — 표준범위를 못 읽었을 때 막대그래프 구역만 잘라 확대하는 데 쓴다.
+  const rawDataUrlRef = useRef<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => () => abortRef.current?.abort(), [])
@@ -88,6 +99,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
   }
 
   // 준비된(리사이즈된) 이미지를 서버 API로 보내 분석한다. 다시 분석할 때도 같은 이미지를 재사용한다.
+  // 표준범위를 못 읽었으면, 원본에서 막대그래프 구역만 잘라 확대해 한 번 더(자동으로) 시도한다.
   const analyze = async (prepared: PreparedImage) => {
     abortRef.current?.abort()
     const controller = new AbortController()
@@ -95,13 +107,31 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
 
     setStep('analyzing')
     setStage(1)
+    setRetrying(false)
     try {
-      const result = await analyzeInBodyImage(prepared, { mode, signal: controller.signal })
+      let result = await analyzeInBodyImage(prepared, { mode, signal: controller.signal })
       setStage(2)
+
+      const box = parseBoxFraction(result.muscleFatAnalysisBox)
+      const rawDataUrl = rawDataUrlRef.current
+      if (mode === 'real' && hasMissingStandardRange(result) && box && rawDataUrl) {
+        try {
+          setRetrying(true)
+          const cropped = await prepareCroppedRegion(rawDataUrl, box, 'inbody')
+          const retryResult = await analyzeInBodyStandardRangeCrop(cropped, controller.signal)
+          result = mergeStandardRanges(result, retryResult)
+        } catch {
+          // 재시도가 실패해도 1차 결과는 그대로 쓴다 — 조용히 넘어간다.
+        } finally {
+          setRetrying(false)
+        }
+      }
+
       await sleep(250, 'inbody', controller.signal)
       const measurements = toMeasurements(result)
       setExtraction(result)
       setValues(toInputValues(measurements))
+      setMeasuredAt(measurements.measuredAt ?? '')
       setMissing(new Set(FIELDS.filter((f) => measurements[f.key] === null).map((f) => f.key)))
       setStage(3)
       setStep('result')
@@ -122,6 +152,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       const prepared = await prepareImage(dataUrl, 'inbody')
       if (controller.signal.aborted) return
       preparedRef.current = prepared
+      rawDataUrlRef.current = dataUrl
       // 신체 정보가 담긴 사진이므로 분석 화면 미리보기에만 쓰고 어디에도 저장하지 않는다.
       setPreview(prepared.preview)
       await analyze(prepared)
@@ -138,6 +169,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
   const retakePhoto = () => {
     abortRef.current?.abort()
     preparedRef.current = null
+    rawDataUrlRef.current = null
     setPreview(null)
     setStep('capture')
   }
@@ -150,7 +182,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
     return (
       <AnalyzingLoader
         image={preview}
-        message="AI가 InBody 결과를 읽고 있어요."
+        message={retrying ? '표준범위를 더 정확히 읽고 있어요.' : 'AI가 InBody 결과를 읽고 있어요.'}
         steps={STEPS}
         activeStep={stage}
         demo={mode === 'mock'}
@@ -185,6 +217,13 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
     const apply = () => {
       const measurements = {} as InBodyMeasurements
       for (const p of parsed) measurements[p.key] = p.value
+      measurements.measuredAt = measuredAt.trim() === '' ? null : measuredAt
+      const weightRange = toStandardRange(extraction.weightStandardRange)
+      const skeletalMuscleMassRange = toStandardRange(extraction.skeletalMuscleMassStandardRange)
+      const bodyFatMassRange = toStandardRange(extraction.bodyFatMassStandardRange)
+      // 체형 판정은 그래프에서 읽은 측정값 위치(%) 기준이라, 사용자가 kg 값을 고쳐도 다시 계산되지 않는다.
+      measurements.bodyType = classifyBodyType(skeletalMuscleMassRange, bodyFatMassRange)
+      measurements.standardRanges = { weight: weightRange, skeletalMuscleMass: skeletalMuscleMassRange, bodyFatMass: bodyFatMassRange }
       onApply(measurements)
     }
 
@@ -213,6 +252,24 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
           <div className="flex items-center justify-between">
             <p className="text-xs text-slate-500">읽은 값을 확인하고, 틀린 값은 직접 고쳐주세요.</p>
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.className}`}>{badge.text}</span>
+          </div>
+
+          <div className="rounded-2xl border border-slate-100 bg-white p-4">
+            <div className="mb-1 flex items-center justify-between">
+              <label htmlFor="inbody-measured-at" className="text-sm font-medium text-slate-700">
+                측정 날짜
+              </label>
+              {measuredAt === '' && (
+                <span className="text-[11px] font-medium text-amber-600">결과지에서 못 읽었어요 · 직접 선택</span>
+              )}
+            </div>
+            <input
+              id="inbody-measured-at"
+              type="date"
+              value={measuredAt}
+              onChange={(e) => setMeasuredAt(e.target.value)}
+              className="w-full rounded-xl border-2 border-slate-100 bg-white px-3 py-2.5 text-base font-semibold text-slate-900 outline-none focus:border-emerald-400"
+            />
           </div>
 
           {partial && (

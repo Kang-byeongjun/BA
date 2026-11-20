@@ -6,6 +6,7 @@ const target: NutritionTarget = { calories: 2000, protein: 120, carbohydrates: 2
 
 function entry(daysAgo: number, weight: number | null): InBodyHistoryEntry {
   return {
+    id: `entry-${daysAgo}`,
     timestamp: Date.now() - daysAgo * 86_400_000,
     source: 'manual',
     weight,
@@ -16,6 +17,8 @@ function entry(daysAgo: number, weight: number | null): InBodyHistoryEntry {
     proteinMass: null,
     mineralMass: null,
     basalMetabolicRate: null,
+    bodyType: null,
+    standardRanges: null,
   }
 }
 

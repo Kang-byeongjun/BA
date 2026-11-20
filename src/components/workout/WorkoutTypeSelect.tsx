@@ -6,8 +6,9 @@ interface Props {
   onStart: () => void
 }
 
+// '헬스'는 세트·kg·회를 기록하는 전용 화면(WorkoutLogger)이 따로 있어서 뺐다 — 여기는
+// 시간만 재는 유산소·기타 활동 전용이다.
 const TYPES: { type: WorkoutType; emoji: string }[] = [
-  { type: '헬스', emoji: '🏋️' },
   { type: '러닝', emoji: '🏃' },
   { type: '걷기', emoji: '🚶' },
   { type: '자전거', emoji: '🚴' },

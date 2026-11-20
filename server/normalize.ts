@@ -12,6 +12,20 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value))
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+// 모델이 돌려준 검사일시를 검증한다: 형식이 올바르고, 실제 날짜이며, 미래이거나(시계/타임존 오차 1일은 허용)
+// 너무 먼 과거(InBody가 보급된 시기 이전)가 아니어야 한다.
+function validateTestedAtDate(raw: string | null): string | null {
+  if (raw === null || !DATE_RE.test(raw)) return null
+  const date = new Date(`${raw}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return null
+  const tomorrow = Date.now() + 24 * 60 * 60 * 1000
+  if (date.getTime() > tomorrow) return null
+  if (date.getFullYear() < 2000) return null
+  return raw
+}
+
 function cleanWarnings(warnings: string[]): string[] {
   const seen = new Set<string>()
   const result: string[] = []
@@ -56,6 +70,57 @@ const IN_BODY_RANGES: Record<InBodyValueKey, { min: number; max: number; label: 
 function round(value: number, decimals: number): number {
   const f = 10 ** decimals
   return Math.round(value * f) / f
+}
+
+// InBody "골격근·지방분석" 그래프의 가로축은 kg이 아니라 "표준 대비 %"다(100 = 그 사람의 표준치).
+// "표준"(정상) 구간의 좌우 경계와, 이 사람 측정값이 그 축 위 어디에 있는지(점/막대 끝 위치)를 함께
+// 받는다: "zoneMin-zoneMax" 또는 측정값 위치까지 읽었으면 "zoneMin-zoneMax@value" 형태의 문자열
+// (각각 별도 필드로 두면 Anthropic 구조화 출력의 nullable 파라미터 상한을 넘는다). 체지방량 그래프는
+// 100%를 넘어가면 눈금 간격이 넓어지는 비선형 축이라, 상식 범위를 넉넉하게 잡는다.
+const PERCENT_STANDARD_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)(?:@(\d+(?:\.\d+)?))?$/
+const ZONE_BOUNDS = { min: 40, max: 250 }
+const VALUE_BOUNDS = { min: 10, max: 500 }
+
+interface PercentStandard {
+  min: number | null
+  max: number | null
+  value: number | null
+}
+
+function validatePercentStandard(raw: string | null): PercentStandard {
+  if (raw === null) return { min: null, max: null, value: null }
+  const match = PERCENT_STANDARD_RE.exec(raw.trim())
+  if (!match) return { min: null, max: null, value: null }
+  const min = Number(match[1])
+  const max = Number(match[2])
+  const value = match[3] !== undefined ? Number(match[3]) : null
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: null, max: null, value: null }
+  if (min >= max || min < ZONE_BOUNDS.min || max > ZONE_BOUNDS.max) return { min: null, max: null, value: null }
+  const validValue = value !== null && Number.isFinite(value) && value >= VALUE_BOUNDS.min && value <= VALUE_BOUNDS.max ? value : null
+  return { min: round(min, 0), max: round(max, 0), value: validValue !== null ? round(validValue, 0) : null }
+}
+
+function formatPercentStandard(range: PercentStandard): string | null {
+  if (range.min === null || range.max === null) return null
+  return range.value !== null ? `${range.min}-${range.max}@${range.value}` : `${range.min}-${range.max}`
+}
+
+const BOUNDING_BOX_RE = /^(\d*\.?\d+),(\d*\.?\d+),(\d*\.?\d+),(\d*\.?\d+)$/
+const MIN_BOX_WIDTH = 0.03
+const MIN_BOX_HEIGHT = 0.02
+
+// "골격근·지방분석" 구역의 위치. 네 수 모두 0~1이고, 너비·높이가 너무 작지 않아야(=모델이 점 하나를
+// 찍은 게 아니라 실제로 그 구역을 가리킨 것으로 보여야) 크롭에 쓴다 — 잘못된 박스로 엉뚱한 곳을
+// 잘라내느니, 크롭을 포기하고 전체 이미지로 읽은 1차 결과를 그대로 쓰는 편이 낫다.
+function validateBoundingBox(raw: string | null): string | null {
+  if (raw === null) return null
+  const match = BOUNDING_BOX_RE.exec(raw.trim())
+  if (!match) return null
+  const [xMin, yMin, xMax, yMax] = match.slice(1, 5).map(Number)
+  if (![xMin, yMin, xMax, yMax].every(Number.isFinite)) return null
+  if (xMin < 0 || yMin < 0 || xMax > 1 || yMax > 1) return null
+  if (xMax - xMin < MIN_BOX_WIDTH || yMax - yMin < MIN_BOX_HEIGHT) return null
+  return `${round(xMin, 4)},${round(yMin, 4)},${round(xMax, 4)},${round(yMax, 4)}`
 }
 
 export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
@@ -111,11 +176,51 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     }
   }
 
+  const weightRange = validatePercentStandard(raw.weightStandardRange)
+  const muscleRange = validatePercentStandard(raw.skeletalMuscleMassStandardRange)
+  const fatRange = validatePercentStandard(raw.bodyFatMassStandardRange)
+
   return {
     isInBodyReport: true,
     ...values,
+    testedAtDate: validateTestedAtDate(raw.testedAtDate),
+    weightStandardRange: formatPercentStandard(weightRange),
+    skeletalMuscleMassStandardRange: formatPercentStandard(muscleRange),
+    bodyFatMassStandardRange: formatPercentStandard(fatRange),
+    muscleFatAnalysisBox: validateBoundingBox(raw.muscleFatAnalysisBox),
     confidence: clamp01(raw.confidence),
     warnings: cleanWarnings(warnings),
+  }
+}
+
+// 표준범위 재시도(막대그래프 구역만 잘라 확대한 이미지)용. 이 패스는 그 구역 외엔 아무것도 안 보이는 게
+// 정상이라, normalizeInBody와 달리 "읽은 값이 하나도 없으면 에러"로 보지 않는다 — 표준범위 세 개만
+// 검증해서 돌려주고, 그마저도 다 null이면 호출한 쪽이 "재시도해도 못 읽었다"로 판단해 1차 결과를 쓴다.
+export function normalizeInBodyStandardRangeOnly(raw: InBodyExtraction): InBodyExtraction {
+  const weightRange = validatePercentStandard(raw.weightStandardRange)
+  const muscleRange = validatePercentStandard(raw.skeletalMuscleMassStandardRange)
+  const fatRange = validatePercentStandard(raw.bodyFatMassStandardRange)
+
+  return {
+    isInBodyReport: true,
+    weightKg: null,
+    ageYears: null,
+    heightCm: null,
+    skeletalMuscleMassKg: null,
+    bodyFatMassKg: null,
+    bodyFatPercentage: null,
+    bodyWaterL: null,
+    proteinMassKg: null,
+    mineralMassKg: null,
+    bmi: null,
+    basalMetabolicRateKcal: null,
+    testedAtDate: null,
+    weightStandardRange: formatPercentStandard(weightRange),
+    skeletalMuscleMassStandardRange: formatPercentStandard(muscleRange),
+    bodyFatMassStandardRange: formatPercentStandard(fatRange),
+    muscleFatAnalysisBox: null,
+    confidence: clamp01(raw.confidence),
+    warnings: cleanWarnings(raw.warnings),
   }
 }
 

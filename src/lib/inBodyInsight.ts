@@ -19,7 +19,7 @@ function weightChangePhrase(delta: number): string {
 }
 
 /**
- * 두 InBody 측정 사이 기간의 식단 준수(적정 섭취일 수)와 체중 변화를 한 문장으로 엮는다.
+ * 두 InBody 측정 사이 기간의 식단 준수(목표를 지킨 날 수)와 체중 변화를 한 문장으로 엮는다.
  * 둘 중 하나라도 체중 측정값이 없으면("측정 안 함") 비교할 수 없어 null을 반환한다.
  */
 export function buildDietInBodyInsight(
@@ -35,7 +35,7 @@ export function buildDietInBodyInsight(
   const totalDays = statuses.length
 
   return {
-    message: `이 기간 적정 섭취일이 ${onTrackDays}/${totalDays}일이었고, ${weightChangePhrase(latest.weight - comparison.weight)}.`,
+    message: `이 기간 목표를 지킨 날이 ${onTrackDays}/${totalDays}일이었고, ${weightChangePhrase(latest.weight - comparison.weight)}.`,
     onTrackDays,
     totalDays,
   }

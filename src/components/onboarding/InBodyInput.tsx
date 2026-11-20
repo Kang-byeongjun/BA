@@ -1,6 +1,7 @@
 import { Sparkles } from 'lucide-react'
 import { useState } from 'react'
-import type { Gender } from '../../types'
+import type { InBodyBodyType } from '../../lib/inBodyBodyType'
+import type { Gender, InBodyStandardRanges } from '../../types'
 import InBodyScanFlow from './InBodyScanFlow'
 
 export interface InBodyFormValues {
@@ -15,6 +16,10 @@ export interface InBodyFormValues {
   proteinMass: string
   mineralMass: string
   basalMetabolicRate: string
+  // 결과지 스캔으로 읽은 검사일(YYYY-MM-DD). 직접 입력이면 null — 이 경우 온보딩 시점을 측정일로 쓴다.
+  measuredAt: string | null
+  bodyType: InBodyBodyType | null
+  standardRanges: InBodyStandardRanges | null
 }
 
 export type InBodyEntryMode = 'full' | 'lite'
@@ -26,15 +31,18 @@ interface Props {
   onNext: (values: InBodyFormValues, mode: InBodyEntryMode) => void
 }
 
+// 숫자 입력칸(문자열)으로 다루는 필드만. gender는 버튼 선택, 나머지는 스캔 화면에서 따로 다룬다.
+type NumericFieldKey = Exclude<keyof InBodyFormValues, 'gender' | 'measuredAt' | 'bodyType' | 'standardRanges'>
+
 // 간편 시작(InBody 없음)에서도 항상 받는 필수 항목
-const CORE_FIELDS: { key: keyof InBodyFormValues; label: string; unit: string }[] = [
+const CORE_FIELDS: { key: NumericFieldKey; label: string; unit: string }[] = [
   { key: 'age', label: '나이', unit: '세' },
   { key: 'height', label: '키', unit: 'cm' },
   { key: 'weight', label: '체중', unit: 'kg' },
 ]
 
 // InBody 결과가 있을 때만 받는 체성분 항목 (정식 모드에서 필수)
-const BODY_COMP_FIELDS: { key: keyof InBodyFormValues; label: string; unit: string }[] = [
+const BODY_COMP_FIELDS: { key: NumericFieldKey; label: string; unit: string }[] = [
   { key: 'skeletalMuscleMass', label: '골격근량', unit: 'kg' },
   { key: 'bodyFatMass', label: '체지방량', unit: 'kg' },
   { key: 'bodyFatPercentage', label: '체지방률', unit: '%' },
@@ -42,7 +50,7 @@ const BODY_COMP_FIELDS: { key: keyof InBodyFormValues; label: string; unit: stri
 ]
 
 // 결과지에 없을 수도 있어 정식 모드에서도 선택 입력으로 둔다
-const ADVANCED_FIELDS: { key: keyof InBodyFormValues; label: string; unit: string }[] = [
+const ADVANCED_FIELDS: { key: NumericFieldKey; label: string; unit: string }[] = [
   { key: 'bodyWater', label: '체수분', unit: 'L' },
   { key: 'proteinMass', label: '단백질량', unit: 'kg' },
   { key: 'mineralMass', label: '무기질량', unit: 'kg' },
@@ -53,7 +61,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
   const [mode, setMode] = useState<InBodyEntryMode>(initialMode)
   const [scanOpen, setScanOpen] = useState(false)
 
-  const update = (key: keyof InBodyFormValues, value: string) => {
+  const update = (key: NumericFieldKey, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -80,6 +88,9 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
             ...(scanned.proteinMass !== null && { proteinMass: String(scanned.proteinMass) }),
             ...(scanned.mineralMass !== null && { mineralMass: String(scanned.mineralMass) }),
             ...(scanned.basalMetabolicRate !== null && { basalMetabolicRate: String(scanned.basalMetabolicRate) }),
+            measuredAt: scanned.measuredAt,
+            bodyType: scanned.bodyType,
+            standardRanges: scanned.standardRanges,
           }))
           // 스캔으로 결과를 받았다는 건 InBody가 있다는 뜻이므로 정식 모드로 전환한다.
           setMode('full')

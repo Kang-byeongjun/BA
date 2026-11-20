@@ -60,6 +60,7 @@ export async function requestAnalysis<T>(
   imageBase64: string,
   isValid: (data: unknown) => data is T,
   signal?: AbortSignal,
+  focus?: 'inbody_standard_range',
 ): Promise<T> {
   const controller = new AbortController()
   let timedOut = false
@@ -74,7 +75,7 @@ export async function requestAnalysis<T>(
     const res = await fetch(ENDPOINTS[kind], {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: imageBase64 }),
+      body: JSON.stringify(focus ? { image: imageBase64, focus } : { image: imageBase64 }),
       signal: controller.signal,
       cache: 'no-store',
     })

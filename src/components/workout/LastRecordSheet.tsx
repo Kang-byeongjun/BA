@@ -45,7 +45,7 @@ export default function LastRecordSheet({ name, last, onClose }: Props) {
         {last ? (
           <>
             <p className="text-sm text-slate-500">
-              {dateText(last.date)} · {last.day}일차 {last.label}
+              {dateText(last.date)} · {last.day > 0 ? `${last.day}일차 ${last.label}` : last.label}
             </p>
             <ol className="space-y-1.5">
               {last.exercise.sets.map((s, i) => (
