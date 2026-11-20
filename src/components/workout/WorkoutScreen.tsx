@@ -78,16 +78,8 @@ export default function WorkoutScreen({ onLoggingChange }: Props) {
         }}
       />
 
-      <button
-        onClick={() => {
-          const created = createWorkoutLog({ day: 0, label: '자유 운동', exercises: [] }, Date.now())
-          saveWorkoutLog(created)
-          setSession(created)
-        }}
-        className="w-full rounded-2xl border-2 border-dashed border-slate-200 py-3 text-sm font-semibold text-slate-500"
-      >
-        추천 루틴 없이 직접 종목 골라서 운동 시작
-      </button>
+      {/* "추천 루틴 없이 직접 종목 골라서 운동 시작" 버튼은 화면에서 숨김(나중에 복구 가능):
+          createWorkoutLog({ day: 0, label: '자유 운동', exercises: [] }, Date.now()) → saveWorkoutLog → setSession */}
 
       {pendingWorkout ? (
         <WorkoutComplete
@@ -119,14 +111,7 @@ export default function WorkoutScreen({ onLoggingChange }: Props) {
             }}
           />
         </div>
-      ) : (
-        <button
-          onClick={() => setStartingCardio(true)}
-          className="w-full rounded-2xl border-2 border-dashed border-slate-200 py-3 text-sm font-semibold text-slate-500"
-        >
-          유산소 운동 시작 (러닝·걷기·자전거 등)
-        </button>
-      )}
+      ) : null /* "유산소 운동 시작" 버튼은 숨김: 복구하려면 여기서 setStartingCardio(true) 버튼을 다시 렌더 */}
     </div>
   )
 }

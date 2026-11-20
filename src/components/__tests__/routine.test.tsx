@@ -227,43 +227,10 @@ describe('WorkoutScreen', () => {
     expect(screen.queryByRole('button', { name: '운동 시작' })).toBeNull()
     expect(screen.queryByText('00:00:00')).toBeNull()
     expect(screen.queryByText('운동 종류')).toBeNull()
-    expect(screen.getByRole('button', { name: /유산소 운동 시작/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /유산소 운동 시작/ })).toBeNull() // 숨김 처리됨
+    expect(screen.queryByRole('button', { name: /직접 종목 골라서 운동 시작/ })).toBeNull() // 숨김 처리됨
     expect(screen.queryByText('최근 운동 기록')).toBeNull()
     await waitFor(() => expect(fetchMock).not.toHaveBeenCalled())
-  })
-
-  it('"유산소 운동 시작"을 누르면 운동 종류·스톱워치가 펼쳐지고, 뒤로 가면 다시 접힌다', () => {
-    render(
-      <AppProvider>
-        <WorkoutScreen />
-      </AppProvider>,
-    )
-    fireEvent.click(screen.getByRole('button', { name: /유산소 운동 시작/ }))
-
-    expect(screen.getByText('운동 종류')).toBeTruthy()
-    expect(screen.getByText('00:00:00')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /러닝/ })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /헬스/ })).toBeNull() // 헬스는 WorkoutLogger 전용
-    expect(screen.queryByText('최근 운동 기록')).toBeNull()
-
-    fireEvent.click(screen.getByRole('button', { name: '뒤로' }))
-    expect(screen.queryByText('운동 종류')).toBeNull()
-    expect(screen.queryByText('최근 운동 기록')).toBeNull()
-    expect(screen.getByRole('button', { name: /유산소 운동 시작/ })).toBeTruthy()
-  })
-
-  it('운동 종류를 골라 시작하면 스톱워치가 뜨고, 마치면 저장/버리기로 이어진다', () => {
-    render(
-      <AppProvider>
-        <WorkoutScreen />
-      </AppProvider>,
-    )
-    fireEvent.click(screen.getByRole('button', { name: /유산소 운동 시작/ }))
-    fireEvent.click(screen.getByRole('button', { name: /러닝/ }))
-    fireEvent.click(screen.getByRole('button', { name: '운동 시작' }))
-
-    expect(screen.queryByText('운동 종류')).toBeNull() // 시작하면 종류 선택 화면은 사라지고
-    expect(screen.getByRole('button', { name: /운동 종료/ })).toBeTruthy()
   })
 
   it('"이 루틴으로 운동 시작"을 누르면 기록 화면으로 가고, 중단하면 돌아온다', async () => {
