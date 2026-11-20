@@ -191,17 +191,17 @@ export default function NutritionCalendar({ onNavigateTab }: Props) {
           </p>
 
           <div className="mt-2.5">
-            <p className="text-xs font-medium text-slate-500">식단</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-slate-500">식단</p>
+              <button
+                onClick={() => onNavigateTab('meals')}
+                className="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
+              >
+                + 추가 등록
+              </button>
+            </div>
             {selected.status === 'none' ? (
-              <div className="mt-1 flex items-center justify-between gap-2">
-                <p className="text-xs text-slate-400">기록된 식사가 없어요.</p>
-                <button
-                  onClick={() => onNavigateTab('meals')}
-                  className="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
-                >
-                  식단 등록하기
-                </button>
-              </div>
+              <p className="mt-1 text-xs text-slate-400">기록된 식사가 없어요.</p>
             ) : (
               <>
                 <p className="mt-1 text-xs text-slate-600">
@@ -236,19 +236,19 @@ export default function NutritionCalendar({ onNavigateTab }: Props) {
           </div>
 
           <div className="mt-3 border-t border-slate-100 pt-2.5">
-            <p className="text-xs font-medium text-slate-500">운동</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-slate-500">운동</p>
+              <button
+                onClick={() => onNavigateTab('workout')}
+                className="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
+              >
+                + 추가 등록
+              </button>
+            </div>
             {(() => {
               const daySessions = sessions.filter((s) => isSameDay(s.startTime, selected.date))
               return daySessions.length === 0 ? (
-                <div className="mt-1 flex items-center justify-between gap-2">
-                  <p className="text-xs text-slate-400">운동 기록이 없어요.</p>
-                  <button
-                    onClick={() => onNavigateTab('workout')}
-                    className="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
-                  >
-                    운동 등록하기
-                  </button>
-                </div>
+                <p className="mt-1 text-xs text-slate-400">운동 기록이 없어요.</p>
               ) : (
                 <div className="mt-2 space-y-1.5">
                   {daySessions.map((s) => (
