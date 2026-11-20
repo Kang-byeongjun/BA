@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppProvider, useApp } from '../../context/AppContext'
 import { buildDemoMeals, DEMO_NUTRITION_TARGET, DEMO_PROFILE } from '../../data/mockData'
 import { createRowsFromExtraction, buildMeal } from '../../services/mealService'
@@ -39,7 +39,7 @@ describe('식사 저장 → 식단 탭 영양 Progress Bar (Test B 마지막 단
   it('저장한 식사의 영양소가 개인 목표 대비 진행률에 반영된다', () => {
     render(
       <AppProvider>
-        <MealHistory />
+        <MealHistory onOpenCamera={() => {}} />
         <AddMealButton />
       </AppProvider>,
     )
@@ -52,5 +52,29 @@ describe('식사 저장 → 식단 탭 영양 Progress Bar (Test B 마지막 단
     // 닭가슴살 120g(37.2g) + 현미밥 180g(5.8g) ≈ +43g → 68 + 43 = 111 / 130g = 85%
     expect(screen.getByText('85%')).toBeTruthy()
     expect(screen.queryByText('52%')).toBeNull()
+  })
+})
+
+describe('식단 탭 구성 (홈에서 옮겨온 영양 밸런스·촬영·오늘의 식단)', () => {
+  it('오늘의 영양 밸런스·촬영 버튼·오늘의 식단을 보여준다', () => {
+    render(
+      <AppProvider>
+        <MealHistory onOpenCamera={() => {}} />
+      </AppProvider>,
+    )
+    expect(screen.getByText('오늘의 영양 밸런스')).toBeTruthy()
+    expect(screen.getByText('음식 촬영하고 기록하기')).toBeTruthy()
+    expect(screen.getByText('오늘의 식단')).toBeTruthy()
+  })
+
+  it('촬영 버튼을 누르면 onOpenCamera를 호출한다', () => {
+    const onOpenCamera = vi.fn()
+    render(
+      <AppProvider>
+        <MealHistory onOpenCamera={onOpenCamera} />
+      </AppProvider>,
+    )
+    fireEvent.click(screen.getByText('음식 촬영하고 기록하기'))
+    expect(onOpenCamera).toHaveBeenCalledWith()
   })
 })

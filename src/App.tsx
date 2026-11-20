@@ -44,7 +44,7 @@ function MainApp() {
       {tab === 'home' && (
         <Dashboard onOpenCamera={(slot) => setCameraSlot(slot)} recentMeal={recentMeal} onDismissRecentMeal={dismissRecentMeal} />
       )}
-      {tab === 'meals' && <MealHistory />}
+      {tab === 'meals' && <MealHistory onOpenCamera={(slot) => setCameraSlot(slot)} />}
       {tab === 'dashboard' && <DashboardScreen />}
       {tab === 'workout' && <WorkoutScreen onLoggingChange={setLogging} />}
       {tab === 'profile' && <Profile />}

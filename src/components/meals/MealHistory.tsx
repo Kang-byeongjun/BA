@@ -1,22 +1,31 @@
+import { Camera } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import { generateFeedback, getRecommendedMeals, sumMeals } from '../../lib/nutrition'
+import { generateFeedback, getRecommendedMeals, getStreakDays, sumMeals } from '../../lib/nutrition'
 import { isSameDay } from '../../lib/time'
 import { getTodayWaterTotal } from '../../lib/water'
-import { DEFAULT_WATER_TARGET_ML, type Meal } from '../../types'
+import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
+import CalorieSummary from '../dashboard/CalorieSummary'
 import FeedbackPanel from '../dashboard/FeedbackPanel'
 import NutritionBar from '../dashboard/NutritionBar'
 import RecommendationCard from '../dashboard/RecommendationCard'
+import TodayMealsSection from '../dashboard/TodayMealsSection'
 import WaterBar from '../dashboard/WaterBar'
 import MealDetailModal from './MealDetailModal'
 import MealHistoryAccordion from './MealHistoryAccordion'
 
-export default function MealHistory() {
+interface Props {
+  // slot을 넘기면 그 칸으로 바로 기록된다. 하단 촬영 버튼처럼 어느 칸인지 모를 때는 생략한다.
+  onOpenCamera: (slot?: MealSlot) => void
+}
+
+export default function MealHistory({ onOpenCamera }: Props) {
   const { meals, waterLogs, nutritionTarget, profile, dispatch } = useApp()
   const [selected, setSelected] = useState<Meal | null>(null)
 
   const todayMeals = useMemo(() => meals.filter((m) => isSameDay(m.timestamp, Date.now())), [meals])
   const consumed = useMemo(() => sumMeals(todayMeals), [todayMeals])
+  const streakDays = useMemo(() => getStreakDays(meals), [meals])
   const eatenTodayFoodNames = useMemo(() => todayMeals.flatMap((m) => m.foods.map((f) => f.name)), [todayMeals])
   const hasUncertainPortionsToday = todayMeals.some((m) => m.hasLowConfidencePortions)
   const todayWaterLogs = useMemo(() => waterLogs.filter((w) => isSameDay(w.timestamp, Date.now())), [waterLogs])
@@ -40,6 +49,18 @@ export default function MealHistory() {
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
       <h1 className="text-xl font-bold text-slate-900">식단</h1>
+
+      <CalorieSummary consumed={consumed.calories} target={nutritionTarget.calories} streakDays={streakDays} />
+
+      <button
+        onClick={() => onOpenCamera()}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 font-semibold text-white shadow-lg shadow-slate-300 active:scale-[0.98]"
+      >
+        <Camera size={20} />
+        음식 촬영하고 기록하기
+      </button>
+
+      <TodayMealsSection meals={todayMeals} onSelect={setSelected} onAdd={onOpenCamera} />
 
       <div className="space-y-4 rounded-2xl border border-slate-100 bg-white p-4">
         <NutritionBar

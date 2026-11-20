@@ -26,15 +26,25 @@ function CheatDayBanner({ meals, nutritionTarget }: { meals: Meal[]; nutritionTa
 
 // 주간 목표 길이의 TARGET_POS%까지를 "목표 안"으로 쓰고, 나머지는 초과분을 보여줄 여유 공간으로 비워둔다.
 const TARGET_POS = 78
-// 월 -> 일 순서로, 같은 색조를 진하게.
-const WEEKDAY_SHADES = ['bg-sky-100', 'bg-sky-200', 'bg-sky-300', 'bg-sky-400', 'bg-sky-500', 'bg-sky-600', 'bg-sky-700']
+// 월 -> 일 순서로 색조 자체를 다르게(같은 색조의 명암 단계로는 요일이 잘 구분되지 않는다는 피드백으로
+// 바꿈) — 검증된 8색 카테고리 팔레트의 앞 7개(빨강만 제외)를, 인접 쌍 CVD 대비를 지키는 고정 순서
+// 그대로 쓴다. 요일마다 같은 색이 고정되므로(주가 바뀌어도 월=파랑) 매번 다시 익힐 필요가 없다.
+const WEEKDAY_COLORS = [
+  '#2a78d6', // 월 · blue
+  '#eb6834', // 화 · orange
+  '#1baf7a', // 수 · aqua
+  '#eda100', // 목 · yellow
+  '#e87ba4', // 금 · magenta
+  '#008300', // 토 · green
+  '#6250d6', // 일 · violet
+]
 
 function WeekdayLegend({ series }: { series: DayNutrition[] }) {
   return (
     <div className="mb-3 flex items-center gap-2">
       {series.map((d, i) => (
         <div key={d.date} className="flex items-center gap-0.5">
-          <span className={`inline-block h-2 w-2 rounded-sm ${WEEKDAY_SHADES[i]}`} />
+          <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: WEEKDAY_COLORS[i] }} />
           <span className="text-[10px] text-slate-400">{weekdayLabel(d.date)}</span>
         </div>
       ))}
@@ -63,12 +73,12 @@ function WeeklyBudgetBar({ nutrient, series, target }: { nutrient: NutrientKey; 
         </span>
       </div>
       <div className="relative overflow-hidden rounded-full bg-slate-100" style={{ height: 18 }}>
-        <div className="flex h-full">
+        <div className="flex h-full gap-x-[2px]">
           {series.map((d, i) => (
             <div
               key={d.date}
-              className={`h-full shrink-0 ${WEEKDAY_SHADES[i]}`}
-              style={{ width: `${Math.max(0, d[nutrient] * scale)}%` }}
+              className="h-full shrink-0"
+              style={{ width: `${Math.max(0, d[nutrient] * scale)}%`, backgroundColor: WEEKDAY_COLORS[i] }}
             />
           ))}
         </div>
@@ -96,9 +106,9 @@ function WeeklyBudgetBar({ nutrient, series, target }: { nutrient: NutrientKey; 
 }
 
 // 끼니 구분 없이 하루 전체를 더해서, 영양소별로 "그 주 목표 중 얼마나 채웠는지"를 가로 막대 하나로
-// 보여준다. 막대 안의 각 구간은 요일(월 -> 일, 점점 진해짐)이고, 목표(점선)를 넘기면 그 초과분만
-// 빨간 구간으로 이어 붙인다. 화살표로 지난 주들을 돌아볼 수 있고, "오늘 치팅해도 되는지" 배너는
-// 이번 주를 볼 때만 뜬다(지난 주는 이미 끝난 주라 "오늘" 개념이 없다).
+// 보여준다. 막대 안의 각 구간은 요일(월 -> 일, WEEKDAY_COLORS 순서)이고, 목표(점선)를 넘기면 그
+// 초과분만 빨간 구간으로 이어 붙인다. 화살표로 지난 주들을 돌아볼 수 있고, "오늘 치팅해도 되는지"
+// 배너는 이번 주를 볼 때만 뜬다(지난 주는 이미 끝난 주라 "오늘" 개념이 없다).
 export default function MealWeekTrend({ meals, nutritionTarget }: Props) {
   const [weekOffset, setWeekOffset] = useState(0) // 0 = 이번 주, 1 = 지난 주, ...
   const isCurrentWeek = weekOffset === 0

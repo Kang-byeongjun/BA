@@ -632,4 +632,46 @@ describe('인바디 재측정 (체형 판정 실패 기록 교체)', () => {
       expect(saved.find((e) => e.id !== 'ok-1')?.bodyType).not.toBeNull()
     })
   })
+
+  it('"체형 분석"은 기본으로 펼쳐져 있고, "전체 측정 기록"은 기본으로 접혀 있으며, 둘 다 클릭해서 열고 닫을 수 있다', () => {
+    const entryA: InBodyHistoryEntry = {
+      id: 'a',
+      timestamp: Date.now(),
+      source: 'scan',
+      weight: 75,
+      skeletalMuscleMass: 34,
+      bodyFatMass: 14,
+      bodyFatPercentage: 18,
+      bodyWater: 42,
+      proteinMass: 13,
+      mineralMass: 4.5,
+      basalMetabolicRate: 1700,
+      bodyType: 'I',
+      standardRanges: {
+        weight: { min: 90, max: 110, value: 100 },
+        skeletalMuscleMass: { min: 90, max: 110, value: 100 },
+        bodyFatMass: { min: 80, max: 120, value: 100 },
+      },
+    }
+    const entryB: InBodyHistoryEntry = { ...entryA, id: 'b', timestamp: Date.now() - 14 * 24 * 60 * 60 * 1000 }
+    render(
+      <AppProvider>
+        <InBodyTrend history={[entryA, entryB]} />
+      </AppProvider>,
+    )
+
+    // 체형 분석: 기본으로 펼쳐져 있다 (각 행에 찍히는 표준이하/표준/표준이상 라벨로 확인)
+    expect(screen.getAllByText('표준이하').length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByText('체형 분석'))
+    expect(screen.queryByText('표준이하')).toBeNull()
+    fireEvent.click(screen.getByText('체형 분석'))
+    expect(screen.getAllByText('표준이하').length).toBeGreaterThan(0)
+
+    // 전체 측정 기록: 기본으로 접혀 있다 (목록 항목이 안 보임)
+    expect(screen.queryByText('결과지 스캔')).toBeNull()
+    fireEvent.click(screen.getByText('전체 측정 기록 (2)'))
+    expect(screen.getAllByText('결과지 스캔').length).toBe(2)
+    fireEvent.click(screen.getByText('전체 측정 기록 (2)'))
+    expect(screen.queryByText('결과지 스캔')).toBeNull()
+  })
 })

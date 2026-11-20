@@ -35,3 +35,17 @@ describe('식사 저장 → 대시보드 (Test B 마지막 단계)', () => {
     expect(screen.getByText(/\+155kcal · 단백질 \+13g/)).toBeTruthy()
   })
 })
+
+describe('홈 탭 구성 (캘린더는 홈으로, 영양 밸런스·촬영·오늘의 식단은 식단 탭으로)', () => {
+  it('캘린더를 보여주고, 영양 밸런스·촬영 버튼·오늘의 식단은 더 이상 보여주지 않는다', () => {
+    render(
+      <AppProvider>
+        <Dashboard onOpenCamera={() => {}} recentMeal={null} onDismissRecentMeal={() => {}} />
+      </AppProvider>,
+    )
+    expect(screen.getByLabelText('이전 달')).toBeTruthy()
+    expect(screen.queryByText('오늘의 영양 밸런스')).toBeNull()
+    expect(screen.queryByText('음식 촬영하고 기록하기')).toBeNull()
+    expect(screen.queryByText('오늘의 식단')).toBeNull()
+  })
+})
