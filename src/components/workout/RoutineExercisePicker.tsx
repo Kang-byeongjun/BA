@@ -3,7 +3,7 @@ import type { MuscleGroup, PainPart } from '../../../server/engine/types'
 import { checkTypedName, EDIT_GROUPS, GROUP_LABELS, optionsForGroup, TYPED_NAME_MAX, type PickOption } from '../../lib/routineEdit'
 
 /**
- * ExercisePicker — "바꾸기 / 종목 추가"에서 종목을 고르는 창.
+ * RoutineExercisePicker — "바꾸기 / 종목 추가"에서 종목을 고르는 창.
  * - replace: 부위가 정해져 있다(바꾸려는 종목과 같은 부위만 보여준다).
  * - add: 부위를 먼저 고른 뒤 그 부위의 종목을 보여준다.
  * 통증 부위에 부담이 큰 종목은 목록 아래쪽에 경고 배지와 함께 두고, 고르면 한 번 더 확인한다.
@@ -105,7 +105,7 @@ function TypedForm({ group, existingNames, onSubmit }: { group: MuscleGroup; exi
   )
 }
 
-export default function ExercisePicker({ mode, group: fixedGroup, pain, takenIds, currentId, existingNames = [], onPick, onPickTyped, onClose }: Props) {
+export default function RoutineExercisePicker({ mode, group: fixedGroup, pain, takenIds, currentId, existingNames = [], onPick, onPickTyped, onClose }: Props) {
   const [group, setGroup] = useState<MuscleGroup | null>(mode === 'replace' ? (fixedGroup ?? null) : null)
   // 부담이 큰 종목을 골랐을 때 "그래도 담을까요?"를 물어볼 대상
   const [confirming, setConfirming] = useState<PickOption | null>(null)

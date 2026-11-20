@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { RoutineExercise, WorkoutResult } from '../../../server/engine/types'
 import { addExercise, addTypedExercise, isTypedExercise, removeExercise, replaceExercise, takenIdsOf, type EditContext } from '../../lib/routineEdit'
-import ExercisePicker from './ExercisePicker'
+import RoutineExercisePicker from './RoutineExercisePicker'
 
 /**
  * RoutineView — 운동 추천 엔진 결과(WorkoutResult)를 그리기만 하는 화면 조각.
@@ -203,7 +203,7 @@ export default function RoutineView({ result, onStart, edit, edited = false }: P
       )}
 
       {current && edit && picker && (
-        <ExercisePicker
+        <RoutineExercisePicker
           mode={picker.mode}
           group={picker.mode === 'replace' ? current.exercises.find((e) => e.order === picker.order)?.group : undefined}
           currentId={picker.mode === 'replace' ? current.exercises.find((e) => e.order === picker.order)?.id : undefined}
