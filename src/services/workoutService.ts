@@ -1,6 +1,6 @@
 import type { WorkoutResult } from '../../server/engine/types'
 import { AnalysisError, describeError, type AnalysisErrorCode } from '../../shared/errors'
-import { loadFromStorage, saveToStorage } from '../lib/storage'
+import { loadFromStorage, removeFromStorage, saveToStorage } from '../lib/storage'
 import { toWorkoutRequest } from '../lib/workoutAdapter'
 import type { PainArea, WorkoutProfile } from '../types'
 
@@ -16,6 +16,8 @@ const ENDPOINT = '/api/workout'
 // storage.ts의 STORAGE_KEYS와 같은 방식(접두사는 loadFromStorage/saveToStorage가 붙임).
 // storage.ts는 수정하지 않기로 해서 여기 따로 둔다.
 export const WORKOUT_ROUTINE_STORAGE_KEY = 'workoutRoutine'
+// 사용자가 종목을 바꾸거나 추가·삭제한 루틴. AI 결과 저장값(위)과 섞이지 않게 따로 둔다.
+export const WORKOUT_ROUTINE_EDIT_STORAGE_KEY = 'workoutRoutineEdit'
 
 // 저장 형식이나 엔진 결과 모양이 바뀌면 숫자를 올려 예전 저장값을 무시한다.
 const CACHE_VERSION = 1
@@ -55,6 +57,8 @@ export interface WorkoutRoutineResponse {
   unsupportedPains: PainArea[]
   /** true면 저장된 결과를 재사용한 것(서버 호출 없음) */
   fromCache: boolean
+  /** true면 사용자가 종목을 직접 바꾼 루틴(AI 추천이 아님). 예전 코드·테스트는 이 값을 몰라도 된다 */
+  edited?: boolean
 }
 
 const inFlight = new Map<string, Promise<WorkoutResult>>()
@@ -71,10 +75,34 @@ function readCache(requestKey: string): WorkoutResult | null {
   return isWorkoutResult(cached.result) ? cached.result : null
 }
 
-/** 화면 첫 표시용: 저장된 결과가 있으면 서버 호출 없이 바로 돌려준다. 없으면 null. */
+function readEdited(requestKey: string): WorkoutResult | null {
+  const saved = loadFromStorage<CachedRoutine | null>(WORKOUT_ROUTINE_EDIT_STORAGE_KEY, null)
+  if (!saved || saved.v !== CACHE_VERSION || saved.requestKey !== requestKey) return null
+  return isWorkoutResult(saved.result) ? saved.result : null
+}
+
+/** 사용자가 바꾼 루틴을 저장한다(현재 프로필의 요청과 짝지어서). AI는 부르지 않는다. */
+export function saveEditedWorkoutRoutine(profile: WorkoutProfile, result: WorkoutResult): void {
+  const requestKey = JSON.stringify(toWorkoutRequest(profile).request)
+  const entry: CachedRoutine = { v: CACHE_VERSION, requestKey, savedAt: new Date().toISOString(), result }
+  saveToStorage(WORKOUT_ROUTINE_EDIT_STORAGE_KEY, entry)
+}
+
+/** 바꾼 루틴을 지운다(다시 AI 추천으로 되돌릴 때) */
+export function clearEditedWorkoutRoutine(): void {
+  removeFromStorage(WORKOUT_ROUTINE_EDIT_STORAGE_KEY)
+}
+
+/**
+ * 화면 첫 표시용: 저장된 결과가 있으면 서버 호출 없이 바로 돌려준다. 없으면 null.
+ * 사용자가 바꾼 루틴이 있으면 AI 저장값보다 그쪽을 먼저 돌려준다(대시보드 요약도 같은 함수를 쓴다).
+ */
 export function getCachedWorkoutRoutine(profile: WorkoutProfile): WorkoutRoutineResponse | null {
   const { request, unsupportedPains } = toWorkoutRequest(profile)
-  const result = readCache(JSON.stringify(request))
+  const requestKey = JSON.stringify(request)
+  const edited = readEdited(requestKey)
+  if (edited) return { result: edited, unsupportedPains, fromCache: true, edited: true }
+  const result = readCache(requestKey)
   return result ? { result, unsupportedPains, fromCache: true } : null
 }
 
@@ -87,6 +115,8 @@ export async function getWorkoutRoutine(
   const requestKey = JSON.stringify(request)
 
   if (!options.force) {
+    const edited = readEdited(requestKey)
+    if (edited) return { result: edited, unsupportedPains, fromCache: true, edited: true }
     const cached = readCache(requestKey)
     if (cached) return { result: cached, unsupportedPains, fromCache: true }
   }
@@ -100,6 +130,8 @@ export async function getWorkoutRoutine(
 
   const entry: CachedRoutine = { v: CACHE_VERSION, requestKey, savedAt: new Date().toISOString(), result }
   saveToStorage(WORKOUT_ROUTINE_STORAGE_KEY, entry)
+  // 새 추천을 받는 데 성공했을 때만 바꾼 내용을 지운다(실패하면 그대로 남는다).
+  clearEditedWorkoutRoutine()
   return { result, unsupportedPains, fromCache: false }
 }
 
