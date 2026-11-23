@@ -208,3 +208,38 @@ describe('앱 데이터 연결(data를 안 넘길 때)', () => {
     expect(container.textContent).not.toMatch(BAD)
   })
 })
+
+describe('DashboardWorkoutSection 주간 볼륨 변화율 표시', () => {
+  const volumeBox = () => screen.getByText('주간 볼륨(헬스)').parentElement!
+
+  it('이번 주 볼륨이 0이면(유산소만 한 경우) -100% 대신 "-"를 보여준다', () => {
+    const lastWeek = rec(at(11, 4), [exr('CHEST', 1000)]) // 지난주 헬스 기록
+    const thisWeekCardio: Workout = { id: 'run', type: '러닝', startTime: at(11, 10), endTime: at(11, 10) + 1_800_000, duration: 1800 }
+    const input: WorkoutSummaryInput = {
+      history: [lastWeek],
+      workouts: [teamOf(lastWeek), thisWeekCardio],
+      profile: DEFAULT_WORKOUT_PROFILE,
+      routine,
+    }
+    const { container } = render(<DashboardWorkoutSection data={buildWorkoutCardData(input, NOW)} />)
+    const box = volumeBox()
+    expect(box.textContent).toContain('0kg')
+    expect(box.textContent).toContain('-')
+    expect(container.textContent).not.toContain('-100%')
+    expect(container.textContent).not.toContain('이번 주 첫 운동을 시작해보세요') // 운동은 했으니
+  })
+
+  it('지난주 볼륨이 0이면 퍼센트 대신 "-"를 보여준다', () => {
+    const { container } = render(<DashboardWorkoutSection data={make([rec(at(11, 10), [exr('CHEST', 900)])])} />)
+    const box = volumeBox()
+    expect(box.textContent).toContain('900kg')
+    expect(box.textContent).toMatch(/-$/)
+    expect(container.textContent).not.toMatch(/\+\d+%|Infinity|NaN/)
+  })
+
+  it('둘 다 있으면 퍼센트를 보여준다', () => {
+    const data = make([rec(at(11, 4), [exr('CHEST', 1000)]), rec(at(11, 10), [exr('CHEST', 1500)])])
+    render(<DashboardWorkoutSection data={data} />)
+    expect(volumeBox().textContent).toContain('+50%')
+  })
+})

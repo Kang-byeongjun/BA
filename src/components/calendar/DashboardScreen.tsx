@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
+import { getInBodySummaryLine, getWeekNutritionSummaryLine } from '../../lib/dashboardSummaries'
 import { loadFromStorage, saveToStorage } from '../../lib/storage'
+import CollapsibleCard from '../dashboard/CollapsibleCard'
 import InBodyTrend from '../profile/InBodyTrend'
-import WorkoutSummaryCard from '../workout/WorkoutSummaryCard'
+import DashboardWorkoutSection from '../workout/DashboardWorkoutSection'
 import DashboardPreviewModal from './DashboardPreviewModal'
 import DietInBodyInsightCard from './DietInBodyInsightCard'
 import MealWeekTrend from './MealWeekTrend'
@@ -19,14 +21,27 @@ export default function DashboardScreen() {
     setPreviewOpen(false)
   }
 
+  const weekSummary = nutritionTarget ? getWeekNutritionSummaryLine(meals, nutritionTarget) : null
+  const inBodySummary = getInBodySummaryLine(inBodyHistory)
+
   return (
     <div className="space-y-4 px-4 pb-4 pt-6">
       <h1 className="text-xl font-bold text-slate-900">대시보드</h1>
 
+      <DashboardWorkoutSection />
       {nutritionTarget && <DietInBodyInsightCard history={inBodyHistory} meals={meals} target={nutritionTarget} />}
-      <WorkoutSummaryCard />
-      <InBodyTrend history={inBodyHistory} />
-      {nutritionTarget && <MealWeekTrend meals={meals} nutritionTarget={nutritionTarget} />}
+      {nutritionTarget && weekSummary && (
+        <CollapsibleCard title="주간 영양소" summary={weekSummary}>
+          <MealWeekTrend meals={meals} nutritionTarget={nutritionTarget} />
+        </CollapsibleCard>
+      )}
+      {inBodySummary ? (
+        <CollapsibleCard title="인바디 추이" summary={inBodySummary}>
+          <InBodyTrend history={inBodyHistory} />
+        </CollapsibleCard>
+      ) : (
+        <InBodyTrend history={inBodyHistory} />
+      )}
 
       {previewOpen && <DashboardPreviewModal onClose={closePreview} />}
     </div>

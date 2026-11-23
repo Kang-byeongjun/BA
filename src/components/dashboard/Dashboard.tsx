@@ -9,7 +9,10 @@ import { getHomeNudge } from '../../lib/nudge'
 import { isSameDay } from '../../lib/time'
 import { getTodayWaterTotal } from '../../lib/water'
 import { DEFAULT_WATER_TARGET_ML, type Meal, type MealSlot } from '../../types'
+import HomeWeekStats from '../workout/HomeWeekStats'
+import HomeWorkoutCard from '../workout/HomeWorkoutCard'
 import HomeCoach from './HomeCoach'
+import HomeDietGoalCell from './HomeDietGoalCell'
 import UpdatesPanel from './UpdatesPanel'
 
 interface Props {
@@ -109,6 +112,9 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
       )}
 
       {recommendations[0] && <HomeCoach meal={recommendations[0]} goal={recommendationProfile.goal} />}
+
+      <HomeWorkoutCard onOpenWorkout={() => onNavigateTab('workout')} />
+      <HomeWeekStats dietSlot={<HomeDietGoalCell meals={meals} target={nutritionTarget} />} />
 
       <NutritionCalendar onNavigateTab={onNavigateTab} />
 

@@ -13,8 +13,9 @@ interface Props {
 const DAY_NAMES = ['월', '화', '수', '목', '금', '토', '일']
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 
-function Change({ rate }: { rate: number | null }) {
-  if (!isNum(rate)) return <span className="text-xs text-slate-300">지난주 기록 없음</span>
+// 이번 주나 지난주 볼륨이 0이면 퍼센트를 계산할 수 없으니(-100%·무한대) "-"로 보여준다.
+function Change({ rate, thisWeek, lastWeek }: { rate: number | null; thisWeek: number; lastWeek: number }) {
+  if (!isNum(rate) || !(thisWeek > 0) || !(lastWeek > 0)) return <span className="text-xs text-slate-300">-</span>
   const percent = Math.round(rate * 100)
   if (percent === 0) {
     return (
@@ -93,7 +94,7 @@ function WithRecords({ summary, weekDots }: Pick<WorkoutCardData, 'summary' | 'w
         ) : (
           <div className="mt-0.5 flex items-baseline justify-between">
             <span className="text-sm font-semibold text-slate-800">{thisWeekVolume}kg</span>
-            <Change rate={summary.volume.changeRate} />
+            <Change rate={summary.volume.changeRate} thisWeek={thisWeekVolume} lastWeek={isNum(summary.volume.lastWeek) ? summary.volume.lastWeek : 0} />
           </div>
         )}
       </div>
