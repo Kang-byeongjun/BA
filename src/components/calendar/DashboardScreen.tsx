@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext'
 import { getInBodySummaryLine, getWeekNutritionSummaryLine } from '../../lib/dashboardSummaries'
 import { loadFromStorage, saveToStorage } from '../../lib/storage'
 import CollapsibleCard from '../dashboard/CollapsibleCard'
+import WeekGlanceCard from '../dashboard/WeekGlanceCard'
 import InBodyTrend from '../profile/InBodyTrend'
 import DashboardWorkoutSection from '../workout/DashboardWorkoutSection'
 import DashboardPreviewModal from './DashboardPreviewModal'
@@ -28,6 +29,7 @@ export default function DashboardScreen() {
     <div className="space-y-4 px-4 pb-4 pt-6">
       <h1 className="text-xl font-bold text-slate-900">대시보드</h1>
 
+      <WeekGlanceCard meals={meals} target={nutritionTarget} history={inBodyHistory} />
       <DashboardWorkoutSection />
       {nutritionTarget && <DietInBodyInsightCard history={inBodyHistory} meals={meals} target={nutritionTarget} />}
       {nutritionTarget && weekSummary && (

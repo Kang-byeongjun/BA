@@ -49,7 +49,14 @@ function DashboardWorkoutSectionView({ data }: { data: WorkoutCardData }) {
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-4">
-      <p className="mb-3 text-sm font-semibold text-slate-800">운동</p>
+      <div className="mb-3 flex items-center gap-2">
+        <p className="text-sm font-semibold text-slate-800">운동</p>
+        {summary.nextRoutine && (
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
+            다음 루틴 · {summary.nextRoutine.day}일차 {summary.nextRoutine.label}
+          </span>
+        )}
+      </div>
 
       {summary.recent.length === 0 ? (
         <div className="flex flex-col items-center gap-2 rounded-xl bg-slate-50 py-6 text-center">
