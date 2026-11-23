@@ -77,7 +77,9 @@ function round(value: number, decimals: number): number {
 // 받는다: "zoneMin-zoneMax" 또는 측정값 위치까지 읽었으면 "zoneMin-zoneMax@value" 형태의 문자열
 // (각각 별도 필드로 두면 Anthropic 구조화 출력의 nullable 파라미터 상한을 넘는다). 체지방량 그래프는
 // 100%를 넘어가면 눈금 간격이 넓어지는 비선형 축이라, 상식 범위를 넉넉하게 잡는다.
-const PERCENT_STANDARD_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)(?:@(\d+(?:\.\d+)?))?$/
+// 체중·체지방량은 끝에 결과지의 숫자 표준범위(kg)가 "|kgMin-kgMax"로 붙을 수 있다(막대 끝 위치 보정용).
+const PERCENT_STANDARD_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)(?:@(\d+(?:\.\d+)?))?(?:\|(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?))?$/
+const KG_BOUNDS = { min: 0.5, max: 400 }
 const ZONE_BOUNDS = { min: 40, max: 250 }
 const VALUE_BOUNDS = { min: 10, max: 500 }
 
@@ -85,6 +87,7 @@ interface PercentStandard {
   min: number | null
   max: number | null
   value: number | null
+  kg?: { min: number; max: number } | null
 }
 
 function validatePercentStandard(raw: string | null): PercentStandard {
@@ -96,13 +99,21 @@ function validatePercentStandard(raw: string | null): PercentStandard {
   const value = match[3] !== undefined ? Number(match[3]) : null
   if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: null, max: null, value: null }
   if (min >= max || min < ZONE_BOUNDS.min || max > ZONE_BOUNDS.max) return { min: null, max: null, value: null }
+  const kgMin = match[4] !== undefined ? Number(match[4]) : null
+  const kgMax = match[5] !== undefined ? Number(match[5]) : null
+  const validKg =
+    kgMin !== null && kgMax !== null && Number.isFinite(kgMin) && Number.isFinite(kgMax) && kgMin < kgMax && kgMin >= KG_BOUNDS.min && kgMax <= KG_BOUNDS.max
+      ? { min: round(kgMin, 1), max: round(kgMax, 1) }
+      : null
   const validValue = value !== null && Number.isFinite(value) && value >= VALUE_BOUNDS.min && value <= VALUE_BOUNDS.max ? value : null
-  return { min: round(min, 0), max: round(max, 0), value: validValue !== null ? round(validValue, 0) : null }
+  return { min: round(min, 0), max: round(max, 0), value: validValue !== null ? round(validValue, 0) : null, kg: validKg }
 }
 
-function formatPercentStandard(range: PercentStandard): string | null {
+// withKg: 체중·체지방량만 숫자 표준범위(kg)를 남긴다(골격근량은 결과지에 숫자 범위가 없다).
+function formatPercentStandard(range: PercentStandard, withKg = false): string | null {
   if (range.min === null || range.max === null) return null
-  return range.value !== null ? `${range.min}-${range.max}@${range.value}` : `${range.min}-${range.max}`
+  const base = range.value !== null ? `${range.min}-${range.max}@${range.value}` : `${range.min}-${range.max}`
+  return withKg && range.kg ? `${base}|${range.kg.min}-${range.kg.max}` : base
 }
 
 const BOUNDING_BOX_RE = /^(\d*\.?\d+),(\d*\.?\d+),(\d*\.?\d+),(\d*\.?\d+)$/
@@ -184,9 +195,9 @@ export function normalizeInBody(raw: InBodyExtraction): InBodyExtraction {
     isInBodyReport: true,
     ...values,
     testedAtDate: validateTestedAtDate(raw.testedAtDate),
-    weightStandardRange: formatPercentStandard(weightRange),
+    weightStandardRange: formatPercentStandard(weightRange, true),
     skeletalMuscleMassStandardRange: formatPercentStandard(muscleRange),
-    bodyFatMassStandardRange: formatPercentStandard(fatRange),
+    bodyFatMassStandardRange: formatPercentStandard(fatRange, true),
     muscleFatAnalysisBox: validateBoundingBox(raw.muscleFatAnalysisBox),
     confidence: clamp01(raw.confidence),
     warnings: cleanWarnings(warnings),

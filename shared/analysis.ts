@@ -38,6 +38,7 @@ export interface InBodyExtraction {
   // 또는 측정값 위치까지 읽었으면 "표준Min-표준Max@측정값위치" 형태의 문자열(예: "90-110@97")로
   // 받는다 — Anthropic 구조화 출력 스키마는 nullable 파라미터 개수에 상한이 있어서(18개에서 실패),
   // 숫자마다 별도 필드로 두지 않고 하나로 합친다.
+  // weight·bodyFat는 끝에 "|kgMin-kgMax"(결과지의 숫자 표준범위)가 붙을 수 있다 — 막대 끝 위치 보정용.
   weightStandardRange: string | null
   skeletalMuscleMassStandardRange: string | null
   bodyFatMassStandardRange: string | null

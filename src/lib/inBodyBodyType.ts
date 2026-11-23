@@ -17,7 +17,8 @@ export const BODY_TYPE_LABELS: Record<InBodyBodyType, string> = {
   C: 'C자형 · 지방 우세',
 }
 
-const STANDARD_RANGE_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)(?:@(\d+(?:\.\d+)?))?$/
+// 끝의 "|kgMin-kgMax"(숫자 표준범위)는 inBodyRangeCorrection.ts가 따로 읽으므로 여기서는 무시한다.
+const STANDARD_RANGE_RE = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)(?:@(\d+(?:\.\d+)?))?(?:\|\d+(?:\.\d+)?-\d+(?:\.\d+)?)?$/
 
 // 서버가 "min-max" 또는 "min-max@value" 형태의 문자열로 내려주는 표준 구간을 파싱한다
 // (비교 가능한 값이 없으면 null).

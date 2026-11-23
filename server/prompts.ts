@@ -55,6 +55,10 @@ Return each bar as a single string, not separate numbers:
 - skeletalMuscleMassStandardRange: the Skeletal Muscle Mass bar, in this format
 - bodyFatMassStandardRange: the Body Fat Mass bar, in this format
 
+The person's marker is where their own measurement falls — it is NOT the right edge of the 표준 zone. A person above the standard zone has a marker further right than the zone's right edge (on the Body Fat Mass bar it can be far beyond, e.g. 300%); never copy the zone edge as the marker position.
+
+For weightStandardRange and bodyFatMassStandardRange ONLY: the report's numeric body-composition table (체성분분석 / Body Composition Analysis) also prints a kg 정상범위 / Normal Range for 체중 (Weight) and 체지방량 (Body Fat Mass), for example "57.9 ~ 78.3" and "8.2 ~ 16.4". When you can read those two numbers, append them to that string after a "|" as "|kgMin-kgMax", for example "85-115@157|57.9-78.3" or "80-160@325|8.2-16.4" (or "80-160|8.2-16.4" without a marker position). If the kg normal range is not printed or not readable, do not append anything. Never add a kg range to skeletalMuscleMassStandardRange.
+
 Ignore recommendation or target columns such as 체중조절 / 지방조절 / 근육조절 (Weight/Fat/Muscle Control), and past-record trend values. Only read the latest measurement.
 
 - muscleFatAnalysisBox: the bounding box of the entire "골격근·지방분석 / Muscle-Fat Analysis" section described above (all three bars together, including their column headers and printed axis tick numbers) within THIS image, as a single "xMin,yMin,xMax,yMax" string — four numbers from 0 to 1, each the fraction of the image's width (for x) or height (for y) measured from the top-left corner. Be generous rather than tight: pad the box a little so no bar or tick label is cut off. Return null if this section is not visible in the image at all.
@@ -64,7 +68,7 @@ Ignore recommendation or target columns such as 체중조절 / 지방조절 / �
 - isInBodyReport: true only if the image is an InBody or similar body composition analysis report. If it is not (for example a food photo, a person, a screenshot of something else), set it to false and return null for every measurement.
 - Every measurement must be a plain number without units, or null when it is not clearly readable.
 - testedAtDate must be a valid "YYYY-MM-DD" string or null. Never guess a date that is not visibly printed.
-- Each …StandardRange must be formatted exactly as "zoneMin-zoneMax" or "zoneMin-zoneMax@value" (percent-of-standard numbers, zoneMin less than zoneMax, for example "90-110@97"), or null. Base these on the 표준 zone's and the measurement marker's actual positions on that bar's percent axis in this image — never on a typical/textbook normal range unrelated to what this image shows.
+- Each …StandardRange must be formatted exactly as "zoneMin-zoneMax" or "zoneMin-zoneMax@value" (percent-of-standard numbers, zoneMin less than zoneMax, for example "90-110@97"), optionally followed by "|kgMin-kgMax" for weightStandardRange and bodyFatMassStandardRange only (see above), or null. Base these on the 표준 zone's and the measurement marker's actual positions on that bar's percent axis in this image — never on a typical/textbook normal range unrelated to what this image shows.
 - muscleFatAnalysisBox must be formatted exactly as "xMin,yMin,xMax,yMax" with four numbers between 0 and 1, xMin less than xMax and yMin less than yMax, or null.
 - confidence: your overall confidence from 0 to 1 that the returned values are read correctly. Use a low value when the photo is blurry, cropped, glared, or the digits are ambiguous.
 - warnings: short Korean sentences explaining anything unreadable or uncertain (for example "체지방률 숫자가 흐릿해서 읽지 못했어요."). Use an empty array when there is nothing to report.

@@ -4,6 +4,7 @@ import type { InBodyExtraction } from '../../../shared/analysis'
 import { AnalysisError, isRetryable, type AnalysisErrorCode } from '../../../shared/errors'
 import { classifyBodyType, toStandardRange } from '../../lib/inBodyBodyType'
 import { prepareCroppedRegion, prepareImage, type PreparedImage } from '../../lib/imagePrep'
+import { toCorrectedStandardRange } from '../../lib/inBodyRangeCorrection'
 import { hasMissingStandardRange, mergeStandardRanges, parseBoxFraction } from '../../lib/inBodyStandardRangeRetry'
 import { sleep } from '../../lib/sleep'
 import type { AnalysisMode } from '../../services/foodVisionService'
@@ -218,9 +219,10 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
       const measurements = {} as InBodyMeasurements
       for (const p of parsed) measurements[p.key] = p.value
       measurements.measuredAt = measuredAt.trim() === '' ? null : measuredAt
-      const weightRange = toStandardRange(extraction.weightStandardRange)
+      // 체중·체지방량은 숫자 표준범위(kg)가 있으면 (사용자가 고친 kg 값 기준으로) 막대 끝 위치를 보정한다.
+      const weightRange = toCorrectedStandardRange(extraction.weightStandardRange, measurements.weight)
       const skeletalMuscleMassRange = toStandardRange(extraction.skeletalMuscleMassStandardRange)
-      const bodyFatMassRange = toStandardRange(extraction.bodyFatMassStandardRange)
+      const bodyFatMassRange = toCorrectedStandardRange(extraction.bodyFatMassStandardRange, measurements.bodyFatMass)
       // 체형 판정은 그래프에서 읽은 측정값 위치(%) 기준이라, 사용자가 kg 값을 고쳐도 다시 계산되지 않는다.
       measurements.bodyType = classifyBodyType(skeletalMuscleMassRange, bodyFatMassRange)
       measurements.standardRanges = { weight: weightRange, skeletalMuscleMass: skeletalMuscleMassRange, bodyFatMass: bodyFatMassRange }

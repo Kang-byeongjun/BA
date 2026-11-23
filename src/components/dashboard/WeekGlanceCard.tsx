@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { getWeekProteinSummary } from '../../lib/dashboardSummaries'
+import { sortInBodyHistory } from '../../lib/inBodyHistoryOrder'
 import { findComparisonEntry } from '../../lib/inBodyTrend'
 import { getDayWeekSeries } from '../../lib/mealWeekTrend'
 import type { WorkoutCardData } from '../../lib/workoutCardData'
@@ -52,9 +53,10 @@ function View({ meals, target, history, data, now: nowProp }: Props & { data: Wo
   const metDays = target && hasMeal ? getWeekProteinSummary(meals, target, now).metDays : null
 
   // 체중: 가장 최근 측정값 + (비교할 이전 측정이 있으면) 증감
-  const latest = history[0]
+  const sortedHistory = sortInBodyHistory(history)
+  const latest = sortedHistory[0]
   const weight = latest && isNum(latest.weight) ? latest.weight : null
-  const prev = latest ? findComparisonEntry(history, latest) : null
+  const prev = latest ? findComparisonEntry(sortedHistory, latest) : null
   const diff = weight !== null && prev && isNum(prev.weight) ? Math.round((weight - prev.weight) * 10) / 10 : null
 
   return (

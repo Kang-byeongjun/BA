@@ -120,3 +120,22 @@ describe('DashboardWorkoutSection: 다음 루틴 칩', () => {
     expect(screen.queryByText(/다음 루틴/)).toBeNull()
   })
 })
+
+describe('인바디 기록 순서: 날짜 기준 최신', () => {
+  it('한눈에 카드의 체중은 배열 맨 앞이 아니라 측정일이 가장 늦은 기록이다', () => {
+    // 배열 맨 앞 = 방금 추가한 옛날(14일 전) 기록
+    const { container } = render(
+      <WeekGlanceCard meals={[]} target={null} history={[entry(14, 72), entry(0, 71.2)]} data={emptyData} now={NOW} />,
+    )
+    expect(cellText('체중', container)).toContain('71.2kg')
+    expect(cellText('체중', container)).toContain('▼ 0.8kg')
+  })
+
+  it('식단 × 인바디 카드도 날짜 기준으로 최신·이전 측정을 잡아 실제 문장을 보여준다', () => {
+    const { container } = render(
+      <DietInBodyInsightCard history={[entry(14, 72), entry(0, 71)]} meals={[]} target={DEMO_NUTRITION_TARGET} />,
+    )
+    expect(container.querySelector('h3')?.textContent).toBe('식단 × 인바디')
+    expect(container.textContent).toContain('체중이 1kg 줄었어요')
+  })
+})

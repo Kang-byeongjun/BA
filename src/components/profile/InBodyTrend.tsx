@@ -5,6 +5,7 @@ import { resolveAnalysisMode } from '../../lib/aiMode'
 import { buildInBodyAdvice } from '../../lib/inBodyAdvice'
 import { IN_BODY_METRIC_FIELDS } from '../../lib/inBodyChart'
 import { computeShapePositions } from '../../lib/inBodyBodyType'
+import { sortInBodyHistory } from '../../lib/inBodyHistoryOrder'
 import { daysBetween, findComparisonEntry } from '../../lib/inBodyTrend'
 import { formatRelativeDate } from '../../lib/time'
 import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry, type InBodyMeasurements, type Meal, type NutritionTarget } from '../../types'
@@ -187,7 +188,8 @@ function AddMeasurementButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-export default function InBodyTrend({ history }: Props) {
+export default function InBodyTrend({ history: rawHistory }: Props) {
+  const history = sortInBodyHistory(rawHistory) // 측정일 내림차순(맨 앞 = 가장 최근 측정)
   const { aiMode, isDemo, dispatch, meals, nutritionTarget } = useApp()
   const [scanOpen, setScanOpen] = useState(false)
   // 체형 판정에 실패한 기록을 "재측정"으로 열었다면 그 기록의 id. null이면 "새 측정 추가"로 연 것.

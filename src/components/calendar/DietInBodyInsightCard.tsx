@@ -1,5 +1,6 @@
 import { CalendarClock, Sparkles } from 'lucide-react'
 import { buildDietInBodyInsight, daysUntilNextMeasurement } from '../../lib/inBodyInsight'
+import { sortInBodyHistory } from '../../lib/inBodyHistoryOrder'
 import { findComparisonEntry } from '../../lib/inBodyTrend'
 import type { InBodyHistoryEntry, Meal, NutritionTarget } from '../../types'
 
@@ -11,9 +12,10 @@ interface Props {
 
 // 식단 준수(목표를 지킨 날 수)와 인바디 체중 변화를 한 문장으로 엮어서, 식단 노력이 실제 결과로
 // 이어지고 있는지 보여준다. 측정이 2회 이상 쌓여야 비교할 수 있다.
-export default function DietInBodyInsightCard({ history, meals, target }: Props) {
-  if (history.length === 0) return null
+export default function DietInBodyInsightCard({ history: rawHistory, meals, target }: Props) {
+  if (rawHistory.length === 0) return null
 
+  const history = sortInBodyHistory(rawHistory) // 측정일 내림차순(맨 앞 = 가장 최근 측정)
   const latest = history[0]
   const comparison = findComparisonEntry(history, latest)
   const insight = comparison ? buildDietInBodyInsight(meals, target, latest, comparison) : null

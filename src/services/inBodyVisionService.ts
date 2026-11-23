@@ -1,6 +1,7 @@
 import type { InBodyExtraction } from '../../shared/analysis'
 import { getMockInBodyExtraction } from '../data/mockData'
 import { classifyBodyType, toStandardRange } from '../lib/inBodyBodyType'
+import { toCorrectedStandardRange } from '../lib/inBodyRangeCorrection'
 import type { PreparedImage } from '../lib/imagePrep'
 import { sleep } from '../lib/sleep'
 import type { InBodyMeasurements } from '../types'
@@ -35,9 +36,10 @@ export async function analyzeInBodyStandardRangeCrop(image: PreparedImage, signa
 
 /** API 응답 형식(…Kg 등)을 앱의 체성분 측정값 형식으로 변환한다. null은 null로 유지한다. */
 export function toMeasurements(extraction: InBodyExtraction): InBodyMeasurements {
-  const weightRange = toStandardRange(extraction.weightStandardRange)
+  // 체중·체지방량은 결과지의 숫자 표준범위(kg)가 있으면 막대 끝 위치를 계산값으로 보정한다.
+  const weightRange = toCorrectedStandardRange(extraction.weightStandardRange, extraction.weightKg)
   const skeletalMuscleMassRange = toStandardRange(extraction.skeletalMuscleMassStandardRange)
-  const bodyFatMassRange = toStandardRange(extraction.bodyFatMassStandardRange)
+  const bodyFatMassRange = toCorrectedStandardRange(extraction.bodyFatMassStandardRange, extraction.bodyFatMassKg)
   return {
     weight: extraction.weightKg,
     age: extraction.ageYears,

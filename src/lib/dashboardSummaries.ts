@@ -1,5 +1,6 @@
 import type { InBodyHistoryEntry, Meal, NutritionTarget } from '../types'
 import { getDayStatusesInRange, getMonthlyDayStatuses } from './calendar'
+import { sortInBodyHistory } from './inBodyHistoryOrder'
 import { findComparisonEntry } from './inBodyTrend'
 import { currentWeekDays, getDayWeekSeries } from './mealWeekTrend'
 
@@ -40,7 +41,8 @@ const round1 = (v: number) => Math.round(v * 10) / 10
 const signed = (v: number) => `${v > 0 ? '+' : ''}${round1(v)}`
 
 /** 인바디 접힌 요약: "체중 -N kg · 골격근 +N kg". 비교할 이전 측정이 없으면 최신 체중만, 기록이 없으면 null */
-export function getInBodySummaryLine(history: InBodyHistoryEntry[]): string | null {
+export function getInBodySummaryLine(rawHistory: InBodyHistoryEntry[]): string | null {
+  const history = sortInBodyHistory(rawHistory) // 측정일 내림차순(맨 앞 = 가장 최근 측정)
   const latest = history[0]
   if (!latest) return null
   const prev = findComparisonEntry(history, latest)
