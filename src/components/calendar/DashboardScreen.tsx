@@ -6,8 +6,7 @@ import CollapsibleCard from '../dashboard/CollapsibleCard'
 import WeekGlanceCard from '../dashboard/WeekGlanceCard'
 import InBodyTrend from '../profile/InBodyTrend'
 import DashboardWorkoutSection from '../workout/DashboardWorkoutSection'
-import InBodySummaryCard from '../profile/InBodySummaryCard'
-import { sortInBodyHistory } from '../../lib/inBodyHistoryOrder'
+import InBodyResult from '../profile/InBodyResult'
 import DashboardPreviewModal from './DashboardPreviewModal'
 import DietInBodyInsightCard from './DietInBodyInsightCard'
 import MealWeekTrend from './MealWeekTrend'
@@ -59,11 +58,7 @@ export default function DashboardScreen() {
           </>
         )}
         {tab === 'inbody' &&
-          (hasInBody ? (
-            <InBodySummaryCard latest={sortInBodyHistory(inBodyHistory)[0] ?? null} />
-          ) : (
-            <NoInBodyRecord />
-          ))}
+          (hasInBody ? <InBodyResult history={inBodyHistory} /> : <NoInBodyRecord />)}
         {tab === 'trend' && (hasInBody ? <InBodyTrend history={inBodyHistory} /> : <NoInBodyRecord />)}
       </div>
 

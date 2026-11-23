@@ -12,7 +12,7 @@ const HEIGHT = 96
 const PAD_LEFT = 32 // 왼쪽 눈금 숫자가 들어갈 자리
 const PAD_RIGHT = 12
 const PAD_Y = 16
-const ACCENT = '#0284c7' // sky-600 — 선택된 항목의 강조색. de-emphasis 선과 대비되는 유일한 포인트.
+const ACCENT = '#8e2433' // 포인트(primary) — 선택된 항목의 강조색. de-emphasis 선과 대비되는 유일한 포인트.
 const MUTED = '#cbd5e1' // slate-300 — sparkline 본선은 눈에 덜 띄는 색으로.
 const GRID = '#e2e8f0' // slate-200 — 눈금선은 선보다 더 옅게.
 

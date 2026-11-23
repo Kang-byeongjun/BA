@@ -6,6 +6,7 @@ import { AppProvider, useApp } from '../../context/AppContext'
 import type { InBodyHistoryEntry, UserProfile } from '../../types'
 import FoodCaptureFlow from '../food/FoodCaptureFlow'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
+import InBodyResult from '../profile/InBodyResult'
 import InBodyTrend from '../profile/InBodyTrend'
 
 // 브라우저 전용 Canvas 리사이즈는 mock으로 대체하고, 나머지(업로드 → 서버 API → 확인/수정 → 저장)는 실제 코드로 실행한다.
@@ -611,7 +612,7 @@ describe('인바디 재측정 (체형 판정 실패 기록 교체)', () => {
 
     render(
       <AppProvider>
-        <InBodyTrend history={[failedEntry, olderOkEntry]} />
+        <InBodyResult history={[failedEntry, olderOkEntry]} />
       </AppProvider>,
     )
 
@@ -635,7 +636,7 @@ describe('인바디 재측정 (체형 판정 실패 기록 교체)', () => {
     expect(screen.getByText(/마이 탭의 개인 영양 목표도 자동으로 다시 계산했어요/)).toBeTruthy()
   })
 
-  it('"체형 분석"은 기본으로 펼쳐져 있고, "전체 측정 기록"은 기본으로 접혀 있으며, 둘 다 클릭해서 열고 닫을 수 있다', () => {
+  it('"체형 분석"은 인바디 결과에 바로 보이고, "전체 측정 기록"은 변화 추이에서 기본으로 접혀 있으며 클릭해서 열고 닫을 수 있다', () => {
     const entryA: InBodyHistoryEntry = {
       id: 'a',
       timestamp: Date.now(),
@@ -656,18 +657,21 @@ describe('인바디 재측정 (체형 판정 실패 기록 교체)', () => {
       },
     }
     const entryB: InBodyHistoryEntry = { ...entryA, id: 'b', timestamp: Date.now() - 14 * 24 * 60 * 60 * 1000 }
+    // 체형 분석: 인바디 결과 칸에 접히지 않고 바로 보인다 (각 행에 찍히는 표준이하/표준/표준이상 라벨로 확인)
+    render(
+      <AppProvider>
+        <InBodyResult history={[entryA, entryB]} />
+      </AppProvider>,
+    )
+    expect(screen.getAllByText('표준이하').length).toBeGreaterThan(0)
+    expect(screen.getByText('체형 분석')).toBeTruthy()
+    cleanup()
+
     render(
       <AppProvider>
         <InBodyTrend history={[entryA, entryB]} />
       </AppProvider>,
     )
-
-    // 체형 분석: 기본으로 펼쳐져 있다 (각 행에 찍히는 표준이하/표준/표준이상 라벨로 확인)
-    expect(screen.getAllByText('표준이하').length).toBeGreaterThan(0)
-    fireEvent.click(screen.getByText('체형 분석'))
-    expect(screen.queryByText('표준이하')).toBeNull()
-    fireEvent.click(screen.getByText('체형 분석'))
-    expect(screen.getAllByText('표준이하').length).toBeGreaterThan(0)
 
     // 전체 측정 기록: 기본으로 접혀 있다 (목록 항목이 안 보임)
     expect(screen.queryByText('결과지 스캔')).toBeNull()

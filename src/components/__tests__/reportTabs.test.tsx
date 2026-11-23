@@ -65,11 +65,11 @@ describe('리포트 세 칸 탭', () => {
     expect(screen.getByRole('tab', { name: '인바디 결과' }).getAttribute('aria-selected')).toBe('true')
     expect(screen.queryByRole('button', { name: /주간 영양소/ })).toBeNull()
     expect(screen.getByText('C형')).toBeTruthy()
-    expect(screen.getByText('2026년 6월 10일')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /결과지 사진으로 업데이트/ })).toBeNull()
+    expect(screen.getByText('2026년 06월 10일 측정')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: '변화 추이' }))
     expect(screen.getByText('인바디 추이')).toBeTruthy() // 접히지 않고 바로 보인다
+    expect(screen.getByText('체중 (kg)')).toBeTruthy()
     cleanup()
     open()
     expect(screen.getByRole('tab', { name: '이번 주' }).getAttribute('aria-selected')).toBe('true')
