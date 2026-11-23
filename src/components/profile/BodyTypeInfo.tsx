@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import type { InBodyBodyType } from '../../lib/inBodyBodyType'
 import {
+  BODY_TYPE_BADGE_COLORS,
   BODY_TYPE_DISCLAIMER,
   BODY_TYPE_GUIDE,
   BODY_TYPE_INFO,
@@ -15,12 +16,6 @@ interface Props {
   onRemeasure: () => void
 }
 
-const BADGE_COLORS: Record<InBodyBodyType, string> = {
-  D: 'bg-emerald-50 text-emerald-700',
-  I: 'bg-sky-50 text-sky-700',
-  C: 'bg-amber-50 text-amber-700',
-}
-
 // 체형 막대 아래: 유형 배지 + 한두 줄 설명 + 접이식 안내. 판정이 없으면 이유와 재측정 버튼.
 export default function BodyTypeInfo({ bodyType, standardRanges, onRemeasure }: Props) {
   const [guideOpen, setGuideOpen] = useState(false)
@@ -28,7 +23,7 @@ export default function BodyTypeInfo({ bodyType, standardRanges, onRemeasure }: 
   return (
     <div className="mt-3">
       {bodyType !== null ? (
-        <div className={`rounded-lg px-2.5 py-2 ${BADGE_COLORS[bodyType]}`}>
+        <div className={`rounded-lg px-2.5 py-2 ${BODY_TYPE_BADGE_COLORS[bodyType]}`}>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-bold">{BODY_TYPE_INFO[bodyType].badge}</span>
             <span className="text-xs font-medium">{BODY_TYPE_INFO[bodyType].title}</span>

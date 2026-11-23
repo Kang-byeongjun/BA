@@ -28,6 +28,13 @@ export const BODY_TYPE_INFO: Record<InBodyBodyType, BodyTypeInfo> = {
   },
 }
 
+/** 체형 배지 색(마이 탭 인바디 카드와 체형 분석 안내가 함께 쓴다) */
+export const BODY_TYPE_BADGE_COLORS: Record<InBodyBodyType, string> = {
+  D: 'bg-emerald-50 text-emerald-700',
+  I: 'bg-sky-50 text-sky-700',
+  C: 'bg-amber-50 text-amber-700',
+}
+
 export const BODY_TYPE_DISCLAIMER = '의료 진단이 아닌 참고용 간이 추정이에요.'
 
 /** "C·I·D형이란?" 접힌 안내 문구 */

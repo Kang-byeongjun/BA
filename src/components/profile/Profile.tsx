@@ -1,8 +1,10 @@
-import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
-import { BMI_CATEGORY_LABELS, calculateBmi, classifyBmi } from '../../lib/bmi'
+import { isDevMode } from '../../lib/devMode'
+import { GOAL_TO_WORKOUT_GOAL } from '../../lib/goalMapping'
+import { sortInBodyHistory } from '../../lib/inBodyHistoryOrder'
 import {
   listPortionCorrections,
   resetAllPortionCorrections,
@@ -10,6 +12,7 @@ import {
   type PortionCorrectionSummary,
 } from '../../lib/portionCorrection'
 import { describeNutritionRationale, generateNutritionTarget } from '../../services/nutritionTargetService'
+import { getCachedWorkoutRoutine } from '../../services/workoutService'
 import {
   DEFAULT_WORKOUT_PROFILE,
   GOAL_LABELS,
@@ -25,6 +28,9 @@ import {
 import NutritionRationale from '../common/NutritionRationale'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
 import WorkoutProfileInput from '../onboarding/WorkoutProfileInput'
+import InBodySummaryCard from './InBodySummaryCard'
+import InfoRow from './InfoRow'
+import NutritionSummary from './NutritionSummary'
 
 // 나이/키/체중은 항상 값이 있고, 나머지 체성분 항목은 InBody 없이 시작했으면 null일 수 있다.
 const REQUIRED_INBODY_ROWS: { key: 'age' | 'height' | 'weight'; label: string; unit: string }[] = [
@@ -52,7 +58,7 @@ const GOALS = Object.keys(GOAL_LABELS) as Goal[]
 const TARGET_KEYS: (keyof NutritionTarget)[] = ['calories', 'protein', 'carbohydrates', 'fat', 'fiber']
 
 export default function Profile() {
-  const { profile, nutritionTarget, workoutProfile, isDemo, aiMode, dispatch } = useApp()
+  const { profile, nutritionTarget, workoutProfile, inBodyHistory, isDemo, aiMode, dispatch } = useApp()
   const [draftTarget, setDraftTarget] = useState<NutritionTarget | null>(null)
   const [confirmingReset, setConfirmingReset] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -64,10 +70,14 @@ export default function Profile() {
   const [confirmingCorrectionReset, setConfirmingCorrectionReset] = useState(false)
   // 자주 안 쓰는 관리 기능(보정 이력·데이터 초기화)이라 기본은 접어둔다.
   const [toolsOpen, setToolsOpen] = useState(false)
+  // 영양 목표 입력칸은 처음엔 숨기고 "수정"을 눌렀을 때만 연다.
+  const [targetEditing, setTargetEditing] = useState(false)
+  // 앱 설정(AI 분석 방식)·관리 도구는 주소에 ?dev=1이 있을 때만 보인다.
+  const [devMode] = useState(() => isDevMode())
 
   if (!profile || !nutritionTarget) return null
 
-  const bmi = calculateBmi(profile.height, profile.weight)
+  const latestInBody = sortInBodyHistory(inBodyHistory)[0] ?? null
 
   if (scanOpen) {
     return (
@@ -144,11 +154,19 @@ export default function Profile() {
   const handleGoalChange = (goal: Goal) => {
     if (goal === profile.goal) return
     const nextProfile = { ...profile, goal }
-    const nextTarget = generateNutritionTarget(nextProfile, workoutProfile)
+    // 운동 목표도 대응표(goalMapping.ts)대로 함께 바꾼다. 운동 프로필이 없으면 식단 목적만 바꾼다.
+    const nextWorkout = workoutProfile ? { ...workoutProfile, goal: GOAL_TO_WORKOUT_GOAL[goal] } : null
+    const nextTarget = generateNutritionTarget(nextProfile, nextWorkout)
     dispatch({ type: 'UPDATE_PROFILE', profile: nextProfile })
+    if (nextWorkout) dispatch({ type: 'SET_WORKOUT_PROFILE', workoutProfile: nextWorkout })
     dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: nextTarget })
     setDraftTarget(nextTarget)
-    setNotice('관리 목적이 바뀌어 영양 목표를 다시 계산했어요. 필요하면 아래에서 직접 수정할 수 있어요.')
+    // 운동 목표가 바뀌면 저장된 루틴(직접 고친 것 포함)이 새 목표와 맞지 않아 안 보이게 되므로 미리 알린다.
+    const routineLost = workoutProfile && nextWorkout && getCachedWorkoutRoutine(workoutProfile) !== null && getCachedWorkoutRoutine(nextWorkout) === null
+    setNotice(
+      '나의 목표가 바뀌어 영양 목표를 다시 계산했어요. 필요하면 아래에서 직접 수정할 수 있어요.' +
+        (routineLost ? ' 운동 목표도 함께 바뀌어, 저장돼 있던 루틴(직접 고친 것 포함)은 초기화돼요. 운동 탭에서 새로 만들어주세요.' : ''),
+    )
   }
 
   const target = draftTarget ?? nutritionTarget
@@ -162,6 +180,12 @@ export default function Profile() {
   const handleSave = () => {
     if (draftTarget) dispatch({ type: 'UPDATE_NUTRITION_TARGET', target: draftTarget })
     setSaved(true)
+    setTargetEditing(false)
+  }
+
+  const handleCancelTargetEdit = () => {
+    setDraftTarget(null)
+    setTargetEditing(false)
   }
 
   const handleRecalculate = () => {
@@ -184,116 +208,32 @@ export default function Profile() {
 
   return (
     <div className="space-y-5 px-4 pb-8 pt-6">
-      <h1 className="text-xl font-bold text-slate-900">마이</h1>
+      <div>
+        <h1 className="text-xl font-bold text-slate-900">마이</h1>
+        <p className="mt-1 break-keep text-xs text-slate-500">내 정보를 바꾸면 영양 목표와 운동 추천이 함께 바뀌어요.</p>
+      </div>
 
       {notice && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{notice}</p>}
 
-      <div className="rounded-2xl bg-slate-900 p-5 text-white">
-        <p className="text-xs text-slate-300">관리 목적</p>
-        <p className="mt-1 text-lg font-bold">{GOAL_LABELS[profile.goal]}</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {GOALS.map((goal) => (
-            <button
-              key={goal}
-              onClick={() => handleGoalChange(goal)}
-              className={`rounded-xl py-2 text-xs font-semibold ${
-                goal === profile.goal ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'
-              }`}
-            >
-              {GOAL_LABELS[goal]}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {isDemo && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-semibold text-amber-800">데모 모드 AI 분석 방식</p>
-          <p className="mt-1 text-xs text-amber-700">
-            데모에서는 기본으로 예시 결과를 보여줘요. 실제 AI로 사진을 분석해보려면 아래에서 바꿔주세요.
-          </p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {(['mock', 'real'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => dispatch({ type: 'SET_AI_MODE', aiMode: m })}
-                className={`rounded-xl py-2 text-xs font-semibold ${
-                  aiMode === m ? 'bg-amber-500 text-white' : 'bg-white text-amber-700'
-                }`}
-              >
-                {m === 'mock' ? '예시 결과 (데모)' : '실제 AI 분석'}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-800">InBody 정보</p>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setScanOpen(true)} className="flex items-center gap-1 text-xs font-medium text-emerald-600">
-              <Sparkles size={14} />
-              결과지 사진으로 업데이트
+          <p className="text-sm font-semibold text-slate-800">기본 정보</p>
+          {inBodyDraft === null && (
+            <button onClick={openInBodyEdit} className="text-xs font-medium text-emerald-600">
+              수정
             </button>
-            {inBodyDraft === null && (
-              <button onClick={openInBodyEdit} className="text-xs font-medium text-emerald-600">
-                수정
-              </button>
-            )}
-          </div>
+          )}
         </div>
         {inBodyDraft === null ? (
-          <>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                <span className="text-xs text-slate-500">성별</span>
-                <span className="text-sm font-semibold text-slate-800">{profile.gender === 'male' ? '남성' : '여성'}</span>
-              </div>
-              {REQUIRED_INBODY_ROWS.map((row) => (
-                <div key={row.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                  <span className="text-xs text-slate-500">{row.label}</span>
-                  <span className="text-sm font-semibold text-slate-800">
-                    {profile[row.key]}
-                    {row.unit}
-                  </span>
-                </div>
-              ))}
-              <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                <span className="text-xs text-slate-500">BMI</span>
-                <span className="text-sm font-semibold text-slate-800">
-                  {bmi}
-                  <span className="ml-1 text-[11px] font-normal text-slate-400">({BMI_CATEGORY_LABELS[classifyBmi(bmi)]})</span>
-                </span>
-              </div>
-              {OPTIONAL_INBODY_ROWS.map((row) => {
-                const value = profile[row.key]
-                const isEstimated = row.key === 'basalMetabolicRate' && profile.basalMetabolicRateEstimated
-                return (
-                  <div key={row.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                    <span className="text-xs text-slate-500">{row.label}</span>
-                    <span className="text-sm font-semibold text-slate-800">
-                      {value === null ? (
-                        <span className="text-xs font-normal text-slate-400">측정 안 함</span>
-                      ) : (
-                        <>
-                          {value}
-                          {row.unit}
-                          {isEstimated && <span className="ml-1 text-[11px] font-normal text-amber-500">(추정)</span>}
-                        </>
-                      )}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-            {profile.skeletalMuscleMass === null && (
-              <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                아직 InBody 결과가 없어요. 결과지 사진을 올리면 체성분 항목이 채워지고 기초대사량도 더 정확해져요.
-              </p>
-            )}
-          </>
+          <div className="space-y-2.5">
+            <InfoRow label="성별">{profile.gender === 'male' ? '남성' : '여성'}</InfoRow>
+            <InfoRow label="나이">{profile.age}세</InfoRow>
+            <InfoRow label="키">{profile.height}cm</InfoRow>
+            <InfoRow label="체중">
+              {profile.weight}kg
+              <span className="ml-1 text-[10px] font-normal text-slate-400">인바디 기준</span>
+            </InfoRow>
+          </div>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-2">
@@ -307,7 +247,7 @@ export default function Profile() {
                       value={inBodyDraft[row.key]}
                       onChange={(e) => setInBodyDraft({ ...inBodyDraft, [row.key]: e.target.value })}
                       placeholder={REQUIRED_INBODY_ROWS.some((r) => r.key === row.key) ? '0' : '모르면 비워두세요'}
-                      className="w-full bg-transparent py-2 text-sm text-slate-900 outline-none placeholder:text-xs"
+                      className="w-full min-w-0 bg-transparent py-2 text-sm text-slate-900 outline-none placeholder:text-xs"
                     />
                     <span className="pl-1 text-xs text-slate-400">{row.unit}</span>
                   </div>
@@ -333,6 +273,24 @@ export default function Profile() {
         )}
       </div>
 
+      <div className="rounded-2xl bg-slate-900 p-5 text-white">
+        <p className="text-xs text-slate-300">나의 목표</p>
+        <p className="mt-1 text-lg font-bold">{GOAL_LABELS[profile.goal]}</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {GOALS.map((goal) => (
+            <button
+              key={goal}
+              onClick={() => handleGoalChange(goal)}
+              className={`rounded-xl py-2 text-xs font-semibold ${
+                goal === profile.goal ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'
+              }`}
+            >
+              {GOAL_LABELS[goal]}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-800">운동 프로필</p>
@@ -341,157 +299,188 @@ export default function Profile() {
           </button>
         </div>
         {workoutProfile ? (
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-xs text-slate-500">운동 목표</span>
-              <span className="text-sm font-semibold text-slate-800">{WORKOUT_GOAL_LABELS[workoutProfile.goal]}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-xs text-slate-500">운동 경험</span>
-              <span className="text-sm font-semibold text-slate-800">
-                {WORKOUT_EXPERIENCE_LABELS[workoutProfile.experience]}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-xs text-slate-500">주당 횟수</span>
-              <span className="text-sm font-semibold text-slate-800">{workoutProfile.weeklyFrequency}회</span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-xs text-slate-500">1회 시간</span>
-              <span className="text-sm font-semibold text-slate-800">{workoutProfile.sessionDuration}분</span>
-            </div>
-            <div className="col-span-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-xs text-slate-500">통증·부상</span>
-              <span className="text-sm font-semibold text-slate-800">
-                {workoutProfile.painAreas.length === 0
-                  ? '없음'
-                  : workoutProfile.painAreas.map((a) => PAIN_AREA_LABELS[a]).join(', ')}
-              </span>
-            </div>
+          <div className="space-y-2.5">
+            <InfoRow label="운동 목표">{WORKOUT_GOAL_LABELS[workoutProfile.goal]}</InfoRow>
+            <InfoRow label="운동 경험">{WORKOUT_EXPERIENCE_LABELS[workoutProfile.experience]}</InfoRow>
+            <InfoRow label="주당 횟수">{workoutProfile.weeklyFrequency}회</InfoRow>
+            <InfoRow label="1회 시간">{workoutProfile.sessionDuration}분</InfoRow>
+            <InfoRow label="통증·부상">
+              {workoutProfile.painAreas.length === 0 ? '없음' : workoutProfile.painAreas.map((a) => PAIN_AREA_LABELS[a]).join(', ')}
+            </InfoRow>
           </div>
         ) : (
           <p className="text-xs text-slate-400">운동 프로필 정보가 없어요.</p>
         )}
       </div>
 
+      <InBodySummaryCard latest={latestInBody} onUpdate={() => setScanOpen(true)} />
+
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-800">개인 영양 목표</p>
-          <button onClick={handleRecalculate} className="text-xs font-medium text-emerald-600">
-            InBody 기준 다시 계산
-          </button>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-slate-800">
+            하루 영양 목표
+            {saved && !targetEditing && <span className="ml-2 text-xs font-medium text-emerald-600">저장됨 ✓</span>}
+          </p>
+          {!targetEditing && (
+            <button onClick={() => setTargetEditing(true)} className="shrink-0 text-xs font-medium text-emerald-600">
+              수정
+            </button>
+          )}
         </div>
-        <div className="space-y-2">
-          {TARGET_KEYS.map((key) => (
-            <div key={key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-sm text-slate-600">{NUTRIENT_LABELS[key]}</span>
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="number"
-                  value={target[key]}
-                  onChange={(e) => updateTarget(key, e.target.value)}
-                  className="w-20 rounded-md border border-slate-200 bg-white px-2 py-1 text-right text-sm font-semibold text-slate-900 outline-none focus:border-emerald-400"
-                />
-                <span className="text-xs text-slate-400">{NUTRIENT_UNITS[key]}</span>
-              </div>
+
+        {!targetEditing ? (
+          <NutritionSummary target={target} />
+        ) : (
+          <>
+            <div className="space-y-2">
+              {TARGET_KEYS.map((key) => (
+                <div key={key} className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                  <span className="text-sm text-slate-600">{NUTRIENT_LABELS[key]}</span>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      aria-label={NUTRIENT_LABELS[key]}
+                      value={target[key]}
+                      onChange={(e) => updateTarget(key, e.target.value)}
+                      className="w-20 rounded-md border border-slate-200 bg-white px-2 py-1 text-right text-sm font-semibold text-slate-900 outline-none focus:border-emerald-400"
+                    />
+                    <span className="w-7 text-xs text-slate-400">{NUTRIENT_UNITS[key]}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <button
-          onClick={handleSave}
-          className="mt-3 w-full rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white"
-        >
-          {saved ? '저장됨 ✓' : '목표 저장하기'}
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={handleCancelTargetEdit}
+                className="w-1/3 rounded-full border-2 border-slate-200 py-3 text-sm font-semibold text-slate-500"
+              >
+                취소
+              </button>
+              <button onClick={handleSave} className="w-2/3 rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white">
+                목표 저장하기
+              </button>
+            </div>
+          </>
+        )}
+
+        <button onClick={handleRecalculate} className="mt-3 text-xs font-medium text-emerald-600">
+          InBody 기준 다시 계산
         </button>
-        <div className="mt-3">
+        <div className="mt-2">
           <NutritionRationale rationale={describeNutritionRationale(profile, workoutProfile)} />
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-100 bg-white p-4">
-        <button onClick={() => setToolsOpen((v) => !v)} className="flex w-full items-center justify-between">
-          <p className="text-sm font-semibold text-slate-800">관리 도구</p>
-          {toolsOpen ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
-        </button>
-        {!toolsOpen && (
-          <p className="mt-1 text-xs text-slate-400">AI 보정 이력 확인, 전체 데이터 초기화는 여기서 할 수 있어요.</p>
-        )}
-
-        {toolsOpen && (
-        <div className="mt-3 space-y-4">
-          {corrections.length > 0 && (
-            <div>
-              <div className="mb-3 flex items-start justify-between gap-2">
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">AI 분량 추정 보정</p>
-                  <p className="mt-0.5 text-xs text-slate-400">그램 수를 고친 음식 이력이에요. 2번 이상 쌓이면 다음 추정에 반영돼요.</p>
-                </div>
-                {confirmingCorrectionReset ? (
-                  <div className="flex shrink-0 gap-2">
-                    <button onClick={() => setConfirmingCorrectionReset(false)} className="text-xs font-medium text-slate-400">
-                      취소
-                    </button>
-                    <button onClick={handleResetAllCorrections} className="text-xs font-semibold text-rose-500">
-                      확인
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => setConfirmingCorrectionReset(true)} className="shrink-0 text-xs font-medium text-rose-500">
-                    전체 초기화
+      {devMode && (
+        <>
+          {isDemo && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-semibold text-amber-800">데모 모드 AI 분석 방식</p>
+              <p className="mt-1 text-xs text-amber-700">
+                데모에서는 기본으로 예시 결과를 보여줘요. 실제 AI로 사진을 분석해보려면 아래에서 바꿔주세요.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {(['mock', 'real'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => dispatch({ type: 'SET_AI_MODE', aiMode: m })}
+                    className={`rounded-xl py-2 text-xs font-semibold ${
+                      aiMode === m ? 'bg-amber-500 text-white' : 'bg-white text-amber-700'
+                    }`}
+                  >
+                    {m === 'mock' ? '예시 결과 (데모)' : '실제 AI 분석'}
                   </button>
-                )}
-              </div>
-              <div className="space-y-2">
-                {corrections.map((c) => (
-                  <div key={c.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">{c.displayName}</p>
-                      <p className="text-[11px] text-slate-400">
-                        {c.sampleCount}번 수정
-                        {c.factor !== null ? ` · 평균 ${c.factor.toFixed(2)}배 보정 적용 중` : ' · 1번 더 수정하면 보정이 적용돼요'}
-                      </p>
-                    </div>
-                    <button onClick={() => handleResetCorrection(c.key)} className="shrink-0 text-xs font-medium text-slate-400">
-                      초기화
-                    </button>
-                  </div>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
-            <p className="mb-2 text-sm font-semibold text-rose-700">데이터 초기화</p>
-            <p className="mb-3 text-xs text-rose-500">
-              온보딩 정보, 식사 기록, 운동 기록이 모두 삭제되고 처음부터 다시 시작해요.
-            </p>
-            {confirmingReset ? (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setConfirmingReset(false)}
-                  className="flex-1 rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={() => dispatch({ type: 'RESET_APP' })}
-                  className="flex-1 rounded-full bg-rose-500 py-2.5 text-sm font-semibold text-white"
-                >
-                  초기화하기
-                </button>
+          <div className="rounded-2xl border border-slate-100 bg-white p-4">
+            <button onClick={() => setToolsOpen((v) => !v)} className="flex w-full items-center justify-between">
+              <p className="text-sm font-semibold text-slate-800">관리 도구</p>
+              {toolsOpen ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+            </button>
+            {!toolsOpen && (
+              <p className="mt-1 text-xs text-slate-400">AI 보정 이력 확인, 전체 데이터 초기화는 여기서 할 수 있어요.</p>
+            )}
+
+            {toolsOpen && (
+              <div className="mt-3 space-y-4">
+                {corrections.length > 0 && (
+                  <div>
+                    <div className="mb-3 flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">AI 분량 추정 보정</p>
+                        <p className="mt-0.5 text-xs text-slate-400">그램 수를 고친 음식 이력이에요. 2번 이상 쌓이면 다음 추정에 반영돼요.</p>
+                      </div>
+                      {confirmingCorrectionReset ? (
+                        <div className="flex shrink-0 gap-2">
+                          <button onClick={() => setConfirmingCorrectionReset(false)} className="text-xs font-medium text-slate-400">
+                            취소
+                          </button>
+                          <button onClick={handleResetAllCorrections} className="text-xs font-semibold text-rose-500">
+                            확인
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setConfirmingCorrectionReset(true)} className="shrink-0 text-xs font-medium text-rose-500">
+                          전체 초기화
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {corrections.map((c) => (
+                        <div key={c.key} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium text-slate-700">{c.displayName}</p>
+                            <p className="text-[11px] text-slate-400">
+                              {c.sampleCount}번 수정
+                              {c.factor !== null ? ` · 평균 ${c.factor.toFixed(2)}배 보정 적용 중` : ' · 1번 더 수정하면 보정이 적용돼요'}
+                            </p>
+                          </div>
+                          <button onClick={() => handleResetCorrection(c.key)} className="shrink-0 text-xs font-medium text-slate-400">
+                            초기화
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+                  <p className="mb-2 text-sm font-semibold text-rose-700">데이터 초기화</p>
+                  <p className="mb-3 text-xs text-rose-500">
+                    온보딩 정보, 식사 기록, 운동 기록이 모두 삭제되고 처음부터 다시 시작해요.
+                  </p>
+                  {confirmingReset ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setConfirmingReset(false)}
+                        className="flex-1 rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
+                      >
+                        취소
+                      </button>
+                      <button
+                        onClick={() => dispatch({ type: 'RESET_APP' })}
+                        className="flex-1 rounded-full bg-rose-500 py-2.5 text-sm font-semibold text-white"
+                      >
+                        초기화하기
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmingReset(true)}
+                      className="w-full rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
+                    >
+                      전체 데이터 초기화
+                    </button>
+                  )}
+                </div>
               </div>
-            ) : (
-              <button
-                onClick={() => setConfirmingReset(true)}
-                className="w-full rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
-              >
-                전체 데이터 초기화
-              </button>
             )}
           </div>
-        </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   )
 }
