@@ -25,9 +25,9 @@ export default function DietInBodyInsightCard({ history: rawHistory, meals, targ
   const measureLine = daysLeft === 0 ? '오늘 인바디를 측정해보세요' : `다음 측정까지 약 ${daysLeft}일 남았어요`
   if (!insight) {
     return (
-      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-3 py-2">
-        <p className="text-xs text-emerald-900">측정이 2회 이상 쌓이면 식단·운동·인바디를 엮어서 보여드려요</p>
-        <p className="mt-0.5 flex items-center gap-1 text-xs text-emerald-700">
+      <div className="rounded-xl border border-primary-soft bg-primary-soft/60 px-3 py-2">
+        <p className="text-xs text-primary-dark">측정이 2회 이상 쌓이면 식단·운동·인바디를 엮어서 보여드려요</p>
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-primary-dark">
           <CalendarClock size={12} />
           {measureLine}
         </p>
@@ -36,17 +36,17 @@ export default function DietInBodyInsightCard({ history: rawHistory, meals, targ
   }
 
   return (
-    <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+    <div className="rounded-2xl border border-primary-soft bg-primary-soft/60 p-4">
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white">
           <Sparkles size={14} />
         </span>
-        <h3 className="text-sm font-semibold text-emerald-900">식단 × 인바디</h3>
+        <h3 className="text-sm font-semibold text-primary-dark">식단 × 인바디</h3>
       </div>
 
-      <p className="mt-2 text-sm text-emerald-900">{insight.message}</p>
+      <p className="mt-2 text-sm text-primary-dark">{insight.message}</p>
 
-      <p className="mt-2 flex items-center gap-1 text-xs text-emerald-700">
+      <p className="mt-2 flex items-center gap-1 text-xs text-primary-dark">
         <CalendarClock size={12} />
         {measureLine}
       </p>

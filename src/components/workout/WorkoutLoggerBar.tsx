@@ -39,13 +39,13 @@ export default function WorkoutLoggerBar(p: Props) {
         <div role="group" aria-label="휴식 조절" className="mb-2 grid grid-cols-3 gap-2">
           <button
             onClick={() => p.onAdjustRest(-10)}
-            className="h-11 rounded-2xl bg-emerald-50 text-sm font-semibold text-emerald-700 active:scale-95"
+            className="h-11 rounded-2xl bg-primary-softer text-sm font-semibold text-primary-dark"
           >
             −10초
           </button>
           <button
             onClick={() => p.onAdjustRest(10)}
-            className="h-11 rounded-2xl bg-emerald-50 text-sm font-semibold text-emerald-700 active:scale-95"
+            className="h-11 rounded-2xl bg-primary-softer text-sm font-semibold text-primary-dark"
           >
             +10초
           </button>
@@ -69,7 +69,7 @@ export default function WorkoutLoggerBar(p: Props) {
             className="flex h-10 shrink-0 items-center"
           >
             <span
-              className={`relative h-6 w-10 rounded-full transition ${p.restEnabled ? 'bg-emerald-500' : 'bg-slate-200'}`}
+              className={`relative h-6 w-10 rounded-full transition ${p.restEnabled ? 'bg-primary' : 'bg-slate-200'}`}
             >
               <span
                 className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
@@ -84,7 +84,7 @@ export default function WorkoutLoggerBar(p: Props) {
             aria-expanded={showPanel}
             aria-label={running ? `휴식 남은 시간 ${formatRest(p.restRemaining!)}, 눌러서 조절` : undefined}
             className={`flex h-10 min-w-0 items-center gap-1 rounded-xl px-1.5 text-left ${
-              running ? 'bg-emerald-50 text-emerald-700' : p.restDone ? 'text-emerald-600' : 'text-slate-400'
+              running ? 'bg-primary-softer text-primary-dark' : p.restDone ? 'text-emerald-600' : 'text-slate-400'
             }`}
           >
             <Timer size={16} className="shrink-0" />
@@ -113,7 +113,7 @@ export default function WorkoutLoggerBar(p: Props) {
         <div className="flex justify-end">
           <button
             onClick={p.onFinish}
-            className="h-10 rounded-full bg-emerald-500 px-4 text-sm font-semibold text-white shadow-md shadow-emerald-200 active:scale-95"
+            className="h-10 rounded-full bg-primary px-4 text-sm font-semibold text-white shadow-md shadow-primary/25"
           >
             운동 완료
           </button>

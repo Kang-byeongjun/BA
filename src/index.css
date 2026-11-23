@@ -1,4 +1,16 @@
 @import 'tailwindcss';
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
+/* 앱 전체 포인트 색(와인 레드). 색을 바꾸려면 여기 네 줄만 고치면 된다.
+   사용법: bg-primary, text-primary-dark, border-primary-soft, bg-primary-softer 등 */
+@theme {
+  --color-primary: #8e2433;
+  --color-primary-dark: #6f1a27;
+  --color-primary-soft: #f8e9ec;
+  --color-primary-softer: #fcf4f5;
+  --font-sans: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+}
 
 :root {
   color-scheme: light;
@@ -12,12 +24,88 @@ body,
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo',
-    'Noto Sans KR', sans-serif;
+  font-family: var(--font-sans);
   background: #e2e8f0;
   -webkit-tap-highlight-color: transparent;
 }
 
 * {
   box-sizing: border-box;
+}
+
+@layer base {
+  /* 본문은 400~500, 제목은 700 이상(클래스로 굵기를 따로 준 곳은 그대로 따른다) */
+  body {
+    font-weight: 400;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 700;
+  }
+
+  /* 누르는 동안 0.97배로 줄고 0.15초 안에 돌아온다. 하단 탭·버튼·눌 수 있는 요소 공통 */
+  button:not(:disabled),
+  [role='button'],
+  a[href],
+  summary,
+  [data-pressable] {
+    transition: transform 0.15s ease-out;
+  }
+  button:not(:disabled):active,
+  [role='button']:active,
+  a[href]:active,
+  summary:active,
+  [data-pressable]:active {
+    transform: scale(0.97);
+  }
+}
+
+/* 하단 시트·상세 창이 아래에서 부드럽게 올라온다(약 0.25초) */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.sheet-enter {
+  animation: sheet-up 0.25s ease-out both;
+}
+
+/* 리포트 탭 칸을 바꿀 때 내용이 0.2초 동안 부드럽게 나타난다 */
+@keyframes tab-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.tab-fade {
+  animation: tab-fade 0.2s ease-out both;
+}
+
+/* 기기에서 "동작 줄이기"를 켠 경우 효과를 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  button,
+  [role='button'],
+  a[href],
+  summary,
+  [data-pressable] {
+    transition: none !important;
+  }
+  button:active,
+  [role='button']:active,
+  a[href]:active,
+  summary:active,
+  [data-pressable]:active {
+    transform: none !important;
+  }
+  .sheet-enter,
+  .tab-fade {
+    animation: none;
+  }
 }

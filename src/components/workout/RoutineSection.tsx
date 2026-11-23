@@ -82,7 +82,7 @@ export default function RoutineSection({ profile, onStart }: Props) {
           <button
             onClick={onRegenerateClick}
             disabled={loading}
-            className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+            className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
           >
             {loading ? '만드는 중…' : data ? '다시 만들기' : '루틴 만들기'}
           </button>
@@ -100,19 +100,19 @@ export default function RoutineSection({ profile, onStart }: Props) {
                 <button onClick={() => setConfirmReset(false)} className="flex-1 rounded-full border border-amber-200 bg-white py-1.5 font-semibold">
                   취소
                 </button>
-                <button onClick={() => void generate()} className="flex-1 rounded-full bg-emerald-500 py-1.5 font-semibold text-white">
+                <button onClick={() => void generate()} className="flex-1 rounded-full bg-primary py-1.5 font-semibold text-white">
                   네, 다시 만들기
                 </button>
               </div>
             </div>
           )}
           {loading && (
-            <p role="status" className="text-sm text-emerald-700">
+            <p role="status" className="text-sm text-primary-dark">
               맞춤 루틴을 만들고 있어요. 잠시만 기다려주세요…
             </p>
           )}
           {error && (
-            <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            <p role="alert" className="rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-700">
               {error}
             </p>
           )}
@@ -126,7 +126,7 @@ export default function RoutineSection({ profile, onStart }: Props) {
             />
           ) : (
             !loading && (
-              <p className="rounded-2xl bg-emerald-50 px-4 py-6 text-center text-sm text-emerald-800">
+              <p className="rounded-2xl bg-primary-softer px-4 py-6 text-center text-sm text-primary-dark">
                 운동 프로필에 맞춘 루틴을 만들어 드릴게요. 위의 <b>루틴 만들기</b>를 눌러주세요.
               </p>
             )

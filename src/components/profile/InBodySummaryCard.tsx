@@ -5,7 +5,8 @@ import type { InBodyHistoryEntry } from '../../types'
 interface Props {
   /** 가장 최근 측정(측정일 기준). 기록이 없으면 null */
   latest: InBodyHistoryEntry | null
-  onUpdate: () => void
+  /** 없으면(리포트 탭에서 보여줄 때) 업데이트 버튼과 안내 문구를 숨긴다 */
+  onUpdate?: () => void
 }
 
 const formatDate = (ts: number) => {
@@ -40,16 +41,20 @@ export default function InBodySummaryCard({ latest, onUpdate }: Props) {
         </div>
       )}
 
-      <button
-        onClick={onUpdate}
-        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-full border-2 border-emerald-200 py-2.5 text-sm font-semibold text-emerald-700"
-      >
-        <Sparkles size={14} />
-        결과지 사진으로 업데이트
-      </button>
-      <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
-        골격근량·체지방량 등 자세한 수치는 대시보드의 인바디 추이에서 볼 수 있어요.
-      </p>
+      {onUpdate && (
+        <>
+          <button
+            onClick={onUpdate}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-full border-2 border-primary-soft py-2.5 text-sm font-semibold text-primary-dark"
+          >
+            <Sparkles size={14} />
+            결과지 사진으로 업데이트
+          </button>
+          <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+            골격근량·체지방량 등 자세한 수치는 리포트의 인바디 추이에서 볼 수 있어요.
+          </p>
+        </>
+      )}
     </div>
   )
 }

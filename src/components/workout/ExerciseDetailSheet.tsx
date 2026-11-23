@@ -28,7 +28,7 @@ export default function ExerciseDetailSheet({ id, name, onClose }: Props) {
         role="dialog"
         aria-label={`${name} 운동 안내`}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[85vh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-3xl bg-white p-4"
+        className="sheet-enter max-h-[85vh] w-full max-w-md space-y-4 overflow-y-auto rounded-t-3xl bg-white p-4"
       >
         <div className="flex items-center justify-between gap-2">
           <h3 className="min-w-0 font-bold text-slate-900">{name}</h3>

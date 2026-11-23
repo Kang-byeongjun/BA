@@ -23,7 +23,7 @@ function MealCoach({ meal, goal }: { meal: RecommendedMeal; goal: Goal }) {
 
   if (state.status === 'idle') {
     return (
-      <button onClick={() => void request()} className="mt-2 flex items-center gap-1 text-xs font-medium text-emerald-600">
+      <button onClick={() => void request()} className="mt-2 flex items-center gap-1 text-xs font-medium text-primary">
         <Sparkles size={12} />
         AI 코치 한마디 듣기
       </button>
@@ -114,18 +114,18 @@ export default function NutritionFeedbackCard({ feedback, recommendedMeals, goal
   const recommendationsByNutrient = groupByNutrient(recommendedMeals)
 
   return (
-    <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+    <div className="rounded-2xl border border-primary-soft bg-primary-soft/60 p-4">
       <button onClick={() => setOpen((v) => !v)} className="flex w-full items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white">
             <Sparkles size={14} />
           </span>
-          <h3 className="text-sm font-semibold text-emerald-900">AI 영양 피드백</h3>
+          <h3 className="text-sm font-semibold text-primary-dark">AI 영양 피드백</h3>
         </div>
-        {open ? <ChevronUp size={18} className="text-emerald-400" /> : <ChevronDown size={18} className="text-emerald-400" />}
+        {open ? <ChevronUp size={18} className="text-primary" /> : <ChevronDown size={18} className="text-primary" />}
       </button>
       {!open && (
-        <p className="mt-1 text-xs text-emerald-700">오늘 영양소별 섭취 현황과 부족한 재료 추천을 알려드려요. 눌러서 펼쳐보세요.</p>
+        <p className="mt-1 text-xs text-primary-dark">오늘 영양소별 섭취 현황과 부족한 재료 추천을 알려드려요. 눌러서 펼쳐보세요.</p>
       )}
       {open && (
         <div className="mt-3 space-y-4">
@@ -137,7 +137,7 @@ export default function NutritionFeedbackCard({ feedback, recommendedMeals, goal
             return (
               <div key={f.nutrient}>
                 <div className="flex gap-2 text-sm text-slate-600">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                   <span>
                     {f.message}
                     {f.detail && <span className="ml-1 text-xs text-slate-400">({f.detail})</span>}

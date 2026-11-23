@@ -104,7 +104,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
   return (
     <div className="flex h-full flex-col px-6 pb-8 pt-12">
       <div className="mb-6">
-        <p className="text-sm font-semibold text-emerald-600">2 / 4</p>
+        <p className="text-sm font-semibold text-primary">2 / 4</p>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">InBody 정보를 입력해주세요</h1>
         <p className="mt-1 text-sm text-slate-500">최근 InBody 측정 결과를 입력하면 목표를 계산해드려요.</p>
       </div>
@@ -113,7 +113,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
         <button
           onClick={() => setMode('full')}
           className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition ${
-            mode === 'full' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-500'
+            mode === 'full' ? 'border-primary bg-primary-softer text-primary-dark' : 'border-slate-100 bg-white text-slate-500'
           }`}
         >
           InBody 결과 있어요
@@ -121,7 +121,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
         <button
           onClick={() => setMode('lite')}
           className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition ${
-            mode === 'lite' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-500'
+            mode === 'lite' ? 'border-primary bg-primary-softer text-primary-dark' : 'border-slate-100 bg-white text-slate-500'
           }`}
         >
           아직 안 재봤어요
@@ -138,14 +138,14 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
       {mode === 'full' && (
         <button
           onClick={() => setScanOpen(true)}
-          className="mb-4 flex items-center gap-3 rounded-2xl border-2 border-emerald-200 bg-emerald-50 p-4 text-left"
+          className="mb-4 flex items-center gap-3 rounded-2xl border-2 border-primary-soft bg-primary-softer p-4 text-left"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-white">
             <Sparkles size={20} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-emerald-700">InBody 결과지 사진으로 자동 입력</p>
-            <p className="text-xs text-emerald-600/80">AI가 결과지의 나이·키·체중·골격근량·체지방·기초대사량을 읽어 채워줘요</p>
+            <p className="text-sm font-semibold text-primary-dark">InBody 결과지 사진으로 자동 입력</p>
+            <p className="text-xs text-primary/80">AI가 결과지의 나이·키·체중·골격근량·체지방·기초대사량을 읽어 채워줘요</p>
           </div>
         </button>
       )}
@@ -160,7 +160,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
                 onClick={() => setValues((prev) => ({ ...prev, gender: g }))}
                 className={`rounded-xl border-2 py-3 text-sm font-semibold transition ${
                   values.gender === g
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    ? 'border-primary bg-primary-softer text-primary-dark'
                     : 'border-slate-100 bg-white text-slate-500'
                 }`}
               >
@@ -173,7 +173,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
         {CORE_FIELDS.map((f) => (
           <div key={f.key}>
             <label className="mb-1.5 block text-sm font-medium text-slate-600">{f.label}</label>
-            <div className="flex items-center rounded-xl border-2 border-slate-100 bg-white px-4 focus-within:border-emerald-400">
+            <div className="flex items-center rounded-xl border-2 border-slate-100 bg-white px-4 focus-within:border-primary">
               <input
                 type="number"
                 inputMode="decimal"
@@ -192,7 +192,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
             {BODY_COMP_FIELDS.map((f) => (
               <div key={f.key}>
                 <label className="mb-1.5 block text-sm font-medium text-slate-600">{f.label}</label>
-                <div className="flex items-center rounded-xl border-2 border-slate-100 bg-white px-4 focus-within:border-emerald-400">
+                <div className="flex items-center rounded-xl border-2 border-slate-100 bg-white px-4 focus-within:border-primary">
                   <input
                     type="number"
                     inputMode="decimal"
@@ -212,7 +212,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
                 {ADVANCED_FIELDS.map((f) => (
                   <div key={f.key}>
                     <label className="mb-1.5 block text-sm font-medium text-slate-600">{f.label}</label>
-                    <div className="flex items-center rounded-xl border-2 border-slate-100 bg-white px-4 focus-within:border-emerald-400">
+                    <div className="flex items-center rounded-xl border-2 border-slate-100 bg-white px-4 focus-within:border-primary">
                       <input
                         type="number"
                         inputMode="decimal"
@@ -241,7 +241,7 @@ export default function InBodyInput({ initial, initialMode = 'full', onBack, onN
         <button
           onClick={() => onNext(values, mode)}
           disabled={!isValid}
-          className="w-2/3 rounded-full bg-emerald-500 py-4 font-semibold text-white shadow-lg shadow-emerald-200 transition disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+          className="w-2/3 rounded-full bg-primary py-4 font-semibold text-white shadow-lg shadow-primary/25 transition disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
         >
           다음
         </button>

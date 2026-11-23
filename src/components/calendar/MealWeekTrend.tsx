@@ -85,7 +85,7 @@ function WeeklyBudgetBar({ nutrient, series, target }: { nutrient: NutrientKey; 
         <div className="absolute inset-y-0 border-l border-dashed border-slate-400" style={{ left: `${TARGET_POS}%` }} />
         {excess > 0 && (
           <div
-            className="absolute inset-y-0 flex items-center justify-center bg-rose-600"
+            className="absolute inset-y-0 flex items-center justify-center bg-orange-500"
             style={{ left: `${overlayLeft}%`, width: `${overlayWidth}%` }}
           >
             {showInlineLabel && (
@@ -97,7 +97,7 @@ function WeeklyBudgetBar({ nutrient, series, target }: { nutrient: NutrientKey; 
         )}
       </div>
       {excess > 0 && !showInlineLabel && (
-        <p className="mt-1 text-right text-[10px] font-medium text-rose-500">
+        <p className="mt-1 text-right text-[10px] font-medium text-orange-600">
           목표보다 +{Math.round(excess)}{NUTRIENT_UNITS[nutrient]} 초과
         </p>
       )}

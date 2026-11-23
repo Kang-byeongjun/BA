@@ -17,7 +17,7 @@ const STATUS_CELL_CLASS: Record<DayStatus, string> = {
   deficient: 'bg-amber-100 text-amber-700',
   adequate: 'bg-sky-100 text-sky-700',
   near_goal: 'bg-emerald-100 text-emerald-700',
-  exceeded: 'bg-rose-100 text-rose-700',
+  exceeded: 'bg-orange-100 text-orange-700',
 }
 
 const STATUS_DOT_CLASS: Record<DayStatus, string> = {
@@ -25,7 +25,7 @@ const STATUS_DOT_CLASS: Record<DayStatus, string> = {
   deficient: 'bg-amber-400',
   adequate: 'bg-sky-400',
   near_goal: 'bg-emerald-400',
-  exceeded: 'bg-rose-400',
+  exceeded: 'bg-orange-400',
 }
 
 function dayStatusLabel(status: DayStatus): string {
@@ -161,7 +161,7 @@ export default function NutritionCalendar({ onNavigateTab }: Props) {
               onClick={() => setSelected((prev) => (prev?.date === d.date ? null : d))}
               aria-label={`${cursor.month + 1}월 ${dayNum}일 · ${dayStatusLabel(d.status)}${hasWorkout ? ' · 운동함' : ''}`}
               className={`relative flex aspect-square flex-col items-center justify-center rounded-lg text-xs font-semibold transition-colors ${STATUS_CELL_CLASS[d.status]} ${
-                isToday ? 'ring-2 ring-emerald-500' : ''
+                isToday ? 'ring-2 ring-primary' : ''
               } ${isSelected ? 'ring-2 ring-slate-900' : ''}`}
             >
               {dayNum}
@@ -217,7 +217,7 @@ export default function NutritionCalendar({ onNavigateTab }: Props) {
                         {m.image ? (
                           <img src={m.image} alt="" className="h-8 w-8 shrink-0 rounded-md object-cover" />
                         ) : (
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-xs">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary-softer text-xs">
                             🍽️
                           </div>
                         )}

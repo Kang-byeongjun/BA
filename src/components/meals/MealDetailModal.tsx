@@ -20,7 +20,7 @@ export default function MealDetailModal({ meal, onClose, onDelete }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
       <div
-        className="max-h-[85%] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5"
+        className="sheet-enter max-h-[85%] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -68,7 +68,7 @@ export default function MealDetailModal({ meal, onClose, onDelete }: Props) {
 
         <button
           onClick={() => onDelete(meal.id)}
-          className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-rose-100 py-3.5 font-semibold text-rose-500"
+          className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-rose-300 py-3.5 font-semibold text-rose-600"
         >
           <Trash2 size={16} />
           이 식사 기록 삭제하기

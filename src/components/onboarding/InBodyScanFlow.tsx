@@ -50,7 +50,7 @@ function toInputValues(m: InBodyMeasurements): Record<FieldKey, string> {
 function confidenceLabel(confidence: number): { text: string; className: string } {
   if (confidence >= 0.8) return { text: '인식 신뢰도 높음', className: 'bg-emerald-100 text-emerald-700' }
   if (confidence >= LOW_CONFIDENCE) return { text: '인식 신뢰도 보통', className: 'bg-amber-100 text-amber-700' }
-  return { text: '인식 신뢰도 낮음', className: 'bg-rose-100 text-rose-700' }
+  return { text: '인식 신뢰도 낮음', className: 'bg-orange-100 text-orange-700' }
 }
 
 export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
@@ -270,7 +270,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
               type="date"
               value={measuredAt}
               onChange={(e) => setMeasuredAt(e.target.value)}
-              className="w-full rounded-xl border-2 border-slate-100 bg-white px-3 py-2.5 text-base font-semibold text-slate-900 outline-none focus:border-emerald-400"
+              className="w-full rounded-xl border-2 border-slate-100 bg-white px-3 py-2.5 text-base font-semibold text-slate-900 outline-none focus:border-primary"
             />
           </div>
 
@@ -294,11 +294,11 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
                     {wasMissing && values[f.key].trim() === '' && (
                       <span className="text-[11px] font-medium text-amber-600">읽지 못했어요 · 직접 입력</span>
                     )}
-                    {invalid && <span className="text-[11px] font-medium text-rose-500">0보다 큰 숫자를 입력해주세요</span>}
+                    {invalid && <span className="text-[11px] font-medium text-orange-600">0보다 큰 숫자를 입력해주세요</span>}
                   </div>
                   <div
-                    className={`flex items-center rounded-xl border-2 bg-white px-3 focus-within:border-emerald-400 ${
-                      invalid ? 'border-rose-300' : wasMissing && values[f.key].trim() === '' ? 'border-amber-300' : 'border-slate-100'
+                    className={`flex items-center rounded-xl border-2 bg-white px-3 focus-within:border-primary ${
+                      invalid ? 'border-orange-300' : wasMissing && values[f.key].trim() === '' ? 'border-amber-300' : 'border-slate-100'
                     }`}
                   >
                     <input
@@ -343,7 +343,7 @@ export default function InBodyScanFlow({ mode, onApply, onClose }: Props) {
           <button
             onClick={apply}
             disabled={hasInvalid || filledCount === 0}
-            className="w-2/3 rounded-full bg-emerald-500 py-3.5 font-semibold text-white shadow-lg shadow-emerald-200 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+            className="w-2/3 rounded-full bg-primary py-3.5 font-semibold text-white shadow-lg shadow-primary/25 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
           >
             확인하고 적용
           </button>

@@ -20,13 +20,13 @@ export default function AnalysisErrorView({ message, onRetry, onRetake, onClose 
       </div>
       <div className="flex w-full max-w-xs flex-col gap-3">
         {onRetry && (
-          <button onClick={onRetry} className="rounded-full bg-emerald-500 py-3.5 font-semibold">
+          <button onClick={onRetry} className="rounded-full bg-primary py-3.5 font-semibold">
             다시 시도
           </button>
         )}
         <button
           onClick={onRetake}
-          className={`rounded-full py-3.5 font-semibold ${onRetry ? 'bg-white/10' : 'bg-emerald-500'}`}
+          className={`rounded-full py-3.5 font-semibold ${onRetry ? 'bg-white/10' : 'bg-primary'}`}
         >
           다른 사진으로 다시 촬영
         </button>

@@ -51,7 +51,7 @@ export default function ExercisePicker({ onPick, onClose }: Props) {
             <button
               onClick={() => setGroup('ALL')}
               className={`shrink-0 rounded-full border-2 px-3 py-1 text-xs font-semibold transition ${
-                group === 'ALL' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-500'
+                group === 'ALL' ? 'border-primary bg-primary-softer text-primary-dark' : 'border-slate-100 bg-white text-slate-500'
               }`}
             >
               전체
@@ -61,7 +61,7 @@ export default function ExercisePicker({ onPick, onClose }: Props) {
                 key={g}
                 onClick={() => setGroup(g)}
                 className={`shrink-0 rounded-full border-2 px-3 py-1 text-xs font-semibold transition ${
-                  group === g ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-500'
+                  group === g ? 'border-primary bg-primary-softer text-primary-dark' : 'border-slate-100 bg-white text-slate-500'
                 }`}
               >
                 {MUSCLE_GROUP_LABEL[g]}

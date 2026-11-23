@@ -43,7 +43,7 @@ export default function WorkoutProfileInput({ initial, onBack, onNext }: Props) 
   return (
     <div className="flex h-full flex-col px-6 pb-8 pt-12">
       <div className="mb-6">
-        <p className="text-sm font-semibold text-emerald-600">3 / 4</p>
+        <p className="text-sm font-semibold text-primary">3 / 4</p>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">운동 스타일을 알려주세요</h1>
         <p className="mt-1 text-sm text-slate-500">맞춤 운동 루틴을 만드는 데 사용할게요.</p>
       </div>
@@ -58,7 +58,7 @@ export default function WorkoutProfileInput({ initial, onBack, onNext }: Props) 
                 onClick={() => setProfile((prev) => ({ ...prev, goal: g }))}
                 className={`rounded-xl border-2 py-3 text-sm font-semibold transition ${
                   profile.goal === g
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    ? 'border-primary bg-primary-softer text-primary-dark'
                     : 'border-slate-100 bg-white text-slate-500'
                 }`}
               >
@@ -78,13 +78,13 @@ export default function WorkoutProfileInput({ initial, onBack, onNext }: Props) 
                   key={opt.value}
                   onClick={() => setProfile((prev) => ({ ...prev, experience: opt.value }))}
                   className={`flex w-full items-center justify-between rounded-xl border-2 px-4 py-2.5 text-left transition ${
-                    active ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-white'
+                    active ? 'border-primary bg-primary-softer' : 'border-slate-100 bg-white'
                   }`}
                 >
-                  <span className={`text-sm font-semibold ${active ? 'text-emerald-700' : 'text-slate-700'}`}>
+                  <span className={`text-sm font-semibold ${active ? 'text-primary-dark' : 'text-slate-700'}`}>
                     {WORKOUT_EXPERIENCE_LABELS[opt.value]}
                   </span>
-                  <span className={`text-xs ${active ? 'text-emerald-600' : 'text-slate-400'}`}>{opt.desc}</span>
+                  <span className={`text-xs ${active ? 'text-primary' : 'text-slate-400'}`}>{opt.desc}</span>
                 </button>
               )
             })}
@@ -100,7 +100,7 @@ export default function WorkoutProfileInput({ initial, onBack, onNext }: Props) 
                 onClick={() => setProfile((prev) => ({ ...prev, weeklyFrequency: n }))}
                 className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition ${
                   profile.weeklyFrequency === n
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    ? 'border-primary bg-primary-softer text-primary-dark'
                     : 'border-slate-100 bg-white text-slate-500'
                 }`}
               >
@@ -119,7 +119,7 @@ export default function WorkoutProfileInput({ initial, onBack, onNext }: Props) 
                 onClick={() => setProfile((prev) => ({ ...prev, sessionDuration: d }))}
                 className={`rounded-xl border-2 py-2.5 text-xs font-semibold transition ${
                   profile.sessionDuration === d
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    ? 'border-primary bg-primary-softer text-primary-dark'
                     : 'border-slate-100 bg-white text-slate-500'
                 }`}
               >
@@ -159,7 +159,7 @@ export default function WorkoutProfileInput({ initial, onBack, onNext }: Props) 
         </button>
         <button
           onClick={() => onNext(profile)}
-          className="w-2/3 rounded-full bg-emerald-500 py-4 font-semibold text-white shadow-lg shadow-emerald-200"
+          className="w-2/3 rounded-full bg-primary py-4 font-semibold text-white shadow-lg shadow-primary/25"
         >
           다음
         </button>

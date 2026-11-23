@@ -52,7 +52,7 @@ function OptionRow({ option, onSelect }: { option: PickOption; onSelect: () => v
         {taken ? (
           <span className="shrink-0 text-xs text-slate-400">이미 있음</span>
         ) : burden.level === 'HIGH' ? (
-          <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-700">⚠ {parts} 부담 큼</span>
+          <span className="shrink-0 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-semibold text-orange-700">⚠ {parts} 부담 큼</span>
         ) : burden.level === 'MID' ? (
           <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">⚠ {parts} 주의</span>
         ) : null}
@@ -93,13 +93,13 @@ function TypedForm({ group, existingNames, onSubmit }: { group: MuscleGroup; exi
         <button
           type="submit"
           disabled={!check.ok}
-          className="shrink-0 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+          className="shrink-0 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
         >
           직접 추가
         </button>
       </div>
       {error && (
-        <p role="alert" className="text-xs text-rose-600">
+        <p role="alert" className="text-xs text-orange-600">
           {error}
         </p>
       )}
@@ -122,7 +122,7 @@ export default function RoutineExercisePicker({ mode, group: fixedGroup, pain, t
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40">
-      <div role="dialog" aria-label={title} className="max-h-[80vh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-3xl bg-slate-50 p-4">
+      <div role="dialog" aria-label={title} className="sheet-enter max-h-[80vh] w-full max-w-md space-y-3 overflow-y-auto rounded-t-3xl bg-slate-50 p-4">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-slate-900">
             {title}
@@ -134,15 +134,15 @@ export default function RoutineExercisePicker({ mode, group: fixedGroup, pain, t
         </div>
 
         {confirming ? (
-          <div role="alertdialog" aria-label="부담이 큰 종목 확인" className="space-y-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          <div role="alertdialog" aria-label="부담이 큰 종목 확인" className="space-y-3 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-800">
             <p>
               <b>{confirming.exercise.name}</b>은(는) {confirming.burden.highParts.map((p) => PAIN_KO[p]).join('·')}에 부담이 큰 종목이에요. 그래도 담을까요?
             </p>
             <div className="flex gap-2">
-              <button onClick={() => setConfirming(null)} className="flex-1 rounded-full border border-rose-200 bg-white py-2 font-semibold">
+              <button onClick={() => setConfirming(null)} className="flex-1 rounded-full border border-orange-200 bg-white py-2 font-semibold">
                 취소
               </button>
-              <button onClick={() => onPick(confirming.exercise.id)} className="flex-1 rounded-full bg-rose-500 py-2 font-semibold text-white">
+              <button onClick={() => onPick(confirming.exercise.id)} className="flex-1 rounded-full border border-orange-500 bg-white py-2 font-semibold text-orange-700">
                 그래도 담기
               </button>
             </div>
@@ -162,7 +162,7 @@ export default function RoutineExercisePicker({ mode, group: fixedGroup, pain, t
         ) : (
           <>
             {mode === 'add' && (
-              <button onClick={() => setGroup(null)} className="text-sm font-semibold text-emerald-700">
+              <button onClick={() => setGroup(null)} className="text-sm font-semibold text-primary-dark">
                 ← 부위 다시 고르기
               </button>
             )}

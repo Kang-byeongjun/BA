@@ -68,7 +68,7 @@ export default function MealHistoryAccordion({ meals, onSelectMeal, onDeleteMeal
                     ) : (
                       <div
                         key={m.id}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-white bg-emerald-50 text-sm"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 border-white bg-primary-softer text-sm"
                       >
                         🍽️
                       </div>
@@ -109,7 +109,7 @@ export default function MealHistoryAccordion({ meals, onSelectMeal, onDeleteMeal
                 {meal.image ? (
                   <img src={meal.image} alt={meal.title} className="h-14 w-14 shrink-0 rounded-xl object-cover" />
                 ) : (
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-xl">🍽️</div>
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-softer text-xl">🍽️</div>
                 )}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 text-xs text-slate-400">
@@ -125,7 +125,7 @@ export default function MealHistoryAccordion({ meals, onSelectMeal, onDeleteMeal
                     e.stopPropagation()
                     onDeleteMeal(meal.id)
                   }}
-                  className="shrink-0 rounded-full p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-500"
+                  className="shrink-0 rounded-full p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-600"
                 >
                   <Trash2 size={16} />
                 </span>

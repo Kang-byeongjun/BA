@@ -15,7 +15,7 @@ const STATUS_BADGE_CLASSES: Record<NutritionStatus, string> = {
   deficient: 'bg-amber-100 text-amber-700',
   adequate: 'bg-sky-100 text-sky-700',
   near_goal: 'bg-emerald-100 text-emerald-700',
-  exceeded: 'bg-rose-100 text-rose-700',
+  exceeded: 'bg-orange-100 text-orange-700',
 }
 
 export default function NutritionBar({ label, consumed, target, unit, colorClass }: Props) {
@@ -41,7 +41,7 @@ export default function NutritionBar({ label, consumed, target, unit, colorClass
       <AnimatedBar id={label} width={barWidth} trackClass="bg-slate-100" fillClass={colorClass} heightClass="h-2.5" />
       <div className="mt-1 flex justify-between text-[11px] text-slate-400">
         <span>{percent}%</span>
-        {overAmount > 0 && <span className="font-medium text-rose-500">목표보다 +{overAmount}{unit} 초과</span>}
+        {overAmount > 0 && <span className="font-medium text-orange-600">목표보다 +{overAmount}{unit} 초과</span>}
       </div>
     </div>
   )

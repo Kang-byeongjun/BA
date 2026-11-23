@@ -33,7 +33,7 @@ function DeltaBadge({ delta, decimals }: { delta: number; decimals: number }) {
   }
   const isUp = rounded > 0
   return (
-    <span className={`flex items-center gap-0.5 text-xs font-semibold ${isUp ? 'text-rose-500' : 'text-sky-600'}`}>
+    <span className={`flex items-center gap-0.5 text-xs font-semibold ${isUp ? 'text-orange-500' : 'text-sky-600'}`}>
       {isUp ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
       {isUp ? '+' : ''}
       {rounded}
@@ -181,7 +181,7 @@ function CollapsibleSection({ title, defaultOpen, children }: { title: string; d
 
 function AddMeasurementButton({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="flex items-center gap-1 text-xs font-medium text-emerald-600">
+    <button onClick={onClick} className="flex items-center gap-1 text-xs font-medium text-primary">
       <Sparkles size={14} />
       새 측정 추가
     </button>
@@ -242,7 +242,7 @@ export default function InBodyTrend({ history: rawHistory }: Props) {
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-400">예시</span>
           </div>
         </div>
-        {notice && <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{notice}</p>}
+        {notice && <p className="mb-3 rounded-xl bg-primary-softer px-3 py-2 text-xs text-primary-dark">{notice}</p>}
         <CollapsibleSection title="체형 분석" defaultOpen>
           <BodyShapeChart
             entry={latest}
@@ -275,7 +275,7 @@ export default function InBodyTrend({ history: rawHistory }: Props) {
         <AddMeasurementButton onClick={() => setScanOpen(true)} />
       </div>
 
-      {notice && <p className="mb-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{notice}</p>}
+      {notice && <p className="mb-3 rounded-xl bg-primary-softer px-3 py-2 text-xs text-primary-dark">{notice}</p>}
       <CollapsibleSection title="체형 분석" defaultOpen>
         <BodyShapeChart
           entry={latest}
@@ -335,7 +335,7 @@ export default function InBodyTrend({ history: rawHistory }: Props) {
               </div>
               {confirmDeleteId === entry.id ? (
                 <div className="flex items-center gap-2">
-                  <button onClick={() => deleteEntry(entry.id)} className="font-semibold text-rose-500">
+                  <button onClick={() => deleteEntry(entry.id)} className="font-semibold text-rose-600">
                     삭제
                   </button>
                   <button onClick={() => setConfirmDeleteId(null)} className="text-slate-400">
@@ -348,7 +348,7 @@ export default function InBodyTrend({ history: rawHistory }: Props) {
                     {entry.weight !== null ? `${entry.weight}kg` : '—'}
                     {entry.bodyFatPercentage !== null ? ` · 체지방 ${entry.bodyFatPercentage}%` : ''}
                   </span>
-                  <button onClick={() => setConfirmDeleteId(entry.id)} className="text-slate-300 hover:text-rose-400">
+                  <button onClick={() => setConfirmDeleteId(entry.id)} className="text-slate-300 hover:text-rose-600">
                     <Trash2 size={13} />
                   </button>
                 </div>

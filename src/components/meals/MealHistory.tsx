@@ -53,7 +53,7 @@ export default function MealHistory({ onOpenCamera }: Props) {
 
       <button
         onClick={() => onOpenCamera()}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-4 font-semibold text-white shadow-lg shadow-slate-300 active:scale-[0.98]"
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-4 font-semibold text-white shadow-lg shadow-primary/25 active:scale-[0.98]"
       >
         <Camera size={20} />
         음식 촬영하고 기록하기

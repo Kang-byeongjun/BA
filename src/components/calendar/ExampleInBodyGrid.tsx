@@ -29,7 +29,7 @@ export default function ExampleInBodyGrid() {
                 {f.current}
                 {f.unit}
               </p>
-              <span className={`flex items-center gap-0.5 text-xs font-semibold ${isUp ? 'text-rose-500' : 'text-sky-600'}`}>
+              <span className={`flex items-center gap-0.5 text-xs font-semibold ${isUp ? 'text-orange-500' : 'text-sky-600'}`}>
                 {isUp ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
                 {isUp ? '+' : ''}
                 {f.delta}

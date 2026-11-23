@@ -22,7 +22,7 @@ export default function WorkoutHistory() {
                 <p className="text-xs text-slate-400">{formatRelativeDate(w.startTime)}</p>
                 <p className="font-semibold text-slate-800">{w.type}</p>
               </div>
-              <p className="text-sm font-medium text-emerald-600">{formatDurationKorean(w.duration)}</p>
+              <p className="text-sm font-medium text-primary">{formatDurationKorean(w.duration)}</p>
             </div>
           ))}
         </div>

@@ -46,7 +46,7 @@ function ExerciseItem({ exercise, showReason, actions, onOpen }: { exercise: Rou
     // 행을 누르면 종목 상세(근육 맵·수행 방법)가 열린다. 바꾸기·삭제 버튼은 아래에서 전파를 막아 열리지 않게 한다.
     <li onClick={onOpen} className="cursor-pointer rounded-2xl border border-slate-100 bg-white p-4">
       <div className="flex items-start gap-3">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-primary-dark">
           {exercise.order}
         </span>
         <button type="button" aria-label={`${exercise.name} 운동 방법 보기`} className="shrink-0">
@@ -63,12 +63,12 @@ function ExerciseItem({ exercise, showReason, actions, onOpen }: { exercise: Rou
           </p>
           {showReason && <p className="mt-1 text-sm text-slate-500">{exercise.reason}</p>}
           {exercise.prescription && (
-            <p className="mt-1 text-lg font-bold text-emerald-700">× {range(exercise.prescription.setsMin, exercise.prescription.setsMax)}세트</p>
+            <p className="mt-1 text-lg font-bold text-primary-dark">× {range(exercise.prescription.setsMin, exercise.prescription.setsMax)}세트</p>
           )}
           <div className="mt-1.5 flex flex-wrap gap-1 text-[11px] font-medium">
             {rx ? (
               <>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">{rx.main}</span>
+                <span className="rounded-full bg-primary-softer px-2 py-0.5 text-primary-dark">{rx.main}</span>
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{rx.rest}</span>
               </>
             ) : (
@@ -125,7 +125,7 @@ export default function RoutineView({ result, onStart, edit, edited = false }: P
   return (
     <div className="space-y-3">
       {result.goalReason && (
-        <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{result.goalReason}</p>
+        <p className="rounded-2xl bg-primary-softer px-4 py-3 text-sm text-primary-dark">{result.goalReason}</p>
       )}
 
       <p className="text-sm text-slate-600">{edited ? EDITED_NOTICE : isFallback ? FALLBACK_NOTICE : result.summary}</p>
@@ -144,7 +144,7 @@ export default function RoutineView({ result, onStart, edit, edited = false }: P
                   setConfirmRemoveOrder(null)
                 }}
                 className={`shrink-0 rounded-full border-2 px-4 py-1.5 text-sm font-semibold transition ${
-                  selected ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-500'
+                  selected ? 'border-primary bg-primary-softer text-primary-dark' : 'border-slate-100 bg-white text-slate-500'
                 }`}
               >
                 {d.day}일차 · {d.label}
@@ -157,7 +157,7 @@ export default function RoutineView({ result, onStart, edit, edited = false }: P
       {current && onStart && (
         <button
           onClick={() => onStart(current)}
-          className="w-full rounded-full bg-emerald-500 py-3 font-semibold text-white shadow-lg shadow-emerald-200"
+          className="w-full rounded-full bg-primary py-3 font-semibold text-white shadow-lg shadow-primary/25"
         >
           이 루틴으로 운동 시작
         </button>
@@ -199,7 +199,7 @@ export default function RoutineView({ result, onStart, edit, edited = false }: P
                 edit.onChange(removeExercise(result, current.day, confirmRemoveOrder))
                 setConfirmRemoveOrder(null)
               }}
-              className="flex-1 rounded-full bg-rose-500 py-1.5 font-semibold text-white"
+              className="flex-1 rounded-full border border-rose-600 bg-white py-1.5 font-semibold text-rose-600"
             >
               지우기
             </button>
@@ -210,7 +210,7 @@ export default function RoutineView({ result, onStart, edit, edited = false }: P
       {current && edit && (
         <button
           onClick={() => setPicker({ mode: 'add' })}
-          className="w-full rounded-full border-2 border-dashed border-emerald-300 py-2.5 text-sm font-semibold text-emerald-700"
+          className="w-full rounded-full border-2 border-dashed border-primary-soft py-2.5 text-sm font-semibold text-primary-dark"
         >
           + 종목 추가
         </button>

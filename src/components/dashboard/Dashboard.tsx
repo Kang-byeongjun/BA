@@ -97,14 +97,14 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
       )}
 
       {nudge && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-sky-50 px-4 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary-soft bg-primary-softer px-4 py-3">
           <div className="flex items-start gap-2">
-            <Bell size={16} className="mt-0.5 shrink-0 text-sky-600" />
-            <p className="text-sm text-sky-800">{nudge.message}</p>
+            <Bell size={16} className="mt-0.5 shrink-0 text-primary" />
+            <p className="text-sm text-primary-dark">{nudge.message}</p>
           </div>
           <button
             onClick={() => (nudge.action === 'log-dinner' ? onOpenCamera('저녁') : dispatch({ type: 'ADD_WATER', amount: 200 }))}
-            className="shrink-0 rounded-full bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white"
+            className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white"
           >
             {nudge.action === 'log-dinner' ? '기록하기' : '한 잔 추가'}
           </button>

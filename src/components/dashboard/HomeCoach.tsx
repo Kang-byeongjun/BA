@@ -13,24 +13,24 @@ export default function HomeCoach({ meal, goal }: Props) {
   const { state } = useMealCoach(meal, goal, true)
 
   return (
-    <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+    <div className="rounded-2xl border border-primary-soft bg-primary-soft/60 p-4">
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white">
           <Sparkles size={14} />
         </span>
-        <p className="text-sm font-semibold text-emerald-900">오늘의 AI 코치</p>
+        <p className="text-sm font-semibold text-primary-dark">오늘의 AI 코치</p>
       </div>
 
       {state.status !== 'done' ? (
-        <p className="mt-2 flex items-center gap-1 text-xs text-emerald-700">
+        <p className="mt-2 flex items-center gap-1 text-xs text-primary-dark">
           <Loader2 size={12} className="animate-spin" />
           코치가 생각 중이에요...
         </p>
       ) : (
         <div className="mt-2">
-          <p className="text-sm text-emerald-900">💬 {state.message}</p>
+          <p className="text-sm text-primary-dark">💬 {state.message}</p>
           {state.isFallback && (
-            <p className="mt-0.5 text-[10px] text-emerald-500">AI 연결이 원활하지 않아 기본 문구로 보여드려요.</p>
+            <p className="mt-0.5 text-[10px] text-primary">AI 연결이 원활하지 않아 기본 문구로 보여드려요.</p>
           )}
         </div>
       )}

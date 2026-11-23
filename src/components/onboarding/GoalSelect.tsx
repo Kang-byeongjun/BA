@@ -20,7 +20,7 @@ export default function GoalSelect({ value, onSelect, onNext, onDemo }: Props) {
   return (
     <div className="flex h-full flex-col px-6 pb-8 pt-12">
       <div className="mb-8">
-        <p className="text-sm font-semibold text-emerald-600">1 / 3</p>
+        <p className="text-sm font-semibold text-primary">1 / 3</p>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">관리 목적을 선택해주세요</h1>
         <p className="mt-1 text-sm text-slate-500">목적에 맞춰 개인 영양 목표를 만들어드려요.</p>
       </div>
@@ -34,13 +34,13 @@ export default function GoalSelect({ value, onSelect, onNext, onDemo }: Props) {
               onClick={() => onSelect(opt.goal)}
               className={`flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition ${
                 active
-                  ? 'border-emerald-500 bg-emerald-50'
+                  ? 'border-primary bg-primary-softer'
                   : 'border-slate-100 bg-white hover:border-slate-200'
               }`}
             >
               <div
                 className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
-                  active ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500'
+                  active ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'
                 }`}
               >
                 {opt.icon}
@@ -58,7 +58,7 @@ export default function GoalSelect({ value, onSelect, onNext, onDemo }: Props) {
         <button
           onClick={onNext}
           disabled={!value}
-          className="w-full rounded-full bg-emerald-500 py-4 font-semibold text-white shadow-lg shadow-emerald-200 transition disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+          className="w-full rounded-full bg-primary py-4 font-semibold text-white shadow-lg shadow-primary/25 transition disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
         >
           다음
         </button>

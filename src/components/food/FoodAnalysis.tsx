@@ -268,7 +268,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
             id="meal-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-900 outline-none focus:border-emerald-400"
+            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-semibold text-slate-900 outline-none focus:border-primary"
           />
         </div>
 
@@ -280,7 +280,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                 key={s}
                 onClick={() => setSlot(s)}
                 className={`rounded-xl border-2 py-2 text-sm font-semibold ${
-                  slot === s ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-500'
+                  slot === s ? 'border-primary bg-primary-softer text-primary-dark' : 'border-slate-100 bg-white text-slate-500'
                 }`}
               >
                 {s}
@@ -375,12 +375,12 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                       onBlur={() => setTimeout(() => setOpenSuggestKey((k) => (k === row.key ? null : k)), 150)}
                       placeholder="음식 이름 검색"
                       aria-label="음식 이름"
-                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-emerald-400"
+                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium outline-none focus:border-primary"
                     />
                     <button
                       onClick={() => removeRow(row.key)}
                       aria-label="음식 삭제"
-                      className="shrink-0 rounded-lg p-2 text-slate-300 hover:text-rose-500"
+                      className="shrink-0 rounded-lg p-2 text-slate-300 hover:text-rose-600"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -422,7 +422,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                         </span>
                       )}
                       {hasPortionCorrection(row) && (
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                        <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary-dark">
                           지난 수정 이력 반영
                         </span>
                       )}
@@ -440,7 +440,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                             onClick={() => setGrams(row.key, presetValue)}
                             className={`flex-1 rounded-lg border py-1.5 text-[11px] font-medium transition ${
                               active
-                                ? 'border-emerald-400 bg-emerald-50 text-emerald-700'
+                                ? 'border-primary bg-primary-softer text-primary-dark'
                                 : 'border-slate-200 bg-white text-slate-500'
                             }`}
                           >
@@ -493,7 +493,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                           영양정보 직접 입력
                         </button>
                       </div>
-                      {estimateErrors[row.key] && <p className="mt-1 text-[11px] text-rose-600">{estimateErrors[row.key]}</p>}
+                      {estimateErrors[row.key] && <p className="mt-1 text-[11px] text-orange-600">{estimateErrors[row.key]}</p>}
                     </div>
                   )}
 
@@ -519,7 +519,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                               inputMode="decimal"
                               value={manualDraft[field]}
                               onChange={(e) => setManualDraft((prev) => ({ ...prev, [field]: e.target.value }))}
-                              className="mt-0.5 w-full rounded-md border border-slate-200 px-2 py-1 text-sm outline-none focus:border-emerald-400"
+                              className="mt-0.5 w-full rounded-md border border-slate-200 px-2 py-1 text-sm outline-none focus:border-primary"
                             />
                           </label>
                         ))}
@@ -534,7 +534,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                         <button
                           onClick={() => applyManualEntry(row)}
                           disabled={!manualDraft.calories}
-                          className="flex-1 rounded-lg bg-emerald-500 py-1.5 text-xs font-semibold text-white disabled:bg-slate-200 disabled:text-slate-400"
+                          className="flex-1 rounded-lg bg-primary py-1.5 text-xs font-semibold text-white disabled:bg-slate-200 disabled:text-slate-400"
                         >
                           적용
                         </button>
@@ -549,7 +549,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                           key={entry.id}
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => handleSelectSuggestion(row.key, entry)}
-                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-emerald-50"
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-primary-softer"
                         >
                           <span className="min-w-0">
                             <span className="flex items-center gap-1.5">
@@ -558,7 +558,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                                 {entry.category}
                               </span>
                             </span>
-                            {entry.brand && <span className="mt-0.5 block text-[10px] text-emerald-600">{entry.brand}</span>}
+                            {entry.brand && <span className="mt-0.5 block text-[10px] text-primary">{entry.brand}</span>}
                           </span>
                           <span className="shrink-0 text-xs text-slate-400">100g당 {entry.caloriesPer100g}kcal</span>
                         </button>
@@ -573,7 +573,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
 
           <button
             onClick={addRow}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-emerald-200 py-2.5 text-sm font-semibold text-emerald-600"
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-primary-soft py-2.5 text-sm font-semibold text-primary"
           >
             <Plus size={16} />
             음식 추가하기
@@ -612,7 +612,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
         <button
           onClick={handleSaveClick}
           disabled={!canSave}
-          className="w-full rounded-full bg-emerald-500 py-4 font-semibold text-white shadow-lg shadow-emerald-200 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+          className="w-full rounded-full bg-primary py-4 font-semibold text-white shadow-lg shadow-primary/25 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
         >
           식사 기록하기
         </button>
@@ -659,7 +659,7 @@ export default function FoodAnalysis({ preview, extraction, mode, initialSlot, o
                   setShowPortionConfirm(false)
                   onConfirm({ title, slot, rows, waterMl })
                 }}
-                className="flex-1 rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white"
+                className="flex-1 rounded-full bg-primary py-3 text-sm font-semibold text-white"
               >
                 그대로 저장
               </button>

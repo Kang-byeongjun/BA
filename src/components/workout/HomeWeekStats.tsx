@@ -45,7 +45,7 @@ function HomeWeekStatsView({ data, dietSlot }: { data: WorkoutCardData } & Pick<
               id="home-week-progress"
               width={Math.min(100, (count / goal) * 100)}
               trackClass="bg-slate-100"
-              fillClass={count >= goal ? 'bg-emerald-500' : 'bg-sky-500'}
+              fillClass={count >= goal ? 'bg-emerald-500' : 'bg-primary'}
               heightClass="h-1.5"
             />
           </div>

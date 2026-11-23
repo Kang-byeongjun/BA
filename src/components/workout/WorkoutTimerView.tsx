@@ -55,7 +55,7 @@ export default function WorkoutTimerView({ session, onPause, onResume, onFinish 
           ) : (
             <button
               onClick={onResume}
-              className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white"
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white"
               aria-label="재개"
             >
               <Play size={26} />
@@ -63,7 +63,7 @@ export default function WorkoutTimerView({ session, onPause, onResume, onFinish 
           )}
           <button
             onClick={onFinish}
-            className="flex h-16 w-16 items-center justify-center rounded-full bg-rose-500 text-white"
+            className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-rose-600 bg-white text-rose-600"
             aria-label="운동 종료"
           >
             <Square size={24} />

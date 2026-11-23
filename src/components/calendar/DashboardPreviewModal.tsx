@@ -13,10 +13,10 @@ export default function DashboardPreviewModal({ onClose }: Props) {
       <div className="w-full max-w-sm rounded-2xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-1 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white">
               <Sparkles size={14} />
             </span>
-            <p className="text-sm font-bold text-slate-900">대시보드는 이렇게 채워져요</p>
+            <p className="text-sm font-bold text-slate-900">리포트는 이렇게 채워져요</p>
           </div>
           <button onClick={onClose} aria-label="닫기" className="text-slate-400">
             <X size={18} />
@@ -31,12 +31,12 @@ export default function DashboardPreviewModal({ onClose }: Props) {
           <ExampleInBodyGrid />
         </div>
 
-        <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
-          <p className="text-xs font-semibold text-emerald-900">식단 × 인바디</p>
-          <p className="mt-1 text-sm text-emerald-800">이 기간 목표를 지킨 날이 10/14일이었고, 체중이 0.8kg 줄었어요.</p>
+        <div className="rounded-xl border border-primary-soft bg-primary-soft/60 p-3">
+          <p className="text-xs font-semibold text-primary-dark">식단 × 인바디</p>
+          <p className="mt-1 text-sm text-primary-dark">이 기간 목표를 지킨 날이 10/14일이었고, 체중이 0.8kg 줄었어요.</p>
         </div>
 
-        <button onClick={onClose} className="mt-4 w-full rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white">
+        <button onClick={onClose} className="mt-4 w-full rounded-full bg-primary py-3 text-sm font-semibold text-white">
           확인했어요
         </button>
       </div>

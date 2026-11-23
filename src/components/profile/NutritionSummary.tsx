@@ -11,7 +11,7 @@ const finite = (v: number) => (Number.isFinite(v) && v > 0 ? v : 0)
 const MACROS = [
   { key: 'protein', kcalPerG: 4, fill: 'bg-sky-500' },
   { key: 'carbohydrates', kcalPerG: 4, fill: 'bg-amber-400' },
-  { key: 'fat', kcalPerG: 9, fill: 'bg-rose-400' },
+  { key: 'fat', kcalPerG: 9, fill: 'bg-violet-500' },
 ] as const
 
 // 하루 영양 목표 요약: 큰 kcal 숫자 + 단백질·탄수화물·지방 비율 막대(g 표시) + 식이섬유 한 줄

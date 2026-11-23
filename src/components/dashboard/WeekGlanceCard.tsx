@@ -76,7 +76,7 @@ function View({ meals, target, history, data, now: nowProp }: Props & { data: Wo
                     id="glance-workout"
                     width={Math.min(100, (count / goal) * 100)}
                     trackClass="bg-slate-200"
-                    fillClass={count >= goal ? 'bg-emerald-500' : 'bg-sky-500'}
+                    fillClass={count >= goal ? 'bg-emerald-500' : 'bg-primary'}
                     heightClass="h-1.5"
                   />
                 </div>

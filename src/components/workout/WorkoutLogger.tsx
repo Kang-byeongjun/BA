@@ -91,17 +91,17 @@ function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, onRequestDele
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             onClick={() => onShowLast(log)}
-            className="flex items-center gap-1 rounded-full border border-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+            className="flex items-center gap-1 rounded-full border border-primary-soft px-2.5 py-1 text-xs font-semibold text-primary-dark"
           >
             <History size={13} /> 지난 기록
           </button>
-          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+          <span className="rounded-full bg-primary-softer px-2.5 py-1 text-xs font-semibold text-primary-dark">
             볼륨 {formatKg(volumeOf(log.sets))}
           </span>
           <button
             aria-label={`${log.name} 종목 삭제`}
             onClick={() => onRequestDelete(log)}
-            className="rounded-full p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-500"
+            className="rounded-full p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-600"
           >
             <Trash2 size={15} />
           </button>
@@ -116,7 +116,7 @@ function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, onRequestDele
         value={log.memo}
         onChange={(e) => onChange({ ...log, memo: e.target.value })}
         placeholder="메모 (자세, 느낌 등)"
-        className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-300 focus:outline-none"
+        className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-primary-soft focus:outline-none"
       />
 
       <table className="w-full table-fixed border-separate border-spacing-y-1 text-sm">
@@ -145,7 +145,7 @@ function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, onRequestDele
                     value={s.kg}
                     onChange={(e) => setRows(setKg(log.sets, s.id, cleanKg(e.target.value)))}
                     placeholder="-"
-                    className="w-full rounded-lg bg-white/80 py-2 text-center tabular-nums text-slate-900 ring-1 ring-slate-100 focus:outline-emerald-400"
+                    className="w-full rounded-lg bg-white/80 py-2 text-center tabular-nums text-slate-900 ring-1 ring-slate-100 focus:outline-primary"
                   />
                 </td>
                 <td className={`px-1 py-1 ${cell}`}>
@@ -155,7 +155,7 @@ function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, onRequestDele
                     value={s.reps}
                     onChange={(e) => patch(s.id, { reps: cleanReps(e.target.value) })}
                     placeholder="-"
-                    className="w-full rounded-lg bg-white/80 py-2 text-center tabular-nums text-slate-900 ring-1 ring-slate-100 focus:outline-emerald-400"
+                    className="w-full rounded-lg bg-white/80 py-2 text-center tabular-nums text-slate-900 ring-1 ring-slate-100 focus:outline-primary"
                   />
                 </td>
                 <td className={`py-1 ${cell}`}>
@@ -175,7 +175,7 @@ function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, onRequestDele
                   <button
                     aria-label={`${n}세트 삭제`}
                     onClick={() => setRows(log.sets.filter((x) => x.id !== s.id))}
-                    className="rounded-full p-1.5 text-slate-300 hover:text-rose-500"
+                    className="rounded-full p-1.5 text-slate-300 hover:text-rose-600"
                   >
                     <X size={16} />
                   </button>
@@ -189,7 +189,7 @@ function ExerciseCard({ log, onChange, onSetCompleted, onShowLast, onRequestDele
       <div className="flex gap-2">
         <button
           onClick={() => setRows([...log.sets, newSet(newId(), '', String(log.defaultReps))])}
-          className="flex flex-1 items-center justify-center gap-1 rounded-full bg-emerald-50 py-2 text-sm font-semibold text-emerald-700"
+          className="flex flex-1 items-center justify-center gap-1 rounded-full bg-primary-softer py-2 text-sm font-semibold text-primary-dark"
         >
           <Plus size={16} /> 세트 추가
         </button>
@@ -239,7 +239,7 @@ function Modal({ title, message, cancelLabel, confirmLabel, tone, onCancel, onCo
           )}
           <button
             onClick={onConfirm}
-            className={`flex-1 rounded-full py-3 font-semibold text-white ${tone === 'danger' ? 'bg-rose-500' : 'bg-emerald-500'}`}
+            className={`flex-1 rounded-full py-3 font-semibold ${tone === 'danger' ? 'border-2 border-rose-600 bg-white text-rose-600' : 'bg-primary text-white'}`}
           >
             {confirmLabel}
           </button>
@@ -341,12 +341,12 @@ export default function WorkoutLogger({ initial, onExit, onFinish }: Props) {
           <h1 className="text-xl font-bold text-slate-900">{day.day > 0 ? `${day.day}일차 · ${day.label}` : day.label}</h1>
         </div>
 
-        <div className="rounded-3xl bg-emerald-500 px-5 py-4 text-white">
-          <p className="text-sm text-emerald-50">전체 볼륨</p>
+        <div className="rounded-3xl bg-primary px-5 py-4 text-white">
+          <p className="text-sm text-primary-softer">전체 볼륨</p>
           <p aria-label="전체 볼륨" className="text-3xl font-bold tabular-nums">
             {formatKg(total)}
           </p>
-          <p className="mt-1 text-xs text-emerald-50">완료 체크한 세트의 kg × 회를 더한 값이에요</p>
+          <p className="mt-1 text-xs text-primary-softer">완료 체크한 세트의 kg × 회를 더한 값이에요</p>
         </div>
 
         {logs.length === 0 && (

@@ -191,10 +191,10 @@ interface Props {
 export default function UpdatesPanel({ onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/60 backdrop-blur-sm">
-      <div className="mt-auto flex max-h-[88vh] flex-col rounded-t-3xl bg-white">
+      <div className="sheet-enter mt-auto flex max-h-[88vh] flex-col rounded-t-3xl bg-white">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-600">What's New</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">What's New</p>
             <h2 className="text-lg font-bold text-slate-900">최근 업데이트 노트</h2>
           </div>
           <button onClick={onClose} aria-label="닫기" className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100">

@@ -77,7 +77,7 @@ export default function WorkoutSummaryCard() {
                 id="workout-week-progress"
                 width={Math.min(100, (summary.week.progress ?? 0) * 100)}
                 trackClass="bg-slate-100"
-                fillClass={summary.week.achieved ? 'bg-emerald-500' : 'bg-sky-500'}
+                fillClass={summary.week.achieved ? 'bg-emerald-500' : 'bg-primary'}
                 heightClass="h-2.5"
               />
             )}

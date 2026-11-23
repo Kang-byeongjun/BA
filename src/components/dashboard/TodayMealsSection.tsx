@@ -45,7 +45,7 @@ export default function TodayMealsSection({ meals, onSelect, onAdd }: Props) {
                   className="flex w-full items-center justify-between rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-sm text-slate-400"
                 >
                   <span>아직 기록이 없어요</span>
-                  <span className="flex items-center gap-1 font-medium text-emerald-500">
+                  <span className="flex items-center gap-1 font-medium text-primary">
                     <Plus size={14} />
                     추가
                   </span>
@@ -61,7 +61,7 @@ export default function TodayMealsSection({ meals, onSelect, onAdd }: Props) {
                       {meal.image ? (
                         <img src={meal.image} alt={meal.title} className="h-9 w-9 shrink-0 rounded-lg object-cover" />
                       ) : (
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-base">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-softer text-base">
                           🍽️
                         </span>
                       )}

@@ -25,8 +25,8 @@ export default function WorkoutSummary({ record, onConfirm }: Props) {
         </p>
       </div>
 
-      <div className="rounded-3xl bg-emerald-500 px-5 py-4 text-white">
-        <p className="text-sm text-emerald-50">총 볼륨</p>
+      <div className="rounded-3xl bg-primary px-5 py-4 text-white">
+        <p className="text-sm text-primary-softer">총 볼륨</p>
         <p aria-label="총 볼륨" className="text-3xl font-bold tabular-nums">
           {formatKg(record.totalVolume)}
         </p>
@@ -55,7 +55,7 @@ export default function WorkoutSummary({ record, onConfirm }: Props) {
               <span className="min-w-0 truncate font-medium text-slate-700">
                 {e.name} <span className="text-xs text-slate-400">· {e.sets.length}세트</span>
               </span>
-              <span className="shrink-0 font-semibold tabular-nums text-emerald-700">{formatKg(e.volume)}</span>
+              <span className="shrink-0 font-semibold tabular-nums text-primary-dark">{formatKg(e.volume)}</span>
             </li>
           ))}
         </ul>
@@ -63,7 +63,7 @@ export default function WorkoutSummary({ record, onConfirm }: Props) {
 
       <button
         onClick={onConfirm}
-        className="w-full rounded-full bg-emerald-500 py-3.5 font-semibold text-white shadow-lg shadow-emerald-200"
+        className="w-full rounded-full bg-primary py-3.5 font-semibold text-white shadow-lg shadow-primary/25"
       >
         확인
       </button>

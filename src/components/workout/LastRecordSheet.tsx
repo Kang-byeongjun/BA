@@ -30,7 +30,7 @@ export default function LastRecordSheet({ name, last, onClose }: Props) {
         aria-modal="true"
         aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md space-y-3 rounded-t-3xl bg-white px-5 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-4"
+        className="sheet-enter w-full max-w-md space-y-3 rounded-t-3xl bg-white px-5 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-4"
       >
         <div className="mx-auto h-1 w-10 rounded-full bg-slate-200" />
         <div className="flex items-center justify-between gap-2">
@@ -49,8 +49,8 @@ export default function LastRecordSheet({ name, last, onClose }: Props) {
             </p>
             <ol className="space-y-1.5">
               {last.exercise.sets.map((s, i) => (
-                <li key={i} className="flex items-center justify-between rounded-2xl bg-emerald-50 px-4 py-2.5 text-sm">
-                  <span className="font-semibold text-emerald-700">{i + 1}세트</span>
+                <li key={i} className="flex items-center justify-between rounded-2xl bg-primary-softer px-4 py-2.5 text-sm">
+                  <span className="font-semibold text-primary-dark">{i + 1}세트</span>
                   <span className="font-semibold tabular-nums text-slate-900">
                     {s.kg.toLocaleString('ko-KR')}kg × {s.reps}회
                   </span>

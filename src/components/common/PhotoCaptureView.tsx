@@ -96,7 +96,7 @@ export default function PhotoCaptureView({
       <div className="flex flex-col gap-3 p-6 pb-10">
         <button
           onClick={handlePrimary}
-          className="flex items-center justify-center gap-2 rounded-full bg-emerald-500 py-4 font-semibold"
+          className="flex items-center justify-center gap-2 rounded-full bg-primary py-4 font-semibold"
         >
           <Camera size={20} />
           {primaryLabel}

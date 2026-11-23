@@ -16,7 +16,7 @@ export default function NutritionRationale({ rationale }: Props) {
     <div>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="text-xs font-medium text-emerald-600"
+        className="text-xs font-medium text-primary"
       >
         {open ? '근거 숨기기 ▲' : '이 숫자는 어떻게 나왔나요? ▼'}
       </button>

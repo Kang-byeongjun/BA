@@ -12,7 +12,7 @@ export default function WorkoutComplete({ workout, onSave, onDiscard }: Props) {
     <div className="flex flex-col items-center gap-6 rounded-3xl border border-slate-100 bg-white px-6 py-14 text-center">
       <div>
         <p className="text-2xl font-bold text-slate-900">운동 완료 🎉</p>
-        <p className="mt-1 text-sm font-medium text-emerald-600">{workout.type}</p>
+        <p className="mt-1 text-sm font-medium text-primary">{workout.type}</p>
       </div>
 
       <div>
@@ -36,7 +36,7 @@ export default function WorkoutComplete({ workout, onSave, onDiscard }: Props) {
       <div className="flex w-full flex-col gap-2">
         <button
           onClick={onSave}
-          className="w-full rounded-full bg-emerald-500 py-4 font-semibold text-white shadow-lg shadow-emerald-200"
+          className="w-full rounded-full bg-primary py-4 font-semibold text-white shadow-lg shadow-primary/25"
         >
           운동 기록 저장
         </button>

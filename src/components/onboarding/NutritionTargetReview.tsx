@@ -25,7 +25,7 @@ export default function NutritionTargetReview({ initial, profile, workoutProfile
   return (
     <div className="flex h-full flex-col px-6 pb-8 pt-12">
       <div className="mb-6">
-        <p className="text-sm font-semibold text-emerald-600">3 / 3</p>
+        <p className="text-sm font-semibold text-primary">3 / 3</p>
         <h1 className="mt-2 text-2xl font-bold text-slate-900">개인 영양 목표가 완성됐어요</h1>
         <p className="mt-1 text-sm text-slate-500">
           입력하신 InBody 데이터를 기반으로 계산된 하루 목표예요. 필요하면 직접 수정할 수 있어요.
@@ -44,7 +44,7 @@ export default function NutritionTargetReview({ initial, profile, workoutProfile
                 type="number"
                 value={target[key]}
                 onChange={(e) => update(key, e.target.value)}
-                className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-right text-base font-semibold text-slate-900 outline-none focus:border-emerald-400"
+                className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-right text-base font-semibold text-slate-900 outline-none focus:border-primary"
               />
               <span className="text-sm text-slate-400">{NUTRIENT_UNITS[key]}</span>
             </div>
@@ -63,7 +63,7 @@ export default function NutritionTargetReview({ initial, profile, workoutProfile
         </button>
         <button
           onClick={() => onConfirm(target)}
-          className="w-2/3 rounded-full bg-emerald-500 py-4 font-semibold text-white shadow-lg shadow-emerald-200"
+          className="w-2/3 rounded-full bg-primary py-4 font-semibold text-white shadow-lg shadow-primary/25"
         >
           시작하기
         </button>

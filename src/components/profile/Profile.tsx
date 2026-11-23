@@ -213,13 +213,13 @@ export default function Profile() {
         <p className="mt-1 break-keep text-xs text-slate-500">내 정보를 바꾸면 영양 목표와 운동 추천이 함께 바뀌어요.</p>
       </div>
 
-      {notice && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">{notice}</p>}
+      {notice && <p className="rounded-xl bg-primary-softer px-3 py-2 text-xs text-primary-dark">{notice}</p>}
 
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-800">기본 정보</p>
           {inBodyDraft === null && (
-            <button onClick={openInBodyEdit} className="text-xs font-medium text-emerald-600">
+            <button onClick={openInBodyEdit} className="text-xs font-medium text-primary">
               수정
             </button>
           )}
@@ -264,7 +264,7 @@ export default function Profile() {
               <button
                 onClick={saveInBodyEdit}
                 disabled={!inBodyEditValid}
-                className="w-2/3 rounded-full bg-emerald-500 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                className="w-2/3 rounded-full bg-primary py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
               >
                 저장
               </button>
@@ -282,7 +282,7 @@ export default function Profile() {
               key={goal}
               onClick={() => handleGoalChange(goal)}
               className={`rounded-xl py-2 text-xs font-semibold ${
-                goal === profile.goal ? 'bg-emerald-500 text-white' : 'bg-white/10 text-slate-300'
+                goal === profile.goal ? 'bg-primary text-white' : 'bg-white/10 text-slate-300'
               }`}
             >
               {GOAL_LABELS[goal]}
@@ -294,7 +294,7 @@ export default function Profile() {
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-800">운동 프로필</p>
-          <button onClick={() => setWorkoutEditOpen(true)} className="text-xs font-medium text-emerald-600">
+          <button onClick={() => setWorkoutEditOpen(true)} className="text-xs font-medium text-primary">
             수정
           </button>
         </div>
@@ -322,7 +322,7 @@ export default function Profile() {
             {saved && !targetEditing && <span className="ml-2 text-xs font-medium text-emerald-600">저장됨 ✓</span>}
           </p>
           {!targetEditing && (
-            <button onClick={() => setTargetEditing(true)} className="shrink-0 text-xs font-medium text-emerald-600">
+            <button onClick={() => setTargetEditing(true)} className="shrink-0 text-xs font-medium text-primary">
               수정
             </button>
           )}
@@ -342,7 +342,7 @@ export default function Profile() {
                       aria-label={NUTRIENT_LABELS[key]}
                       value={target[key]}
                       onChange={(e) => updateTarget(key, e.target.value)}
-                      className="w-20 rounded-md border border-slate-200 bg-white px-2 py-1 text-right text-sm font-semibold text-slate-900 outline-none focus:border-emerald-400"
+                      className="w-20 rounded-md border border-slate-200 bg-white px-2 py-1 text-right text-sm font-semibold text-slate-900 outline-none focus:border-primary"
                     />
                     <span className="w-7 text-xs text-slate-400">{NUTRIENT_UNITS[key]}</span>
                   </div>
@@ -356,14 +356,14 @@ export default function Profile() {
               >
                 취소
               </button>
-              <button onClick={handleSave} className="w-2/3 rounded-full bg-emerald-500 py-3 text-sm font-semibold text-white">
+              <button onClick={handleSave} className="w-2/3 rounded-full bg-primary py-3 text-sm font-semibold text-white">
                 목표 저장하기
               </button>
             </div>
           </>
         )}
 
-        <button onClick={handleRecalculate} className="mt-3 text-xs font-medium text-emerald-600">
+        <button onClick={handleRecalculate} className="mt-3 text-xs font-medium text-primary">
           InBody 기준 다시 계산
         </button>
         <div className="mt-2">
@@ -418,12 +418,12 @@ export default function Profile() {
                           <button onClick={() => setConfirmingCorrectionReset(false)} className="text-xs font-medium text-slate-400">
                             취소
                           </button>
-                          <button onClick={handleResetAllCorrections} className="text-xs font-semibold text-rose-500">
+                          <button onClick={handleResetAllCorrections} className="text-xs font-semibold text-rose-600">
                             확인
                           </button>
                         </div>
                       ) : (
-                        <button onClick={() => setConfirmingCorrectionReset(true)} className="shrink-0 text-xs font-medium text-rose-500">
+                        <button onClick={() => setConfirmingCorrectionReset(true)} className="shrink-0 text-xs font-medium text-rose-600">
                           전체 초기화
                         </button>
                       )}
@@ -456,13 +456,13 @@ export default function Profile() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setConfirmingReset(false)}
-                        className="flex-1 rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
+                        className="flex-1 rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-600"
                       >
                         취소
                       </button>
                       <button
                         onClick={() => dispatch({ type: 'RESET_APP' })}
-                        className="flex-1 rounded-full bg-rose-500 py-2.5 text-sm font-semibold text-white"
+                        className="flex-1 rounded-full border-2 border-rose-600 bg-white py-2.5 text-sm font-semibold text-rose-600"
                       >
                         초기화하기
                       </button>
@@ -470,7 +470,7 @@ export default function Profile() {
                   ) : (
                     <button
                       onClick={() => setConfirmingReset(true)}
-                      className="w-full rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-500"
+                      className="w-full rounded-full border-2 border-rose-200 py-2.5 text-sm font-semibold text-rose-600"
                     >
                       전체 데이터 초기화
                     </button>

@@ -19,7 +19,7 @@ export default function AnalyzingLoader({ image, message, steps, activeStep, dem
           <img src={image} alt="분석 대상 이미지" className="h-full w-full object-cover" />
         </div>
       )}
-      <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-emerald-400" />
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-primary-soft" />
       <p className="text-base font-medium">{message}</p>
 
       <ol className="w-full max-w-[16rem] space-y-2 text-left text-sm">
@@ -30,7 +30,7 @@ export default function AnalyzingLoader({ image, message, steps, activeStep, dem
             <li key={label} className="flex items-center gap-2.5">
               <span
                 className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${
-                  done ? 'bg-emerald-500 text-white' : current ? 'border-2 border-emerald-400 text-emerald-300' : 'border border-white/20 text-white/30'
+                  done ? 'bg-emerald-500 text-white' : current ? 'border-2 border-primary-soft text-primary-soft' : 'border border-white/20 text-white/30'
                 }`}
               >
                 {done ? <Check size={12} /> : i + 1}

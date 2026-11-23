@@ -28,7 +28,7 @@ export default function WorkoutTypeSelect({ value, onChange, onStart }: Props) {
               onClick={() => onChange(t.type)}
               className={`flex flex-col items-center gap-1 rounded-xl border-2 py-3 text-sm font-semibold transition ${
                 value === t.type
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                  ? 'border-primary bg-primary-softer text-primary-dark'
                   : 'border-slate-100 bg-white text-slate-500'
               }`}
             >
@@ -43,7 +43,7 @@ export default function WorkoutTypeSelect({ value, onChange, onStart }: Props) {
         <span className="font-mono text-5xl font-bold tabular-nums text-slate-300">00:00:00</span>
         <button
           onClick={onStart}
-          className="rounded-full bg-emerald-500 px-10 py-4 font-semibold text-white shadow-lg shadow-emerald-200"
+          className="rounded-full bg-primary px-10 py-4 font-semibold text-white shadow-lg shadow-primary/25"
         >
           운동 시작
         </button>

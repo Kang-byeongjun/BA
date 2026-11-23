@@ -33,7 +33,7 @@ export default function BodyTypeInfo({ bodyType, standardRanges, onRemeasure }: 
       ) : (
         <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-100 px-2.5 py-2">
           <p className="text-xs text-slate-500">{describeMissingReason(standardRanges)}</p>
-          <button onClick={onRemeasure} className="shrink-0 text-xs font-semibold text-emerald-600">
+          <button onClick={onRemeasure} className="shrink-0 text-xs font-semibold text-primary">
             재측정
           </button>
         </div>
