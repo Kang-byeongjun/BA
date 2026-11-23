@@ -4,13 +4,14 @@ import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
 import { buildInBodyAdvice } from '../../lib/inBodyAdvice'
 import { IN_BODY_METRIC_FIELDS } from '../../lib/inBodyChart'
-import { BODY_TYPE_LABELS, computeShapePositions, type InBodyBodyType } from '../../lib/inBodyBodyType'
+import { computeShapePositions } from '../../lib/inBodyBodyType'
 import { daysBetween, findComparisonEntry } from '../../lib/inBodyTrend'
 import { formatRelativeDate } from '../../lib/time'
 import { IN_BODY_SOURCE_LABELS, type InBodyHistoryEntry, type InBodyMeasurements, type Meal, type NutritionTarget } from '../../types'
 import ExampleInBodyGrid from '../calendar/ExampleInBodyGrid'
 import InBodyMetricChart from '../calendar/InBodyMetricChart'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
+import BodyTypeInfo from './BodyTypeInfo'
 
 interface Props {
   history: InBodyHistoryEntry[]
@@ -37,12 +38,6 @@ function DeltaBadge({ delta, decimals }: { delta: number; decimals: number }) {
       {rounded}
     </span>
   )
-}
-
-const BODY_TYPE_COLORS: Record<InBodyBodyType, string> = {
-  D: 'bg-emerald-50 text-emerald-700',
-  I: 'bg-sky-50 text-sky-700',
-  C: 'bg-amber-50 text-amber-700',
 }
 
 type ShapeRowKey = 'weight' | 'skeletalMuscleMass' | 'bodyFatMass'
@@ -143,26 +138,7 @@ function BodyShapeChart({
             ),
         )}
       </div>
-      {entry.bodyType !== null ? (
-        <p className={`mt-3 rounded-lg px-2.5 py-2 text-xs font-medium ${BODY_TYPE_COLORS[entry.bodyType]}`}>
-          {BODY_TYPE_LABELS[entry.bodyType]}
-          <span className="ml-1 font-normal opacity-70">
-            · 체중·골격근량·체지방량을 결과지의 표준범위와 비교한 간이 추정이에요
-          </span>
-        </p>
-      ) : (
-        <div className="mt-3 flex items-center justify-between gap-2 rounded-lg bg-slate-100 px-2.5 py-2">
-          <p className="text-xs text-slate-400">
-            결과지에서 골격근량·체지방량의 표준범위를 일부 읽지 못해 체형 판정은 생략했어요.
-          </p>
-          <button
-            onClick={() => onRemeasure(entry.id)}
-            className="shrink-0 text-xs font-semibold text-emerald-600"
-          >
-            재측정
-          </button>
-        </div>
-      )}
+      <BodyTypeInfo bodyType={entry.bodyType} standardRanges={entry.standardRanges} onRemeasure={() => onRemeasure(entry.id)} />
       <BodyTypeAdvice entry={entry} meals={meals} nutritionTarget={nutritionTarget} />
     </div>
   )
