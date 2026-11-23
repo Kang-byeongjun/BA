@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { RoutineExercise, WorkoutResult } from '../../../server/engine/types'
 import { addExercise, addTypedExercise, isTypedExercise, removeExercise, replaceExercise, takenIdsOf, type EditContext } from '../../lib/routineEdit'
+import ExerciseDetailSheet from './ExerciseDetailSheet'
+import ExerciseThumb from './ExerciseThumb'
 import RoutineExercisePicker from './RoutineExercisePicker'
 
 /**
@@ -37,15 +39,19 @@ interface ItemActions {
   onRemove: () => void
 }
 
-function ExerciseItem({ exercise, showReason, actions }: { exercise: RoutineExercise; showReason: boolean; actions?: ItemActions }) {
+function ExerciseItem({ exercise, showReason, actions, onOpen }: { exercise: RoutineExercise; showReason: boolean; actions?: ItemActions; onOpen: () => void }) {
   const rx = exercise.prescription ? prescriptionText(exercise.prescription) : null
 
   return (
-    <li className="rounded-2xl border border-slate-100 bg-white p-4">
+    // 행을 누르면 종목 상세(근육 맵·수행 방법)가 열린다. 바꾸기·삭제 버튼은 아래에서 전파를 막아 열리지 않게 한다.
+    <li onClick={onOpen} className="cursor-pointer rounded-2xl border border-slate-100 bg-white p-4">
       <div className="flex items-start gap-3">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
           {exercise.order}
         </span>
+        <button type="button" aria-label={`${exercise.name} 운동 방법 보기`} className="shrink-0">
+          <ExerciseThumb id={exercise.id} />
+        </button>
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-slate-900">
             {exercise.name}
@@ -68,7 +74,7 @@ function ExerciseItem({ exercise, showReason, actions }: { exercise: RoutineExer
           </div>
         </div>
         {actions && (
-          <div className="flex shrink-0 gap-1 text-xs font-semibold">
+          <div className="flex shrink-0 gap-1 text-xs font-semibold" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={actions.onReplace}
               aria-label={`${exercise.name} 바꾸기`}
@@ -101,6 +107,8 @@ type PickerState = { mode: 'replace'; order: number } | { mode: 'add' } | null
 export default function RoutineView({ result, onStart, edit, edited = false }: Props) {
   const [dayIndex, setDayIndex] = useState(0)
   const [picker, setPicker] = useState<PickerState>(null)
+  // 상세 창(근육 맵·수행 방법)을 열어 둔 종목
+  const [detail, setDetail] = useState<{ id: string; name: string } | null>(null)
   // 일차의 마지막 종목을 지우려 할 때 한 번 확인받는다
   const [confirmRemoveOrder, setConfirmRemoveOrder] = useState<number | null>(null)
   const days = result.days
@@ -157,6 +165,7 @@ export default function RoutineView({ result, onStart, edit, edited = false }: P
               key={`${current.day}-${e.order}-${e.id}`}
               exercise={e}
               showReason={!isFallback}
+              onOpen={() => setDetail({ id: e.id, name: e.name })}
               actions={
                 edit
                   ? {
@@ -229,6 +238,8 @@ export default function RoutineView({ result, onStart, edit, edited = false }: P
           onClose={() => setPicker(null)}
         />
       )}
+
+      {detail && <ExerciseDetailSheet id={detail.id} name={detail.name} onClose={() => setDetail(null)} />}
 
       {result.prescriptionNote && <p className="text-xs text-slate-400">참고: {result.prescriptionNote}</p>}
     </div>

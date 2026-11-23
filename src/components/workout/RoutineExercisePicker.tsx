@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { MuscleGroup, PainPart } from '../../../server/engine/types'
+import ExerciseThumb from './ExerciseThumb'
 import { checkTypedName, EDIT_GROUPS, GROUP_LABELS, optionsForGroup, TYPED_NAME_MAX, type PickOption } from '../../lib/routineEdit'
 
 /**
@@ -39,9 +40,10 @@ function OptionRow({ option, onSelect }: { option: PickOption; onSelect: () => v
       <button
         onClick={onSelect}
         disabled={taken}
-        className="flex w-full items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-white px-4 py-3 text-left disabled:opacity-40"
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white px-4 py-3 text-left disabled:opacity-40"
       >
-        <span className="min-w-0">
+        <ExerciseThumb id={exercise.id} size="sm" />
+        <span className="min-w-0 flex-1">
           <span className="block font-semibold text-slate-900">{exercise.name}</span>
           <span className="block text-xs text-slate-500">
             {exercise.equipment} · {DIFFICULTY[exercise.difficulty]}
