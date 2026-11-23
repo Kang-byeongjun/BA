@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISES } from '../../../server/engine/data'
 import guidesJson from '../../data/exerciseGuides.json'
-import { describeMuscles, getExerciseGuide, getMuscleViews, MUSCLE_LABELS_KO, type ExerciseGuide } from '../exerciseGuides'
+import { describeMuscles, getExerciseGuide, getMuscleViews, getThumbFocus, MUSCLE_LABELS_KO, type ExerciseGuide } from '../exerciseGuides'
 
 const guide = (primary: ExerciseGuide['muscles']['primary'], secondary: ExerciseGuide['muscles']['secondary'] = []): ExerciseGuide => ({
   muscles: { primary, secondary },
@@ -94,5 +94,26 @@ describe('getMuscleViews', () => {
 describe('describeMuscles', () => {
   it('주 근육 먼저, 한글로 이어 붙인다', () => {
     expect(describeMuscles(guide(['quadriceps', 'gluteal'], ['hamstring']))).toBe('대퇴사두근, 둔근, 햄스트링')
+  })
+})
+
+describe('getThumbFocus (썸네일 확대 위치)', () => {
+  it('하체 위주는 lower, 상체 위주는 upper, 섞여 있으면 full', () => {
+    expect(getThumbFocus(guide(['quadriceps', 'gluteal'], ['hamstring']))).toBe('lower')
+    expect(getThumbFocus(guide(['chest'], ['triceps']))).toBe('upper')
+    expect(getThumbFocus(guide(['abs'], ['obliques']))).toBe('upper')
+    expect(getThumbFocus(guide(['upper-back'], ['biceps']))).toBe('upper')
+    expect(getThumbFocus(guide(['hamstring', 'gluteal', 'lower-back']))).toBe('full') // 데드리프트
+    expect(getThumbFocus(guide(['upper-back', 'quadriceps']))).toBe('full') // 로잉
+  })
+  it('주 근육이 없으면 보조 근육 기준, 아무것도 없으면 full', () => {
+    expect(getThumbFocus(guide([], ['calves']))).toBe('lower')
+    expect(getThumbFocus(guide([]))).toBe('full')
+  })
+  it('실제 종목: 스쿼트=lower, 벤치프레스=upper, 데드리프트=full', () => {
+    const f = (id: string) => getThumbFocus(getExerciseGuide(id)!)
+    expect(f('L02')).toBe('lower')
+    expect(f('C03')).toBe('upper')
+    expect(f('L10')).toBe('full')
   })
 })

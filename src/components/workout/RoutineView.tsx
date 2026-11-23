@@ -53,7 +53,7 @@ function ExerciseItem({ exercise, showReason, actions, onOpen }: { exercise: Rou
           <ExerciseThumb id={exercise.id} />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-slate-900">
+          <p className="line-clamp-2 break-words font-semibold text-slate-900">
             {exercise.name}
             {exercise.custom && (
               <span className="ml-2 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">
@@ -62,40 +62,45 @@ function ExerciseItem({ exercise, showReason, actions, onOpen }: { exercise: Rou
             )}
           </p>
           {showReason && <p className="mt-1 text-sm text-slate-500">{exercise.reason}</p>}
-          <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-medium">
+          {exercise.prescription && (
+            <p className="mt-1 text-lg font-bold text-emerald-700">× {range(exercise.prescription.setsMin, exercise.prescription.setsMax)}세트</p>
+          )}
+          <div className="mt-1.5 flex flex-wrap gap-1 text-[11px] font-medium">
             {rx ? (
               <>
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{rx.main}</span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">{rx.rest}</span>
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-700">{rx.main}</span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{rx.rest}</span>
               </>
             ) : (
-              <span className="rounded-full bg-sky-50 px-2.5 py-1 text-sky-700">유산소 · 남은 시간 동안 편한 강도로</span>
+              <span className="rounded-full bg-sky-50 px-2 py-0.5 text-sky-700">유산소 · 남은 시간 동안 편한 강도로</span>
             )}
           </div>
         </div>
-        {actions && (
-          <div className="flex shrink-0 gap-1 text-xs font-semibold" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={actions.onReplace}
-              aria-label={`${exercise.name} 바꾸기`}
-              className="rounded-full border border-slate-200 px-2.5 py-1 text-slate-600"
-            >
-              바꾸기
-            </button>
-            <button
-              onClick={actions.onRemove}
-              aria-label={`${exercise.name} 삭제`}
-              className="rounded-full border border-rose-200 px-2.5 py-1 text-rose-600"
-            >
-              삭제
-            </button>
-          </div>
-        )}
       </div>
 
       {exercise.caution && (
         <div role="note" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {exercise.caution.text}
+        </div>
+      )}
+
+      {actions && (
+        // 바꾸기·삭제는 행 맨 아래에 둔다(좁은 칸에서 글자가 접히지 않게). 누르면 상세 창이 열리지 않도록 전파를 막는다.
+        <div className="mt-3 flex gap-2 text-sm font-semibold" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={actions.onReplace}
+            aria-label={`${exercise.name} 바꾸기`}
+            className="min-h-10 flex-1 rounded-full border border-slate-200 px-3 py-2 text-slate-600"
+          >
+            바꾸기
+          </button>
+          <button
+            onClick={actions.onRemove}
+            aria-label={`${exercise.name} 삭제`}
+            className="min-h-10 flex-1 rounded-full border border-rose-200 px-3 py-2 text-rose-600"
+          >
+            삭제
+          </button>
         </div>
       )}
     </li>

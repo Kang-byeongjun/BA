@@ -132,6 +132,25 @@ export function getMuscleViews(guide: ExerciseGuide): MuscleViews {
   return { anterior, posterior, preferred }
 }
 
+/** 썸네일을 어디에 맞춰 확대할지: 허리 위(upper) · 허리 아래(lower) · 몸 전체(full) */
+export type ThumbFocus = 'upper' | 'lower' | 'full'
+
+// 근육 → 몸의 위/아래(허리 기준). 복근·옆구리·허리는 허리선 위쪽에 있는 근육으로 본다.
+const LOWER_BODY = new Set<GuideMuscle>(['quadriceps', 'hamstring', 'gluteal', 'adductor', 'calves'])
+
+/**
+ * 주 근육이 몸의 어느 쪽에 몰려 있는지 정한다(주 근육이 없으면 보조 근육 기준).
+ * 전부 허리 위면 upper, 전부 허리 아래면 lower, 섞여 있으면(데드리프트·로잉 등) full.
+ */
+export function getThumbFocus(guide: ExerciseGuide): ThumbFocus {
+  const basis = guide.muscles.primary.length > 0 ? guide.muscles.primary : guide.muscles.secondary
+  const lower = basis.filter((m) => LOWER_BODY.has(m)).length
+  const upper = basis.length - lower
+  if (lower > 0 && upper > 0) return 'full'
+  if (lower > 0) return 'lower'
+  return upper > 0 ? 'upper' : 'full'
+}
+
 /** "대퇴사두근, 둔근"처럼 한글 근육 이름을 이어 붙인다(주 근육 먼저) */
 export function describeMuscles(guide: ExerciseGuide): string {
   const names = [...guide.muscles.primary, ...guide.muscles.secondary.filter((m) => !guide.muscles.primary.includes(m))]

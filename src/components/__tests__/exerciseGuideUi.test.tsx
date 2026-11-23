@@ -40,6 +40,19 @@ describe('ExerciseThumb', () => {
     expect(thumb.getAttribute('aria-hidden')).toBe('true')
   })
 
+  it('하체 위주는 허리 아래, 상체 위주는 허리 위로 확대하고, 몸 전체 종목은 전체를 보여준다', () => {
+    const focusOf = (id: string) => {
+      const { unmount } = render(<ExerciseThumb id={id} />)
+      const f = screen.getByTestId('exercise-thumb').getAttribute('data-focus')
+      unmount()
+      return f
+    }
+    expect(focusOf('L02')).toBe('lower')
+    expect(focusOf('C03')).toBe('upper')
+    expect(focusOf('L10')).toBe('full')
+    expect(focusOf('custom-1')).toBe('full')
+  })
+
   it('안내가 없는 종목(없는 id·직접 입력)은 칠하지 않은 회색 몸을 보여준다', () => {
     for (const id of ['ZZ99', 'custom-1700000000']) {
       const { container } = render(<ExerciseThumb id={id} />)
@@ -127,6 +140,28 @@ describe('RoutineView: 종목 행 → 상세 창', () => {
     expect(screen.getByRole('dialog', { name: '바벨 스쿼트 운동 안내' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: '닫기' }))
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('이름 아래에 "× N세트"를 크게, 기존 칩은 그 아래에 작게 보여준다', () => {
+    render(<RoutineView result={result} />)
+    const row = screen.getByText('바벨 스쿼트').closest('li')!
+    const big = within(row).getByText('× 3세트')
+    const chip = within(row).getByText('3세트 × 8~12회')
+    expect(big.className).toContain('text-lg')
+    expect(chip.parentElement!.className).toContain('text-[11px]')
+    expect(!!(big.compareDocumentPosition(chip) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true)
+  })
+
+  it('바꾸기·삭제 버튼은 이름·칩·주의 문구보다 아래(행 맨 아래)에 있다', () => {
+    render(<RoutineView result={result} edit={edit} />)
+    const row = screen.getByText('바벨 스쿼트').closest('li')!
+    const after = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+    const replace = within(row).getByRole('button', { name: '바벨 스쿼트 바꾸기' })
+    const remove = within(row).getByRole('button', { name: '바벨 스쿼트 삭제' })
+    for (const above of [screen.getByText('바벨 스쿼트'), within(row).getByText('3세트 × 8~12회'), within(row).getByText('무릎 주의')]) {
+      expect(after(above, replace)).toBe(true)
+      expect(after(above, remove)).toBe(true)
+    }
   })
 
   it('썸네일 버튼으로도 열 수 있다', () => {
