@@ -8,7 +8,7 @@ import InBodyTrend from '../profile/InBodyTrend'
 import DashboardWorkoutSection from '../workout/DashboardWorkoutSection'
 import InBodyResult from '../profile/InBodyResult'
 import DashboardPreviewModal from './DashboardPreviewModal'
-import DietInBodyInsightCard from './DietInBodyInsightCard'
+import AiCoachingCard from './AiCoachingCard'
 import MealWeekTrend from './MealWeekTrend'
 import ReportTabs, { type ReportTab } from './ReportTabs'
 
@@ -47,9 +47,9 @@ export default function DashboardScreen() {
       <div key={tab} role="tabpanel" id={`report-panel-${tab}`} aria-labelledby={`report-tab-${tab}`} className="tab-fade space-y-4">
         {tab === 'week' && (
           <>
+            <AiCoachingCard />
             <WeekGlanceCard meals={meals} target={nutritionTarget} history={inBodyHistory} />
             <DashboardWorkoutSection />
-            {nutritionTarget && <DietInBodyInsightCard history={inBodyHistory} meals={meals} target={nutritionTarget} />}
             {nutritionTarget && weekSummary && (
               <CollapsibleCard title="주간 영양소" summary={weekSummary}>
                 <MealWeekTrend meals={meals} nutritionTarget={nutritionTarget} />

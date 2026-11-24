@@ -1,6 +1,7 @@
 import type { AnalysisKind } from '../shared/errors.js'
 import { describeError } from '../shared/errors.js'
 import { handleAnalysis, handleCoachMeal, handleNutritionEstimate } from './handlers.js'
+import { handleInsight } from './insightHandler.js'
 import { handleWorkout } from './workoutHandler.js'
 
 // Vercel Node.js Function의 req/res 중 실제로 쓰는 부분만 정의한다(@vercel/node 의존성 없이 사용).
@@ -52,6 +53,19 @@ export async function serveNutritionEstimate(req: NodeRequestLike, res: NodeResp
   }
 
   const result = await handleNutritionEstimate(req.body)
+  res.status(result.status).json(result.body)
+}
+
+export async function serveInsight(req: NodeRequestLike, res: NodeResponseLike): Promise<void> {
+  res.setHeader('Cache-Control', 'no-store')
+
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST')
+    res.status(405).json({ ok: false, error: { code: 'METHOD_NOT_ALLOWED', message: describeError('METHOD_NOT_ALLOWED', 'coach') } })
+    return
+  }
+
+  const result = await handleInsight(req.body)
   res.status(result.status).json(result.body)
 }
 

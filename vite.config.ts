@@ -28,6 +28,10 @@ const ROUTES: Record<string, AnalysisKind> = {
 const COACH_ROUTE = '/coach-meal'
 const NUTRITION_ESTIMATE_ROUTE = '/estimate-nutrition'
 const WORKOUT_ROUTE = '/workout'
+const INSIGHT_ROUTE = '/insight'
+interface InsightHandlerModule {
+  handleInsight(body: unknown, deps: { env: Record<string, string | undefined> }): Promise<{ status: number; body: unknown }>
+}
 interface WorkoutHandlerModule {
   handleWorkout(body: unknown, deps: { env: Record<string, string | undefined> }): Promise<{ status: number; body: unknown }>
 }
@@ -71,7 +75,8 @@ function localAnalysisApi(mode: string): Plugin {
         const isCoach = path === COACH_ROUTE
         const isNutritionEstimate = path === NUTRITION_ESTIMATE_ROUTE
         const isWorkout = path === WORKOUT_ROUTE
-        if (!kind && !isCoach && !isNutritionEstimate && !isWorkout) return next()
+        const isInsight = path === INSIGHT_ROUTE
+        if (!kind && !isCoach && !isNutritionEstimate && !isWorkout && !isInsight) return next()
 
         const send = (status: number, body: unknown) => {
           res.statusCode = status
@@ -89,6 +94,11 @@ function localAnalysisApi(mode: string): Plugin {
             const raw = await readBody(req)
             if (raw === null) {
               return send(413, { ok: false, error: { code: 'IMAGE_TOO_LARGE', message: '이미지 용량이 너무 커요. 더 작은 사진을 선택하거나 다시 촬영해주세요.' } })
+            }
+            if (isInsight) {
+              const insight = (await server.ssrLoadModule('/server/insightHandler.ts')) as unknown as InsightHandlerModule
+              const result = await insight.handleInsight(raw, { env })
+              return send(result.status, result.body)
             }
             if (isWorkout) {
               const workout = (await server.ssrLoadModule('/server/workoutHandler.ts')) as unknown as WorkoutHandlerModule

@@ -32,7 +32,7 @@ export default function DashboardPreviewModal({ onClose }: Props) {
         </div>
 
         <div className="rounded-xl border border-primary-soft bg-primary-soft/60 p-3">
-          <p className="text-xs font-semibold text-primary-dark">식단 × 인바디</p>
+          <p className="text-xs font-semibold text-primary-dark">내 운동, 잘하고 있을까요?</p>
           <p className="mt-1 text-sm text-primary-dark">이 기간 목표를 지킨 날이 10/14일이었고, 체중이 0.8kg 줄었어요.</p>
         </div>
 
