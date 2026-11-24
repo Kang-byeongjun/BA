@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppProvider } from '../../context/AppContext'
 import { buildDemoMeals, DEMO_NUTRITION_TARGET, DEMO_PROFILE } from '../../data/mockData'
 import { createRowsFromExtraction, buildMeal } from '../../services/mealService'
+import type { Meal } from '../../types'
 import Dashboard from '../dashboard/Dashboard'
 
 beforeEach(() => {
@@ -95,5 +96,26 @@ describe('캘린더에서 선택한 날의 "+ 추가 등록" 버튼으로 식단
     expect(addButtons).toHaveLength(2)
     fireEvent.click(addButtons[0])
     expect(onNavigateTab).toHaveBeenCalledWith('meals')
+  })
+})
+
+describe('방금 기록했어요 배너: 값이 빈 항목은 숨긴다', () => {
+  it('값이 0이거나 없는 항목은 빼고, 제목이 없는 식사(잘못된 값)는 배너를 띄우지 않는다', () => {
+    const base = { id: 'm', timestamp: 1, slot: '간식', title: '물만', image: null, foods: [], hasLowConfidencePortions: false } satisfies Partial<Meal>
+    const only: Meal = { ...base, calories: 120, protein: 0, carbohydrates: Number.NaN, fat: 0, fiber: 0 }
+    const { unmount } = render(
+      <AppProvider>
+        <Dashboard onOpenCamera={() => {}} recentMeal={only} onDismissRecentMeal={() => {}} onNavigateTab={() => {}} />
+      </AppProvider>,
+    )
+    expect(screen.getByText('+120kcal')).toBeTruthy()
+    expect(screen.queryByText(/단백질/)).toBeNull()
+    unmount()
+    render(
+      <AppProvider>
+        <Dashboard onOpenCamera={() => {}} recentMeal={{ type: 'click' } as never} onDismissRecentMeal={() => {}} onNavigateTab={() => {}} />
+      </AppProvider>,
+    )
+    expect(screen.queryByText(/방금 기록했어요/)).toBeNull()
   })
 })

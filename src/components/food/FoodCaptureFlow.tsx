@@ -109,7 +109,7 @@ export default function FoodCaptureFlow({ onDone, initialSlot }: Props) {
   }
 
   if (step === 'camera') {
-    return <FoodCamera demo={mode === 'mock'} onCapture={(d) => void handleCapture(d)} onClose={onDone} />
+    return <FoodCamera demo={mode === 'mock'} onCapture={(d) => void handleCapture(d)} onClose={() => onDone()} />
   }
 
   if (step === 'analyzing') {

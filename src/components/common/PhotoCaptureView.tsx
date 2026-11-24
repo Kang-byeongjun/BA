@@ -73,7 +73,7 @@ export default function PhotoCaptureView({
   return (
     <div className="flex h-full flex-col bg-slate-950 text-white">
       <div className="flex items-center justify-between p-4">
-        <button onClick={onClose} className="rounded-full bg-white/10 p-2">
+        <button onClick={onClose} aria-label="닫기" className="rounded-full bg-white/10 p-2">
           <X size={20} />
         </button>
         <p className="text-sm font-medium text-white/80">{title}</p>

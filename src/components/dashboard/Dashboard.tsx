@@ -26,9 +26,22 @@ interface Props {
   onNavigateTab: (tab: 'meals' | 'workout') => void
 }
 
+// 방금 기록한 식사로 더해진 값. 값이 없거나 0인 항목은 빈 칸처럼 보이지 않게 뺀다.
+function describeAdded(meal: Meal): string[] {
+  const items: [string, number, string][] = [
+    ['', meal.calories, 'kcal'],
+    ['단백질 ', meal.protein, 'g'],
+    ['탄수화물 ', meal.carbohydrates, 'g'],
+    ['지방 ', meal.fat, 'g'],
+    ['식이섬유 ', meal.fiber, 'g'],
+  ]
+  return items.filter(([, v]) => Number.isFinite(v) && v > 0).map(([label, v, unit]) => `${label}+${v}${unit}`)
+}
+
 export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMeal, onNavigateTab }: Props) {
   const { meals, waterLogs, nutritionTarget, profile, dispatch } = useApp()
   const [updatesPanelOpen, setUpdatesPanelOpen] = useState(false)
+  const addedParts = recentMeal ? describeAdded(recentMeal) : []
 
   useEffect(() => {
     if (!recentMeal) return
@@ -81,14 +94,11 @@ export default function Dashboard({ onOpenCamera, recentMeal, onDismissRecentMea
         </button>
       </div>
 
-      {recentMeal && (
+      {recentMeal && recentMeal.title && (
         <div className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
           <div className="text-sm">
             <p className="font-semibold text-emerald-800">방금 기록했어요 · {recentMeal.title}</p>
-            <p className="mt-0.5 text-xs text-emerald-700">
-              +{recentMeal.calories}kcal · 단백질 +{recentMeal.protein}g · 탄수화물 +{recentMeal.carbohydrates}g · 지방 +
-              {recentMeal.fat}g · 식이섬유 +{recentMeal.fiber}g
-            </p>
+            {addedParts.length > 0 && <p className="mt-0.5 text-xs text-emerald-700">{addedParts.join(' · ')}</p>}
           </div>
           <button onClick={onDismissRecentMeal} aria-label="닫기" className="shrink-0 text-emerald-600">
             <X size={16} />
