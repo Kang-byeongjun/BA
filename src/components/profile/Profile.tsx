@@ -28,6 +28,7 @@ import {
 import NutritionRationale from '../common/NutritionRationale'
 import InBodyScanFlow from '../onboarding/InBodyScanFlow'
 import WorkoutProfileInput from '../onboarding/WorkoutProfileInput'
+import DemoSeedCard from './DemoSeedCard'
 import InBodySummaryCard from './InBodySummaryCard'
 import InfoRow from './InfoRow'
 import NutritionSummary from './NutritionSummary'
@@ -479,6 +480,8 @@ export default function Profile() {
               </div>
             )}
           </div>
+
+          <DemoSeedCard />
         </>
       )}
     </div>
