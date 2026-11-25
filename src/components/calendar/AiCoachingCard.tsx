@@ -1,26 +1,51 @@
-import { CalendarClock } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
-import { buildDiagnosis, isEmptyDiagnosis, resolveLines, VERDICT_LABELS } from '../../lib/coachingInsight'
-import { sortInBodyHistory } from '../../lib/inBodyHistoryOrder'
-import { daysUntilNextMeasurement } from '../../lib/inBodyInsight'
+import { buildDiagnosis, isEmptyDiagnosis, resolveLines, ringRates, VERDICT_LABELS } from '../../lib/coachingInsight'
 import { loadWorkoutHistory } from '../../lib/workoutHistory'
 import { readCoachingCache, requestInsightLines, requestKeyOf } from '../../services/coachingService'
 
-const signed = (v: number | null, unit: string) => (v === null ? '-' : `${v > 0 ? '+' : ''}${v}${unit}`)
+const SIZE = 132
+const STROKE = 9
+const RING_RADII = [60, 48, 36] as const
+/** 가운데 글자(SVG 좌표). 값 17px, "종합" 9px — 안쪽 링 안쪽 원에 완전히 들어간다 */
+const CENTER_TEXT = { valueSize: 17, valueY: 65, labelSize: 9, labelY: 77 } as const
+const COLORS ={ diet: '#ffffff', protein: '#ffd98a', workout: '#f6a8b4' } as const
 
-function Stat({ label, value }: { label: string; value: string }) {
+const signed = (v: number | null, unit: string) => (v === null ? '-' : `${v > 0 ? '+' : ''}${v}${unit}`)
+const md = (ts: number) => `${new Date(ts).getMonth() + 1}/${new Date(ts).getDate()}`
+
+function Ring({ r, rate, color }: { r: number; rate: number; color: string }) {
+  const c = 2 * Math.PI * r
+  const common = { cx: SIZE / 2, cy: SIZE / 2, r, fill: 'none', strokeWidth: STROKE, strokeLinecap: 'round' as const }
   return (
-    <div className="flex items-baseline justify-between gap-2">
-      <span className="text-[11px] text-white/70">{label}</span>
-      <span className="whitespace-nowrap text-sm font-bold tabular-nums">{value}</span>
+    <>
+      <circle {...common} stroke="#ffffff" strokeOpacity={0.2} />
+      {rate > 0 && (
+        <circle
+          {...common}
+          stroke={color}
+          strokeDasharray={`${(c * rate) / 100} ${c}`}
+          transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
+          data-testid="ring-arc"
+        />
+      )}
+    </>
+  )
+}
+
+function LegendRow({ color, label, value }: { color: string; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+      <span className="text-xs text-white/80">{label}</span>
+      <span className="ml-auto whitespace-nowrap text-sm font-bold tabular-nums">{value}</span>
     </div>
   )
 }
 
 // 리포트 "이번 주" 맨 위 진단 카드. 판정·숫자·보완할 점 선택은 코드가 하고, AI는 보완할 점 문장만 쓴다.
-export default function AiCoachingCard() {
+export default function AiCoachingCard({ onShowTrend }: { onShowTrend?: () => void }) {
   const { meals, nutritionTarget, inBodyHistory, workoutProfile, isDemo, aiMode } = useApp()
   const useAi = resolveAnalysisMode(isDemo, aiMode) === 'real'
 
@@ -60,9 +85,8 @@ export default function AiCoachingCard() {
   // 데모 모드·실패·검사 탈락은 resolveLines가 코드가 만든 예시 문장으로 채운다
   const lines = resolveLines(gaps, process, cached ?? answered?.lines ?? null)
 
-  const latest = sortInBodyHistory(inBodyHistory)[0]
-  const daysLeft = latest ? daysUntilNextMeasurement(latest.timestamp) : null
-  const hasDelta = !!result && result.measurements >= 2
+  const rates = ringRates(process)
+  const compared = !!result && result.measurements >= 2 && result.fromTimestamp !== undefined && result.toTimestamp !== undefined
 
   return (
     <div className="rounded-2xl bg-primary p-4 text-white shadow-lg shadow-primary/25">
@@ -77,18 +101,48 @@ export default function AiCoachingCard() {
         <p className="mt-3 text-sm text-white/90">인바디·식단·운동 기록이 쌓이면 지금 잘하고 있는지 알려드려요.</p>
       ) : (
         <>
-          <div className="mt-3 grid grid-cols-2 divide-x divide-white/25 rounded-xl bg-white/10 py-3">
-            <div className="space-y-1.5 px-3">
-              <p className="text-xs font-semibold">결과 (인바디)</p>
-              <Stat label="체중" value={signed(hasDelta ? result.weightDelta : null, 'kg')} />
-              <Stat label="골격근" value={signed(hasDelta ? result.muscleDelta : null, 'kg')} />
-              <Stat label="체지방" value={signed(hasDelta ? result.fatDelta : null, 'kg')} />
+          <div className="mt-3 rounded-xl bg-white/10 p-3">
+            <p className="text-[11px] font-semibold text-white/80">과정 · 목표 대비 달성률 (최근 7일 · 운동 3주)</p>
+            <div className="mt-2 flex items-center gap-3">
+              <svg
+                width={SIZE}
+                height={SIZE}
+                viewBox={`0 0 ${SIZE} ${SIZE}`}
+                role="img"
+                aria-label={`식단 ${rates.diet}%, 단백질 ${rates.protein}%, 운동 ${rates.workout}%, 종합 ${rates.overall}%`}
+                className="shrink-0"
+              >
+                <Ring r={RING_RADII[0]} rate={rates.diet} color={COLORS.diet} />
+                <Ring r={RING_RADII[1]} rate={rates.protein} color={COLORS.protein} />
+                <Ring r={RING_RADII[2]} rate={rates.workout} color={COLORS.workout} />
+                {/* 안쪽 링 안쪽 원(반지름 36-9/2=31.5)에 두 줄이 모두 들어가도록 작게 쓴다 */}
+                <text x="50%" y={CENTER_TEXT.valueY} textAnchor="middle" fill="#ffffff" fontSize={CENTER_TEXT.valueSize} fontWeight="700" data-testid="ring-value">
+                  {rates.overall}%
+                </text>
+                <text x="50%" y={CENTER_TEXT.labelY} textAnchor="middle" fill="#ffffff" fillOpacity={0.75} fontSize={CENTER_TEXT.labelSize} data-testid="ring-label">
+                  종합
+                </text>
+              </svg>
+              <div className="min-w-0 flex-1 space-y-2.5">
+                <LegendRow color={COLORS.diet} label="식단 달성" value={`${process.dietOnTrackDays}/7일`} />
+                <LegendRow color={COLORS.protein} label="단백질" value={process.proteinPercent === null ? '-' : `${process.proteinPercent}%`} />
+                <LegendRow color={COLORS.workout} label="운동" value={`주 ${rates.sessionsPerWeek}회`} />
+              </div>
             </div>
-            <div className="space-y-1.5 px-3">
-              <p className="text-xs font-semibold">과정</p>
-              <Stat label="식단 달성" value={`${process.dietOnTrackDays}/7일`} />
-              <Stat label="단백질" value={process.proteinPercent === null ? '-' : `${process.proteinPercent}%`} />
-              <Stat label="운동(3주)" value={`${process.workoutSessions}회`} />
+            <div className="mt-3 border-t border-white/20 pt-2 text-[11px]">
+              {compared ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-white/80">
+                    최근 구간 {md(result.fromTimestamp!)}→{md(result.toTimestamp!)}
+                  </span>
+                  <span className="text-right text-white/80">
+                    체지방 <b className="text-[#ffd98a]">{signed(result.fatDelta, 'kg')}</b> · 골격근{' '}
+                    <b className="text-[#ffd98a]">{signed(result.muscleDelta, 'kg')}</b>
+                  </span>
+                </div>
+              ) : (
+                <p className="text-white/80">비교할 이전 측정이 없어요(14일 이상 간격 필요)</p>
+              )}
             </div>
           </div>
 
@@ -109,14 +163,15 @@ export default function AiCoachingCard() {
               </ul>
             </div>
           )}
-        </>
-      )}
 
-      {daysLeft !== null && (
-        <p className="mt-3 flex items-center gap-1 text-[10px] text-white/70">
-          <CalendarClock size={10} />
-          {daysLeft === 0 ? '오늘 인바디를 측정해보세요' : `다음 측정까지 약 ${daysLeft}일 남았어요`}
-        </p>
+          <button
+            type="button"
+            onClick={onShowTrend}
+            className="mt-4 w-full rounded-xl bg-white py-2.5 text-sm font-bold text-primary-dark"
+          >
+            변화 추이 보기 ›
+          </button>
+        </>
       )}
     </div>
   )

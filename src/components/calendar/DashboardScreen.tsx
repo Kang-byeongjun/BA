@@ -47,7 +47,7 @@ export default function DashboardScreen() {
       <div key={tab} role="tabpanel" id={`report-panel-${tab}`} aria-labelledby={`report-tab-${tab}`} className="tab-fade space-y-4">
         {tab === 'week' && (
           <>
-            <AiCoachingCard />
+            <AiCoachingCard onShowTrend={() => setTab('trend')} />
             <WeekGlanceCard meals={meals} target={nutritionTarget} history={inBodyHistory} />
             <DashboardWorkoutSection />
             {nutritionTarget && weekSummary && (

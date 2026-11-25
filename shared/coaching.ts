@@ -14,6 +14,9 @@ export interface ResultFacts {
   weightDelta: number | null
   muscleDelta: number | null
   fatDelta: number | null
+  /** 비교한 "최근 구간"의 시작(이전 측정)·끝(가장 최근 측정) 시각. 비교할 이전 측정이 없으면 없음 */
+  fromTimestamp?: number
+  toTimestamp?: number
 }
 
 /** 과정(실천) */

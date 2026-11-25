@@ -16,7 +16,8 @@ import type { WorkoutSessionRecord } from './workoutHistory'
 const DAY_MS = 86_400_000
 export const DIET_WINDOW_DAYS = 7
 export const WORKOUT_WINDOW_DAYS = 21
-const INBODY_COMPARE_COUNT = 4
+/** 인바디 비교 구간의 최소 간격(일) */
+export const MIN_COMPARE_GAP_DAYS = 14
 
 /** 판정 기준 */
 export const RULES = {
@@ -64,15 +65,20 @@ function delta(a: number | null, b: number | null): number | null {
 // 숫자 모으기
 // ---------------------------------------------------------------------------
 
-/** 인바디 변화: 최근 측정 최대 4회 중 가장 오래된 것과 비교. 측정이 없으면 null */
+/**
+ * 인바디 변화: "최근 구간" = 가장 최근 측정과, 그보다 14일 이상 앞선 측정 중 가장 가까운 것.
+ * 14일 미만 간격의 측정은 건너뛴다. 그런 이전 측정이 없으면 비교하지 않는다(measurements: 1). 측정이 없으면 null
+ */
 export function buildResultFacts(history: InBodyHistoryEntry[]): ResultFacts | null {
   if (history.length === 0) return null
   const sorted = sortInBodyHistory(history) // 맨 앞 = 가장 최근
   const latest = sorted[0]!
-  const base = sorted[Math.min(INBODY_COMPARE_COUNT, sorted.length) - 1]!
-  if (base === latest) return { measurements: 1, periodDays: 0, weightDelta: null, muscleDelta: null, fatDelta: null }
+  const base = sorted.slice(1).find((e) => latest.timestamp - e.timestamp >= MIN_COMPARE_GAP_DAYS * DAY_MS)
+  if (!base) return { measurements: 1, periodDays: 0, weightDelta: null, muscleDelta: null, fatDelta: null }
   return {
-    measurements: Math.min(INBODY_COMPARE_COUNT, sorted.length),
+    measurements: 2,
+    fromTimestamp: base.timestamp,
+    toTimestamp: latest.timestamp,
     periodDays: Math.round((latest.timestamp - base.timestamp) / DAY_MS),
     weightDelta: delta(latest.weight, base.weight),
     muscleDelta: delta(latest.skeletalMuscleMass, base.skeletalMuscleMass),
@@ -107,6 +113,30 @@ export function buildProcessFacts(
     targetProtein: target?.protein ?? 0,
     workoutSessions: recent.length,
     volumeChangePercent: firstAvg > 0 ? Math.round(((lastAvg - firstAvg) / firstAvg) * 100) : null,
+  }
+}
+
+/** 카드의 겹링용 달성률(0~100). 단백질·운동은 100% 상한, 종합은 세 값의 평균 */
+export interface RingRates {
+  diet: number
+  protein: number
+  workout: number
+  overall: number
+  /** 최근 3주 평균 주당 운동 횟수(반올림) */
+  sessionsPerWeek: number
+}
+
+export function ringRates(p: ProcessFacts): RingRates {
+  const cap = (v: number) => Math.max(0, Math.min(100, Math.round(v)))
+  const diet = cap((p.dietOnTrackDays / DIET_WINDOW_DAYS) * 100)
+  const protein = cap(p.proteinPercent ?? 0)
+  const workout = cap((p.workoutSessions / RULES.goalSessions) * 100)
+  return {
+    diet,
+    protein,
+    workout,
+    overall: Math.round((diet + protein + workout) / 3),
+    sessionsPerWeek: Math.round(p.workoutSessions / (WORKOUT_WINDOW_DAYS / 7)),
   }
 }
 
@@ -191,13 +221,29 @@ export function pickGaps(goal: CoachingGoal, verdict: Verdict, r: ResultFacts | 
 // ---------------------------------------------------------------------------
 
 export const MAX_LINE_LENGTH = 35 // "25자 안팎"에서 한참 넘으면 버린다
-const PRAISE = /(잘하|잘했|훌륭|멋지|멋져|대단|칭찬|최고|굿|좋아요|좋은 흐름|순조)/
+const PRAISE = /(잘하|잘했|훌륭|멋지|멋져|대단|칭찬|최고|굿|좋아요|좋은 흐름|순조|성공|해냈|내일도|화이팅|파이팅|응원|축하)/
 
-/** AI가 쓴 문장이 규칙(길이·숫자 포함·칭찬 금지)을 지키는지 */
-export function isValidLine(line: unknown): line is string {
+const proteinMissingGrams = (p: ProcessFacts) => Math.max(5, p.avgProtein === null ? 0 : p.targetProtein - p.avgProtein)
+
+/** 문장에 들어 있어야 하는 "목표와의 차이" 숫자: 목표값 또는 부족한 양(단백질은 부족한 g도 인정) */
+export function gapNumbers(gap: Gap, p?: ProcessFacts): number[] {
+  const nums = [Math.abs(gap.target), round1(Math.abs(gap.target - gap.current))]
+  if (gap.id === 'protein' && p) nums.push(proteinMissingGrams(p))
+  return nums
+}
+
+/**
+ * AI가 쓴 문장이 규칙(길이·숫자 포함·칭찬 금지)을 지키는지.
+ * gap을 주면 "목표와의 차이" 숫자(목표값 또는 부족한 양)도 들어 있어야 통과한다.
+ */
+export function isValidLine(line: unknown, gap?: Gap, p?: ProcessFacts): line is string {
   if (typeof line !== 'string') return false
   const t = line.trim()
-  return t.length > 0 && t.length <= MAX_LINE_LENGTH && /\d/.test(t) && !PRAISE.test(t)
+  if (!(t.length > 0 && t.length <= MAX_LINE_LENGTH && /\d/.test(t) && !PRAISE.test(t))) return false
+  if (!gap) return true
+  const allowed = gapNumbers(gap, p)
+  const found = (t.match(/\d+(?:\.\d+)?/g) ?? []).map((n) => round1(Number(n)))
+  return found.some((n) => allowed.some((a) => Math.abs(a - n) < 0.05))
 }
 
 export function exampleLine(gap: Gap, p: ProcessFacts): string {
@@ -207,18 +253,18 @@ export function exampleLine(gap: Gap, p: ProcessFacts): string {
       return `골격근이 ${Math.abs(n)}kg 줄었어요. 단백질·근력운동을 늘려요`
     case 'result':
       return gap.label === '체지방 변화'
-        ? `체지방 변화가 ${signed(n)}kg이에요. 식단을 점검해요`
-        : `골격근 변화가 ${signed(n)}kg이에요. 운동 볼륨을 올려요`
+        ? `체지방 ${signed(n)}kg, 목표 ${signed(gap.target)}kg예요. 식단을 점검해요`
+        : `골격근 ${signed(n)}kg, 목표 ${signed(gap.target)}kg예요. 운동을 올려요`
     case 'protein': {
-      const missing = Math.max(5, p.avgProtein === null ? 0 : p.targetProtein - p.avgProtein)
+      const missing = proteinMissingGrams(p)
       return `단백질이 목표의 ${n}%예요. 오늘 +${missing}g 채워요`
     }
     case 'diet':
-      return `식단 목표 달성이 7일 중 ${n}일이에요. 칼로리를 맞춰요`
+      return `식단 목표 달성이 ${n}일이에요. ${Math.max(1, gap.target - n)}일만 더 맞춰 봐요`
     case 'record':
-      return `식단 기록이 7일 중 ${n}일이에요. 매일 기록해요`
+      return `식단 기록이 7일 중 ${n}일이에요. ${Math.max(1, gap.target - n)}일 더 기록해요`
     case 'workout':
-      return `최근 3주 운동이 ${n}회예요. 주 3회로 늘려요`
+      return `최근 3주 운동이 ${n}회예요. ${Math.max(1, gap.target - n)}회만 더 해봐요`
     case 'inbody':
       return `인바디 측정이 ${n}회예요. 2주 뒤 다시 재요`
   }
@@ -228,7 +274,7 @@ export function exampleLine(gap: Gap, p: ProcessFacts): string {
 export function resolveLines(gaps: Gap[], p: ProcessFacts, aiLines: readonly unknown[] | null): string[] {
   return gaps.map((g, i) => {
     const ai = aiLines?.[i]
-    return isValidLine(ai) ? ai.trim() : exampleLine(g, p)
+    return isValidLine(ai, g, p) ?ai.trim() : exampleLine(g, p)
   })
 }
 

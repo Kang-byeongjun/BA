@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppProvider } from '../../context/AppContext'
 import { DEMO_NUTRITION_TARGET, DEMO_PROFILE, DEMO_WORKOUT_PROFILE } from '../../data/mockData'
-import { buildDiagnosis, exampleLine } from '../../lib/coachingInsight'
+import { buildDiagnosis, exampleLine, ringRates } from '../../lib/coachingInsight'
 import { buildSeedData } from '../../lib/demoSeed'
 import { COACHING_CACHE_KEY, COACHING_CACHE_VERSION, requestKeyOf } from '../../services/coachingService'
 import AiCoachingCard from '../calendar/AiCoachingCard'
@@ -25,6 +25,8 @@ function seed(mode: { isDemo: boolean; aiMode: 'real' | 'mock' }, proteinTarget 
   localStorage.setItem(key('aiMode'), JSON.stringify(mode.aiMode))
   return { d, target, diagnosis: buildDiagnosis({ goal: GOAL, history: d.inBodyHistory, meals: d.meals, target, workouts: d.workoutHistory }) }
 }
+// 문장 검사를 통과하려면 목표와의 차이 숫자가 들어 있어야 한다
+const diff = (g: { current: number; target: number; unit: string }) => `${Math.round(Math.abs(g.target - g.current) * 10) / 10}${g.unit}`
 const open = () => render(<AppProvider><AiCoachingCard /></AppProvider>)
 const fetchMock = vi.fn()
 const reply = (data: unknown) => ({ ok: true, status: 200, text: async () => JSON.stringify({ ok: true, data }) })
@@ -51,26 +53,65 @@ describe('진단 카드 — 구성', () => {
     expect(screen.getAllByText('순조로워요')).toHaveLength(1)
   })
 
-  it('왼쪽 결과(인바디)·오른쪽 과정을 숫자와 라벨로만 보여준다', () => {
-    seed({ isDemo: true, aiMode: 'mock' })
+  it('겹링(aria-label)·범례·최근 구간 한 줄을 보여준다', () => {
+    const { diagnosis } = seed({ isDemo: true, aiMode: 'mock' })
     open()
-    const result = screen.getByText('결과 (인바디)').parentElement!
-    expect(within(result).getByText('-5.3kg')).toBeTruthy()
-    expect(within(result).getByText('+1.1kg')).toBeTruthy()
-    expect(within(result).getByText('-4.8kg')).toBeTruthy()
-    const process = screen.getByText('과정').parentElement!
-    expect(within(process).getByText('5/7일')).toBeTruthy()
-    expect(within(process).getByText('9회')).toBeTruthy()
-    expect(within(process).getByText(/^\d+%$/)).toBeTruthy()
-    expect(screen.queryByText(/이 기간|목표를 지켰고/)).toBeNull() // 설명 문장 없음
+    expect(screen.getByText('과정 · 목표 대비 달성률 (최근 7일 · 운동 3주)')).toBeTruthy()
+    const r = ringRates(diagnosis.process)
+    const svg = screen.getByRole('img')
+    expect(svg.getAttribute('aria-label')).toBe(`식단 ${r.diet}%, 단백질 ${r.protein}%, 운동 ${r.workout}%, 종합 ${r.overall}%`)
+    expect(within(svg as unknown as HTMLElement).getByText(`${r.overall}%`)).toBeTruthy()
+    expect(screen.getByText('5/7일')).toBeTruthy()
+    expect(screen.getByText('주 3회')).toBeTruthy()
+    expect(screen.getByText(/^최근 구간 \d+\/\d+→\d+\/\d+$/)).toBeTruthy()
+    expect(screen.getByText('-1.7kg')).toBeTruthy() // 체지방
+    expect(screen.getByText('+0.3kg')).toBeTruthy() // 골격근
   })
 
-  it('다음 측정 안내는 작은 글씨로 맨 아래', () => {
+  it('예전 "결과(인바디)/과정" 표와 "다음 측정까지" 줄은 없다', () => {
     seed({ isDemo: true, aiMode: 'mock' })
-    const { container } = open()
-    const note = screen.getByText(/다음 측정까지|오늘 인바디를 측정/)
-    expect(note.className).toContain('text-[10px]')
-    expect(container.firstElementChild!.lastElementChild).toBe(note)
+    open()
+    expect(screen.queryByText('결과 (인바디)')).toBeNull()
+    expect(screen.queryByText(/다음 측정까지|오늘 인바디를 측정/)).toBeNull()
+  })
+
+  it('이전 측정이 14일 이상 떨어져 있지 않으면 안내 문구와 "기록이 더 필요해요"', () => {
+    const { d } = seed({ isDemo: true, aiMode: 'mock' })
+    localStorage.setItem(key('inBodyHistory'), JSON.stringify(d.inBodyHistory.slice(0, 1)))
+    open()
+    expect(screen.getByText('비교할 이전 측정이 없어요(14일 이상 간격 필요)')).toBeTruthy()
+    expect(screen.getByText('기록이 더 필요해요')).toBeTruthy()
+  })
+
+  it('가운데 글자(17px·9px)가 가장 안쪽 링의 안쪽 원 안에 완전히 들어간다(SVG 고정 크기라 360px 폭에서도 같다)', () => {
+    seed({ isDemo: true, aiMode: 'mock' })
+    open()
+    const svg = screen.getByRole('img')
+    expect(svg.getAttribute('viewBox')).toBe('0 0 132 132')
+    const circles = Array.from(svg.querySelectorAll('circle'))
+    const innerRadius = Math.min(...circles.map((c) => Number(c.getAttribute('r')))) - Number(circles[0]!.getAttribute('stroke-width')) / 2
+    const value = screen.getByTestId('ring-value')
+    const label = screen.getByTestId('ring-label')
+    expect(value.getAttribute('font-size')).toBe('17')
+    expect(label.getAttribute('font-size')).toBe('9')
+    // 가장 넓은 경우("100%"=4글자, 글자 폭≈0.6em, "종합"=전각 2글자)로 네 모서리가 원 안에 있는지 계산
+    const box = (el: Element, chars: number, em: number) => {
+      const size = Number(el.getAttribute('font-size'))
+      const y = Number(el.getAttribute('y')) - 66 // 중심 기준
+      const halfW = (chars * size * em) / 2
+      return [[halfW, y - size * 0.8], [halfW, y + size * 0.2]].map(([x, yy]) => Math.hypot(x!, yy!))
+    }
+    for (const d of [...box(value, 4, 0.6), ...box(label, 2, 1)]) expect(d).toBeLessThan(innerRadius)
+    // 두 줄이 서로 겹치지 않는다
+    expect(Number(label.getAttribute('y')) - Number(label.getAttribute('font-size')) * 0.8).toBeGreaterThan(Number(value.getAttribute('y')))
+  })
+
+  it('"변화 추이 보기" 버튼이 탭 전환 함수를 부른다', () => {
+    seed({ isDemo: true, aiMode: 'mock' })
+    const onShowTrend = vi.fn()
+    render(<AppProvider><AiCoachingCard onShowTrend={onShowTrend} /></AppProvider>)
+    fireEvent.click(screen.getByRole('button', { name: '변화 추이 보기 ›' }))
+    expect(onShowTrend).toHaveBeenCalledTimes(1)
   })
 
   it('기록이 하나도 없으면 안내 문구만 보여주고 배지·AI 호출은 없다', () => {
@@ -103,7 +144,7 @@ describe('진단 카드 — 보완할 점(데모 모드)', () => {
 describe('진단 카드 — 실제 AI 모드', () => {
   it('보내는 본문은 판정과 보완할 점 숫자뿐이고, 통과한 AI 문장을 쓰고 저장한다', async () => {
     const { diagnosis } = seed({ isDemo: false, aiMode: 'real' })
-    const ai = diagnosis.gaps.map((g, i) => `AI 문장 ${i + 1}번 ${g.current}${g.unit}이에요`)
+    const ai = diagnosis.gaps.map((g, i) => `AI 문장 ${i + 1}번 ${diff(g)} 부족해요`)
     fetchMock.mockResolvedValue(reply({ lines: ai }))
     open()
     expect(await screen.findByText(ai[0]!)).toBeTruthy()
@@ -145,7 +186,7 @@ describe('진단 카드 — 실제 AI 모드', () => {
 
   it('같은 숫자면 저장된 문장을 쓰고 AI를 다시 부르지 않는다', () => {
     const { diagnosis } = seed({ isDemo: false, aiMode: 'real' })
-    const lines = diagnosis.gaps.map((_, i) => `저장해 둔 ${i + 1}번 문장이에요`)
+    const lines = diagnosis.gaps.map((g, i) => `저장해 둔 ${i + 1}번 ${diff(g)}이에요`)
     localStorage.setItem(key(COACHING_CACHE_KEY), JSON.stringify({ v: COACHING_CACHE_VERSION, requestKey: requestKeyOf(diagnosis.request), lines, savedAt: 'x' }))
     open()
     expect(screen.getByText(lines[0]!)).toBeTruthy()
@@ -155,9 +196,9 @@ describe('진단 카드 — 실제 AI 모드', () => {
   it('이전 버전(v1)으로 저장된 캐시는 무시하고 새로 요청한다', async () => {
     const { diagnosis } = seed({ isDemo: false, aiMode: 'real' })
     localStorage.setItem(key(COACHING_CACHE_KEY), JSON.stringify({ v: 1, requestKey: requestKeyOf(diagnosis.request), lines: ['옛날 문장 1'], message: '옛날 문장', savedAt: 'x' }))
-    fetchMock.mockResolvedValue(reply({ lines: diagnosis.gaps.map((_, i) => `새 문장 ${i + 1}번이에요`) }))
+    fetchMock.mockResolvedValue(reply({ lines: diagnosis.gaps.map((g, i) => `새 문장 ${i + 1}번 ${diff(g)}이에요`) }))
     open()
-    expect(await screen.findByText('새 문장 1번이에요')).toBeTruthy()
+    expect(await screen.findByText(/^새 문장 1번 /)).toBeTruthy()
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(screen.queryByText(/옛날/)).toBeNull()
   })
@@ -165,9 +206,9 @@ describe('진단 카드 — 실제 AI 모드', () => {
   it('입력 숫자가 바뀌면(요청 키가 다르면) 저장된 문장을 쓰지 않는다', async () => {
     const { diagnosis } = seed({ isDemo: false, aiMode: 'real' })
     localStorage.setItem(key(COACHING_CACHE_KEY), JSON.stringify({ v: COACHING_CACHE_VERSION, requestKey: '{"다른":"숫자"}', lines: ['다른 숫자의 문장 1'], savedAt: 'x' }))
-    fetchMock.mockResolvedValue(reply({ lines: diagnosis.gaps.map((_, i) => `새 문장 ${i + 1}번이에요`) }))
+    fetchMock.mockResolvedValue(reply({ lines: diagnosis.gaps.map((g, i) => `새 문장 ${i + 1}번 ${diff(g)}이에요`) }))
     open()
-    expect(await screen.findByText('새 문장 1번이에요')).toBeTruthy()
+    expect(await screen.findByText(/^새 문장 1번 /)).toBeTruthy()
     expect(screen.queryByText(/다른 숫자의 문장/)).toBeNull()
   })
 })

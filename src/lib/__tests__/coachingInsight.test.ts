@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import type { CoachingGoal, ProcessFacts, ResultFacts } from '../../../shared/coaching'
 import {
   buildDiagnosis,
+  buildResultFacts,
+  ringRates,
   decideVerdict,
   exampleLine,
   isEmptyDiagnosis,
@@ -142,10 +144,20 @@ describe('보완할 점 문장', () => {
     expect(isValidLine(42)).toBe(false)
   })
 
+  it('목표와의 차이 숫자가 없거나 칭찬·성공 표현이면 탈락, 차이·목표 숫자가 있으면 통과', () => {
+    const diet = { id: 'diet', label: '식단 목표 달성일', current: 4, target: 5, unit: '일' } as const
+    const praise = '식단 4일 성공했어요. 내일도 실천해요'
+    expect(isValidLine(praise, diet)).toBe(false)
+    expect(isValidLine('식단 4일째예요. 꾸준히 해요', diet)).toBe(false) // 현재 숫자뿐, 차이·목표 숫자 없음
+    expect(isValidLine('식단 달성이 4일이에요. 1일만 더 맞춰요', diet)).toBe(true) // 차이
+    expect(isValidLine('식단 달성이 4일이에요. 목표는 5일이에요', diet)).toBe(true) // 목표
+    expect(resolveLines([diet], p, [praise])).toEqual(['식단 목표 달성이 4일이에요. 1일만 더 맞춰 봐요'])
+  })
+
   it('항목별로 AI 문장이 통과하면 쓰고, 아니면 그 항목만 예시 문장', () => {
     const gaps = pickGaps('fat_loss', 'on_track', result(GOOD.fat_loss), { ...p, dietOnTrackDays: 4 })
-    const lines = resolveLines(gaps, p, ['AI가 쓴 62% 문장이에요', '길이가 너무 길어서 탈락하는 문장입니다 숫자 4일 포함해도 탈락해요 정말로'])
-    expect(lines[0]).toBe('AI가 쓴 62% 문장이에요')
+    const lines = resolveLines(gaps, p, ['단백질이 62%예요. 38%를 더 채워요', '길이가 너무 길어서 탈락하는 문장입니다 숫자 4일 포함해도 탈락해요 정말로'])
+    expect(lines[0]).toBe('단백질이 62%예요. 38%를 더 채워요')
     expect(lines[1]).toBe(exampleLine(gaps[1]!, p))
     expect(resolveLines(gaps, p, null)).toEqual(gaps.map((g) => exampleLine(g, p))) // 데모·실패
   })
@@ -158,8 +170,28 @@ describe('buildDiagnosis — 시연 데이터 기준', () => {
   it('식단은 인바디 측정일과 상관없이 어제까지 7일(7일 중 7일 기록, 5일 달성)', () => {
     expect(d.process).toMatchObject({ dietLoggedDays: 7, dietOnTrackDays: 5, workoutSessions: 9 })
   })
-  it('인바디는 최근 4회 중 가장 오래된 것과 비교', () => {
-    expect(d.result).toMatchObject({ measurements: 4, periodDays: 49, weightDelta: -5.3, muscleDelta: 1.1, fatDelta: -4.8 })
+  it('인바디는 최근 구간(가장 최근 측정 vs 14일 이상 앞선 가장 가까운 측정)으로 비교', () => {
+    expect(d.result).toMatchObject({ measurements: 2, periodDays: 21, weightDelta: -1.4, muscleDelta: 0.3, fatDelta: -1.7 })
+  })
+  describe('최근 구간 14일 규칙', () => {
+    const DAY = 86_400_000
+    const entry = (daysAgo: number, fat: number) => ({ ...seed.inBodyHistory[0]!, id: `e${daysAgo}`, timestamp: NOW - daysAgo * DAY, bodyFatMass: fat })
+    const facts = (...e: ReturnType<typeof entry>[]) => buildResultFacts(e)
+    it('14일 미만 간격은 건너뛰고 그보다 앞선 가장 가까운 측정과 비교', () => {
+      const r = facts(entry(0, 30), entry(10, 31), entry(14, 32), entry(40, 36))!
+      expect(r).toMatchObject({ measurements: 2, periodDays: 14, fatDelta: -2 })
+    })
+    it('13일 간격뿐이면 비교하지 않고 기록 부족으로 판정', () => {
+      const r = facts(entry(0, 30), entry(13, 31))!
+      expect(r).toMatchObject({ measurements: 1, fatDelta: null })
+      expect(r.fromTimestamp).toBeUndefined()
+      expect(decideVerdict('fat_loss', r, HIGH)).toBe('need_data')
+    })
+    it('측정이 하나도 없으면 null', () => expect(buildResultFacts([])).toBeNull())
+  })
+  it('링 달성률: 단백질·운동은 100% 상한, 종합은 평균', () => {
+    expect(ringRates({ ...HIGH, dietOnTrackDays: 5, proteinPercent: 140, workoutSessions: 30 })).toMatchObject({ diet: 71, protein: 100, workout: 100, overall: 90, sessionsPerWeek: 10 })
+    expect(ringRates({ ...LOW, proteinPercent: null })).toMatchObject({ diet: 14, protein: 0, workout: 33, sessionsPerWeek: 1 })
   })
   it('판정은 순조로워요이고 AI에게 보낼 본문은 판정·숫자뿐', () => {
     expect(d.verdict).toBe('on_track')

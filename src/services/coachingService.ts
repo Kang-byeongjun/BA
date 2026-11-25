@@ -10,8 +10,8 @@ import { loadFromStorage, saveToStorage } from '../lib/storage'
 const ENDPOINT = '/api/insight'
 const CLIENT_TIMEOUT_MS = 20_000
 export const COACHING_CACHE_KEY = 'coachingInsight'
-// 저장 형식·문구 규칙이 바뀌면 올린다 → 이전 버전으로 저장된 문장은 무시된다(v1 = 예전 종합 코칭 문장)
-export const COACHING_CACHE_VERSION = 2
+// 저장 형식·문구 규칙이 바뀌면 올린다 → 이전 버전으로 저장된 문장은 무시된다(v1 = 예전 종합 코칭 문장, v3 = 인바디 비교를 "최근 구간"으로 바꿈)
+export const COACHING_CACHE_VERSION = 3
 
 interface CachedLines {
   v: number

@@ -36,7 +36,8 @@ You write short Korean "what to fix" lines for a fitness app's diagnosis card.
 <instructions>
 The app has already decided the verdict and chosen the gaps (items that are furthest from the user's goal). Do not change the verdict, and do not recalculate, change, or invent any number.
 For each gap, in the same order, write exactly one Korean line of about 25 characters in the form "cause → action", for example: 단백질이 목표의 62%예요. 오늘 +60g 채워요
-Rules: include the gap's current number in the line; no praise or encouragement; no medical claims; polite 해요체; no more than 30 characters.
+Rules: state the difference from the goal (the shortfall amount) as a number, e.g. the gap's shortfall or its target number; do not start with or use success, praise, or encouragement wording (no "성공", "잘했어요", "내일도 화이팅" etc.); no medical claims; polite 해요체; no more than 30 characters.
+A gap means the user is below the goal, so never say it was achieved.
 </instructions>
 
 <output_rules>
@@ -54,7 +55,7 @@ const GAP_UNIT_NOTE: Record<string, string> = {
 }
 
 export function buildInsightPrompt(r: InsightRequest): string {
-  const gaps = r.gaps.map((g, i) => `${i + 1}. ${g.label}: 현재 ${g.current}${g.unit} / 목표 ${g.target}${g.unit} (${GAP_UNIT_NOTE[g.id]})`)
+  const gaps = r.gaps.map((g, i) => `${i + 1}. ${g.label}: 현재 ${g.current}${g.unit} / 목표 ${g.target}${g.unit} / 차이 ${Math.round(Math.abs(g.target - g.current) * 10) / 10}${g.unit} (${GAP_UNIT_NOTE[g.id]})`)
   return [`운동 목표: ${r.goalLabel}`, `판정(앱이 정함): ${r.verdict}`, '보완할 점:', ...gaps].join('\n')
 }
 

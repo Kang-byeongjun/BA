@@ -25,7 +25,9 @@ describe('handleInsight', () => {
     expect(res.body).toMatchObject({ ok: true, data: { lines: expect.any(Array) } })
     const arg = (parseStructured.mock.calls[0] as unknown as [{ prompt: string; system: string }])[0]
     expect(arg.system).toBe(INSIGHT_SYSTEM_PROMPT)
-    expect(arg.system).toContain('no praise')
+    expect(arg.system).toContain('praise')
+    expect(arg.system).toContain('shortfall')
+    expect(arg.system).toContain('성공')
     expect(arg.prompt).toBe(buildInsightPrompt(request))
     for (const s of ['체지방 감량', 'check_method', '현재 62%', '현재 5회']) expect(arg.prompt).toContain(s)
   })
