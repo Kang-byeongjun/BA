@@ -1,6 +1,6 @@
 import type { NutritionTarget } from '../../types'
 import type { Change, IntervalAnalysis } from '../../lib/intervalReport'
-import { buildFeedbackView, changeLabel, noFeedbackReason, periodLabel, signedNumber } from '../../lib/trendView'
+import { buildFeedbackView, changeLabel, noFeedbackReason, otherPatternLines, periodLabel, signedNumber } from '../../lib/trendView'
 import CollapsibleCard from '../dashboard/CollapsibleCard'
 
 const changeText = (c: Change, unit: string, changeUnit = unit) =>
@@ -20,6 +20,7 @@ export function TrendEvidence({ latest }: { latest: IntervalAnalysis }) {
   const { diet, workout, evidence } = latest
   const expected = evidence.expectedFatChange
   const protein = diet.protein
+  const others = otherPatternLines(latest)
   return (
     <CollapsibleCard title="근거 보기" summary={`운동 ${workout.sessions}회 · 식단 기록 ${diet.loggedDays}/${diet.periodDays}일`}>
       <div className="rounded-2xl border border-slate-100 bg-white p-4">
@@ -38,6 +39,18 @@ export function TrendEvidence({ latest }: { latest: IntervalAnalysis }) {
         </dl>
         {expected.expectedKg === null && expected.reason && <p className="mt-2 text-[11px] text-slate-400">{expected.reason}</p>}
         <p className="mt-3 text-[11px] text-slate-400">측정 시간대가 다르면 수분 때문에 1kg 안팎 달라질 수 있어요</p>
+        {others.length > 0 && (
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <h4 className="text-xs font-semibold text-slate-800">그 밖에 보이는 점</h4>
+            <ul className="mt-1.5 space-y-1 text-xs text-slate-600">
+              {others.map((o) => (
+                <li key={o.key} data-testid="other-pattern">
+                  {o.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </CollapsibleCard>
   )

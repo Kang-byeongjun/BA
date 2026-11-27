@@ -6,7 +6,16 @@ import { DEMO_PROFILE, DEMO_WORKOUT_PROFILE } from '../../data/mockData'
 import { buildSeedData, type SeedData } from '../../lib/demoSeed'
 import { buildIntervalReport, type Feedback, type PatternId } from '../../lib/intervalReport'
 import { intervalKey, TODO_CHECKS_KEY } from '../../lib/todoChecks'
-import { buildFeedbackView, CHART_BY_PATTERN, headlineOf, noFeedbackReason, TITLE_MAX_LENGTH, type FeedbackChartKind } from '../../lib/trendView'
+import {
+  buildFeedbackView,
+  CHART_BY_PATTERN,
+  DESCRIPTION_MAX_LENGTH,
+  headlineOf,
+  noFeedbackReason,
+  otherPatternLines,
+  TITLE_MAX_LENGTH,
+  type FeedbackChartKind,
+} from '../../lib/trendView'
 import DashboardScreen from '../calendar/DashboardScreen'
 import TrendFeedbackCard from '../trend/TrendFeedbackCard'
 import TrendReport from '../trend/TrendReport'
@@ -86,7 +95,10 @@ describe('변화 추이 — 피드백 0·1·2개', () => {
     expect(cards()).toHaveLength(2)
     const [diet, workout] = cards().map((c) => within(c))
     expect(diet!.getByText('식단')).toBeTruthy()
-    expect(diet!.getByRole('heading').textContent).toMatch(/^주말에 평일보다 \d+% 더 먹었어요$/)
+    expect(diet!.getByRole('heading').textContent).toBe('주말 이틀이 평일 노력을 되돌려요')
+    expect(diet!.getByText('목표보다 주말 하루 690kcal, 일주일 1,380kcal 초과')).toBeTruthy()
+    expect(workout!.getByRole('heading').textContent).toBe('상체에 비해 하체가 많이 쉬고 있어요')
+    expect(workout!.getByText('하체 주당 9세트, 상체의 22%예요')).toBeTruthy()
     expect(diet!.getByTestId('feedback-chart').getAttribute('data-chart')).toBe('stackedMeals')
     expect(diet!.getByTestId('target-line')).toBeTruthy()
     const chips = within(diet!.getByRole('list', { name: '목표를 넘긴 날 저녁·간식에 자주 먹은 음식' })).getAllByRole('listitem')
@@ -216,7 +228,7 @@ describe('변화 추이 — 접힌 영역', () => {
     expect(content.className).not.toContain('hidden')
     const past = within(content).getAllByTestId('past-interval').map((li) => [...li.querySelectorAll('p')].map((p) => p.textContent))
     expect(past).toEqual([
-      ['10.16 → 10.30 (2주)', '체지방 -1.1kg · 골격근 +0.4kg', '운동 · 하체 세트가 상체의 54%예요'],
+      ['10.16 → 10.30 (2주)', '체지방 -1.1kg · 골격근 +0.4kg', '운동 · 상체에 비해 하체가 적은 편이에요'],
       ['10.02 → 10.16 (2주)', '체지방 -1.9kg · 골격근 +0.6kg', '운동 기록이 부족해 피드백이 없어요'],
     ])
   })
@@ -280,13 +292,14 @@ describe('변화 추이 — 패턴별 그래프', () => {
     return buildFeedbackView(latest, feedback, TARGET)
   }
 
-  it.each(Object.entries(EXPECTED) as [PatternId, FeedbackChartKind][])('%s → %s (제목 30자 이내, 숫자 포함)', (id, kind) => {
+  it.each(Object.entries(EXPECTED) as [PatternId, FeedbackChartKind][])('%s → %s (제목 30자·설명 40자 이내, 설명에 근거 숫자)', (id, kind) => {
     expect(CHART_BY_PATTERN[id]).toBe(kind)
     const v = view(id)
     render(<TrendFeedbackCard view={v} />)
     expect(screen.getByTestId('feedback-chart').getAttribute('data-chart')).toBe(kind)
     expect(v.title.length).toBeLessThanOrEqual(TITLE_MAX_LENGTH)
-    expect(v.title).toMatch(/\d/)
+    expect(v.description.length).toBeLessThanOrEqual(DESCRIPTION_MAX_LENGTH)
+    expect(v.description).toMatch(/\d/)
     expect(v.foods.length > 0).toBe(kind === 'stackedMeals')
   })
 
@@ -297,14 +310,14 @@ describe('변화 추이 — 패턴별 그래프', () => {
       ['상체 합계', '42', '#94a3b8'],
       ['하체', '9', '#8e2433'], // 정수, 하체만 와인색
     ])
-    expect(lower.description).toBe('상체 합계 주 42세트, 하체 주 9세트')
+    expect(lower.description).toBe('하체 주당 9세트, 상체의 12%예요')
     const top = view('exercise_stagnation')
     expect(top.chart.legend.slice(0, 2)).toEqual([
       { label: '바벨 스쿼트', color: '#8e2433' },
       { label: '바벨 벤치 프레스', color: '#cbd5e1' },
     ])
     expect(top.chart.groups.map((g) => g.bars.map((b) => b.valueLabel))).toEqual([['60', '55'], ['60', '57.5'], ['60', '60']])
-    expect(top.description).toBe('벤치 프레스는 55→60kg로 늘었어요')
+    expect(top.description).toBe('60kg 12주째 그대로, 벤치 프레스는 5kg 늘었어요')
     expect(view('under_eating').chart.target!.value).toBe(1920)
     expect(view('weekend_overeating').chart.groups[0]!.bars[0]!.segments).toHaveLength(3)
     expect(view('workout_shortage').chart.target).toEqual({ value: 2, label: '목표 주 2회' })
@@ -334,6 +347,102 @@ describe('식단 막대', () => {
     expect(new Set(expected).size).toBe(7) // 요일마다 다르다
     expect(groups.map((g) => g.bars[0]!.valueLabel)).toEqual(expected.map((v) => (v > target!.value ? v.toLocaleString('ko-KR') : null)))
     expect(groups.map((g) => g.bars[0]!.valueLabel !== null)).toEqual([false, false, false, false, false, true, true])
+  })
+})
+
+describe('피드백 문장(앱이 해석용 숫자로 만든다)', () => {
+  const latest = reportOf(buildSeedData(NOW, { targetKcal: TARGET.calories })).intervals[0]!
+  type Options = { value?: number; current?: number; target?: number; interval?: Partial<typeof latest>; kcal?: number | null; exerciseId?: string }
+  const textOf = (id: PatternId, o: Options = {}) => {
+    const domain = ['weekend_overeating', 'evening_skew', 'protein_low', 'under_eating'].includes(id) ? ('diet' as const) : ('workout' as const)
+    const pattern = {
+      id,
+      domain,
+      title: id,
+      chart: 'restDays' as const,
+      headline: { label: '', value: o.value ?? 12, unit: '' },
+      evidence: [],
+      strength: 0,
+      todo: { text: '', current: o.current ?? 60, target: o.target ?? 130, unit: '' },
+      exerciseId: o.exerciseId,
+    }
+    const target = o.kcal === null ? null : { ...TARGET, calories: o.kcal ?? TARGET.calories }
+    const v = buildFeedbackView({ ...latest, ...o.interval }, { domain, tone: 'improve', indicator: null, pattern }, target)
+    return [v.title, v.description]
+  }
+  const averages = (weekendAvg: number, weekdayAvg: number) => ({ diet: { ...latest.diet, weekendAvg, weekdayAvg } })
+
+  it('주말 과식: 목표와 비교해 말할 수 있는 만큼만 말한다', () => {
+    // 목표 1940: 하루 670 초과, 이틀 1340 ≥ 평일에 아낀 900
+    expect(textOf('weekend_overeating', { kcal: 1940 })).toEqual(['주말 이틀이 평일 노력을 되돌려요', '목표보다 주말 하루 670kcal, 일주일 1,340kcal 초과'])
+    // 이틀 초과 200 < 아낀 900 → "일부"
+    expect(textOf('weekend_overeating', { kcal: 1940, interval: averages(2040, 1760) })[0]).toBe('주말이 평일에 아낀 양을 일부 되돌려요')
+    // 평일도 목표 이상 → "되돌린다"고 하지 않는다
+    expect(textOf('weekend_overeating', { kcal: 1700 })).toEqual(['주말에 목표를 넘기는 폭이 커요', '주말 하루 평균이 목표보다 910kcal 많아요'])
+    // 주말도 목표 안이거나 목표가 없으면 평균만
+    for (const kcal of [2700, null]) {
+      expect(textOf('weekend_overeating', { kcal })).toEqual(['주말에 식사량이 부쩍 늘어요', '하루 평균 주말 2,610 · 평일 1,760kcal'])
+    }
+  })
+
+  it('저녁 쏠림·단백질·적게 먹음', () => {
+    const avg = (avgCalories: number) => ({ diet: { ...latest.diet, avgCalories } })
+    expect(textOf('evening_skew', { value: 55, target: 45, interval: avg(1900) })).toEqual([
+      '하루 식사가 저녁·간식에 몰려 있어요',
+      '저녁·간식 55%, 목표 비중보다 하루 약 190kcal 많아요',
+    ])
+    expect(textOf('protein_low', { current: 114, target: 167 })).toEqual(['끼니마다 단백질을 더하면 목표예요', '하루 53g 모자라요. 끼니당 18g씩이에요'])
+    expect(textOf('under_eating', { value: 12, kcal: 1940, interval: avg(1320) })).toEqual(['적게 먹은 날이 절반 이상이에요', '하루 평균이 목표보다 620kcal 적어요'])
+    expect(textOf('under_eating', { value: 12, kcal: 1940, interval: avg(2000) })[1]).toBe('21일 중 12일은 목표의 70%도 안 돼요')
+  })
+
+  it('운동 부족·긴 공백·하체·정체', () => {
+    // 3주 × 주 2회 = 6회가 목표
+    const sessions = (n: number) => ({ workout: { ...latest.workout, sessions: n } })
+    expect(textOf('workout_shortage', { value: 1, target: 2, interval: sessions(3) })).toEqual(['운동하는 날이 드문드문해요', '주 2회 목표보다 이번 구간에 3회 적어요'])
+    expect(textOf('workout_shortage', { value: 1.9, target: 2, interval: sessions(6) })[1]).toBe('주당 1.9회로, 목표 주 2회에 못 미쳐요')
+    expect(textOf('long_gap', { value: 11, target: 3 })).toEqual(['긴 휴식 기간이 있었어요', '11일 연속 쉬었어요. 권장은 3일 이하예요'])
+    expect(textOf('lower_body_imbalance', { value: 49 })[0]).toBe('상체에 비해 하체가 많이 쉬고 있어요')
+    expect(textOf('lower_body_imbalance', { value: 50 })[0]).toBe('상체에 비해 하체가 적은 편이에요')
+    expect(textOf('exercise_stagnation', { value: 3, exerciseId: 'L02' })[0]).toBe('바벨 스쿼트가 같은 자리에 머물러 있어요')
+    // 받침이 있으면 "이", 늘어난 종목이 없으면 정체 종목만
+    const only = { workout: { ...latest.workout, topExercises: [{ ...latest.workout.topExercises[0]!, exerciseId: 'x', name: '풀업' }] } }
+    expect(textOf('exercise_stagnation', { value: 3, exerciseId: 'x', interval: only })).toEqual(['풀업이 같은 자리에 머물러 있어요', '최고 무게 60kg이 3주째 그대로예요'])
+  })
+
+  it('큰 숫자와 긴 이름에서도 길이를 지키고, 경고하거나 원인을 단정하는 말이 없다', () => {
+    const big = {
+      period: { ...latest.period, days: 180 },
+      diet: { ...latest.diet, weekendAvg: 9999, weekdayAvg: 1000, avgCalories: 4000, loggedDays: 180 },
+      workout: { ...latest.workout, sessions: 3, topExercises: latest.workout.topExercises.map((e) => ({ ...e, name: '아주 긴 이름의 스미스머신 인클라인 벤치 프레스 변형 동작' })) },
+    }
+    for (const id of Object.keys(CHART_BY_PATTERN) as PatternId[]) {
+      for (const kcal of [1200, 5000, 12000, null]) {
+        const [title, description] = textOf(id, { value: 100, current: 200, target: 400, kcal, interval: big, exerciseId: 'L02' })
+        expect(title!.length, title).toBeLessThanOrEqual(TITLE_MAX_LENGTH)
+        expect(description!.length, description).toBeLessThanOrEqual(DESCRIPTION_MAX_LENGTH)
+        expect(title! + description!).not.toMatch(/주의해|경고|문제|위험|때문/)
+      }
+    }
+  })
+})
+
+describe('변화 추이 — 그 밖에 보이는 점', () => {
+  it('근거 보기 안에 뽑히지 않은 패턴을 한 줄씩', () => {
+    seed()
+    put('nutritionTarget', { ...TARGET, protein: 167 })
+    open()
+    const button = screen.getByRole('button', { name: /근거 보기/ })
+    const content = within(button.nextElementSibling as HTMLElement)
+    expect(content.getByRole('heading', { name: '그 밖에 보이는 점' })).toBeTruthy()
+    const lines = content.getAllByTestId('other-pattern').map((li) => li.textContent)
+    expect(lines).toContain('단백질 하루 114g · 목표의 68%')
+    expect(lines.join()).not.toContain('하체') // 카드로 뽑힌 것은 빼고
+  })
+
+  it('모두 뽑혔으면 비어 있다', () => {
+    const latest = reportOf(buildSeedData(NOW, { targetKcal: TARGET.calories })).intervals[0]!
+    expect(otherPatternLines({ ...latest, patterns: latest.feedback.map((f) => f.pattern) })).toEqual([])
   })
 })
 

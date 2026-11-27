@@ -77,6 +77,29 @@ export const INTERVAL_RULES = {
 } as const
 
 /**
+ * 패턴 강도를 0~1로 맞출 때 "이 값이면 1(가장 강함)". 강도 0은 INTERVAL_RULES의 판정 기준값이고, 그 사이는 직선이다.
+ * 패턴마다 값의 단위와 범위가 달라도 같은 눈금으로 겨루게 한다.
+ */
+export const STRENGTH_FULL_AT = {
+  /** 주말이 평일보다 이 % 많음 */
+  weekendOverPercent: 60,
+  /** 저녁+간식 비중(%) */
+  eveningSharePercent: 70,
+  /** 단백질이 목표의 이 % */
+  proteinPercent: 50,
+  /** 적게 먹은 날이 기록일의 이 % */
+  underEatDaysPercent: 100,
+  /** 주당 운동 횟수 */
+  sessionsPerWeek: 0,
+  /** 최고 기록이 그대로인 주 수 */
+  stagnantWeeks: 6,
+  /** 상체 대비 하체(%) */
+  lowerToUpperPercent: 0,
+  /** 연속 휴식일 */
+  longGapDays: 14,
+} as const
+
+/**
  * 활동 계수(기초대사량에 곱해 하루 소비 칼로리를 대략 추정). 주 0회 min부터 주 fullPerWeek회 이상 max까지 직선으로 늘어난다.
  */
 export const ACTIVITY_FACTOR = { min: 1.2, max: 1.55, fullPerWeek: 5 } as const
@@ -257,7 +280,7 @@ export interface Pattern {
   /** 제목에 쓸 핵심 숫자 */
   headline: Evidence
   evidence: Evidence[]
-  /** 근거 숫자가 기준을 넘은 정도(기준 대비 비율). 클수록 강한 패턴 */
+  /** 근거 숫자가 기준을 넘은 정도(0~1, STRENGTH_FULL_AT). 클수록 강한 패턴 */
   strength: number
   todo: Todo
   /** 종목 정체일 때 그래프에 쓸 종목 */
@@ -330,9 +353,8 @@ const avgOrNull = (xs: number[]) => (xs.length > 0 ? Math.round(sum(xs) / xs.len
 const percentOf = (part: number, whole: number) => (whole > 0 ? Math.round((part / whole) * 100) : null)
 const emptySlots = (): SlotValues => ({ 아침: 0, 점심: 0, 저녁: 0, 간식: 0 })
 
-/** 기준보다 클수록 나쁜 값 / 작을수록 나쁜 값이 기준을 넘은 정도 */
-const above = (value: number, limit: number) => round2((value - limit) / limit)
-const below = (value: number, limit: number) => round2((limit - value) / limit)
+/** 판정 기준(limit)이면 0, full 이상이면 1. full이 limit보다 작으면 "작을수록 나쁜 값"이다 */
+export const strengthOf = (value: number, limit: number, full: number) => round2(Math.min(1, Math.max(0, (value - limit) / (full - limit))))
 
 /** 앞에서부터 길이 제한에 맞는 첫 문장. 마지막 후보는 항상 짧은 문장을 넣는다 */
 const fitTodo = (candidates: string[]) => candidates.find((t) => t.length <= INTERVAL_RULES.todoMaxLength) ?? candidates.at(-1)!
@@ -715,7 +737,7 @@ export function findDietPatterns(d: DietAnalysis, target: NutritionTarget | null
         headline,
         { label: '주말 하루 권장 상한', value: limit, unit: 'kcal' },
       ],
-      strength: above(((weekendAvg - weekdayAvg) / weekdayAvg) * 100, INTERVAL_RULES.weekendOverPercent),
+      strength: strengthOf(((weekendAvg - weekdayAvg) / weekdayAvg) * 100, INTERVAL_RULES.weekendOverPercent, STRENGTH_FULL_AT.weekendOverPercent),
       todo: food
         ? {
             text: fitTodo([
@@ -743,7 +765,7 @@ export function findDietPatterns(d: DietAnalysis, target: NutritionTarget | null
       chart: 'mealShare',
       headline,
       evidence: [headline, { label: '목표 비중', value: aim, unit: '%' }],
-      strength: above(share, INTERVAL_RULES.eveningSharePercent),
+      strength: strengthOf(share, INTERVAL_RULES.eveningSharePercent, STRENGTH_FULL_AT.eveningSharePercent),
       todo: {
         text: fitTodo([...(food ? [`저녁·간식 ${food.name} 줄이기`, `${food.name} 줄이기`] : []), '저녁·간식 한 가지 줄이기']),
         current: share,
@@ -764,7 +786,7 @@ export function findDietPatterns(d: DietAnalysis, target: NutritionTarget | null
       chart: 'proteinByMeal',
       headline,
       evidence: [{ label: '하루 평균 단백질', value: p.average, unit: 'g' }, headline],
-      strength: below((p.average / p.target) * 100, INTERVAL_RULES.proteinLowPercent),
+      strength: strengthOf((p.average / p.target) * 100, INTERVAL_RULES.proteinLowPercent, STRENGTH_FULL_AT.proteinPercent),
       todo: { text: `단백질을 하루 ${missing}g 더 먹기`, current: p.average, target: p.target, unit: 'g' },
     })
   }
@@ -788,7 +810,7 @@ export function findDietPatterns(d: DietAnalysis, target: NutritionTarget | null
         { label: '하루 평균', value: d.avgCalories, unit: 'kcal' },
         { label: '하루 권장 최소', value: min, unit: 'kcal' },
       ],
-      strength: above((d.underDays / d.loggedDays) * 100, INTERVAL_RULES.underEatDaysPercent),
+      strength: strengthOf((d.underDays / d.loggedDays) * 100, INTERVAL_RULES.underEatDaysPercent, STRENGTH_FULL_AT.underEatDaysPercent),
       todo: { text: '하루 한 끼 더 챙겨 먹기', current: d.mealsPerDay ?? 0, target: round1((d.mealsPerDay ?? 0) + 1), unit: '끼/일' },
     })
   }
@@ -825,7 +847,7 @@ export function findWorkoutPatterns(w: WorkoutAnalysis): Pattern[] {
       chart: 'weeklySessions',
       headline,
       evidence: [headline, { label: '기간 안 운동', value: w.sessions, unit: '회' }],
-      strength: below((w.sessions / w.periodDays) * 7, INTERVAL_RULES.minSessionsPerWeek),
+      strength: strengthOf((w.sessions / w.periodDays) * 7, INTERVAL_RULES.minSessionsPerWeek, STRENGTH_FULL_AT.sessionsPerWeek),
       todo: { text: `주 ${INTERVAL_RULES.minSessionsPerWeek}회 이상 운동하기`, current: w.perWeek, target: INTERVAL_RULES.minSessionsPerWeek, unit: '회/주' },
     })
   }
@@ -849,7 +871,7 @@ export function findWorkoutPatterns(w: WorkoutAnalysis): Pattern[] {
       exerciseId: e.exerciseId,
       headline,
       evidence: [{ label: '최고 무게', value: last.kg, unit: 'kg' }, { label: '그때 횟수', value: last.reps, unit: '회' }, headline],
-      strength: above(same, INTERVAL_RULES.stagnantWeeks),
+      strength: strengthOf(same, INTERVAL_RULES.stagnantWeeks, STRENGTH_FULL_AT.stagnantWeeks),
       todo: {
         text: fitTodo([e.name, shortExerciseName(e.name)].map((n) => `${n} ${kg}kg × ${reps}회 도전`).concat(`${kg}kg × ${reps}회 도전`)),
         current: last.kg,
@@ -875,7 +897,7 @@ export function findWorkoutPatterns(w: WorkoutAnalysis): Pattern[] {
         headline,
         ...(w.unknownGroupSets > 0 ? [{ label: '부위를 몰라 뺀 세트', value: w.unknownGroupSets, unit: '세트' }] : []),
       ],
-      strength: below((w.lowerSets / w.upperSets) * 100, INTERVAL_RULES.lowerToUpperPercent),
+      strength: strengthOf((w.lowerSets / w.upperSets) * 100, INTERVAL_RULES.lowerToUpperPercent, STRENGTH_FULL_AT.lowerToUpperPercent),
       todo: { ...splitSets(w.lowerExercises, extra), current: round1(perWeek(w.lowerSets)), target: round1(perWeek(w.lowerSets) + extra), unit: '세트/주' },
     })
   }
@@ -888,7 +910,7 @@ export function findWorkoutPatterns(w: WorkoutAnalysis): Pattern[] {
       chart: 'restDays',
       headline,
       evidence: [headline],
-      strength: above(w.longestRestDays, INTERVAL_RULES.longGapDays),
+      strength: strengthOf(w.longestRestDays, INTERVAL_RULES.longGapDays, STRENGTH_FULL_AT.longGapDays),
       todo: { text: `연속 휴식은 ${INTERVAL_RULES.todoMaxRestDays}일 이하로`, current: w.longestRestDays, target: INTERVAL_RULES.todoMaxRestDays, unit: '일' },
     })
   }

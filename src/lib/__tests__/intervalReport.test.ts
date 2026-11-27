@@ -14,6 +14,7 @@ import {
   pickFeedback,
   resolveGoal,
   selectIntervals,
+  strengthOf,
   type Indicator,
   type IndicatorId,
   type IntervalInput,
@@ -281,10 +282,37 @@ describe('식단 패턴', () => {
     expect(skew(1500, '간식').todo).toMatchObject({ text: '저녁·간식 떡볶이 줄이기', food: '떡볶이' })
     expect(ids(findDietPatterns(make(950), TARGET))).not.toContain('evening_skew')
   })
-  it('강도는 기준을 넘은 정도, 핵심 숫자는 제목용', () => {
+  it('강도는 기준(0)에서 상한(1)까지, 핵심 숫자는 제목용', () => {
     const at = (weekend: number) => findDietPatterns(diet(weekendDiet(weekend)), TARGET).find((p) => p.id === 'weekend_overeating')!
     expect(at(1800)).toMatchObject({ strength: 0, headline: { value: 20, unit: '%' } })
-    expect(at(2100)).toMatchObject({ strength: 1, headline: { value: 40, unit: '%' } })
+    expect(at(2100)).toMatchObject({ strength: 0.5, headline: { value: 40, unit: '%' } })
+    expect(at(2400)).toMatchObject({ strength: 1, headline: { value: 60, unit: '%' } })
+    expect(at(3600).strength).toBe(1) // 상한을 넘어도 1
+  })
+  it('강도 정규화: 모든 패턴이 0~1이고, 단백질이 많이 모자라면 주말 과식보다 강할 수 있다', () => {
+    expect(strengthOf(20, 20, 60)).toBe(0)
+    expect(strengthOf(40, 20, 60)).toBe(0.5)
+    expect(strengthOf(99, 20, 60)).toBe(1)
+    // 작을수록 나쁜 값(full < limit)
+    expect(strengthOf(65, 80, 50)).toBe(0.5)
+    expect(strengthOf(10, 80, 50)).toBe(1)
+    expect(strengthOf(90, 80, 50)).toBe(0)
+    // 주말이 평일보다 40% 많음(0.5) vs 단백질 목표의 56%(0.8)
+    const patterns = findDietPatterns(
+      diet(everyDay((d) => (d % 7 >= 5 ? [meal(d, 2100, { protein: 56 })] : [meal(d, 1500, { protein: 56 })]))),
+      TARGET,
+    )
+    const of = (id: PatternId) => patterns.find((p) => p.id === id)!.strength
+    expect([of('weekend_overeating'), of('protein_low')]).toEqual([0.5, 0.8])
+    expect(pickFeedback('body_shape', 'increase', [{ id: 'fat', label: '', status: 'good' }], patterns)[0]!.pattern.id).toBe('protein_low')
+  })
+  it('시연 데이터 마지막 구간: 목표 단백질 130g·167g에서는 주말 과식과 하체 부족이 뽑힌다', () => {
+    const s = buildSeedData(day(30), { targetKcal: 1940 })
+    for (const protein of [130, 167]) {
+      const [latest] = buildIntervalReport({ goal: 'fat_loss', ...s, target: { ...TARGET, calories: 1940, protein } }).intervals
+      expect(latest!.feedback.map((f) => f.pattern.id)).toEqual(['weekend_overeating', 'lower_body_imbalance'])
+      for (const p of latest!.patterns) expect(p.strength >= 0 && p.strength <= 1, p.id).toBe(true)
+    }
   })
   it('단백질 부족: 목표의 80% 미만, 할 일은 부족분 g', () => {
     const at = (g: number) => findDietPatterns(diet(everyDay((d) => [meal(d, 1900, { protein: g })])), TARGET)

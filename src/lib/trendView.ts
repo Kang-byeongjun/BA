@@ -8,12 +8,14 @@ import {
   type Feedback,
   type IntervalAnalysis,
   type MetricResult,
+  type Pattern,
   type PatternId,
 } from './intervalReport'
 
 /**
  * trendView — 리포트 "변화 추이" 화면에 보여줄 문장과 그래프 데이터를 구간 분석 결과로 만든다.
  * 문장은 모두 이 파일의 틀(템플릿)에 숫자를 넣은 것이고 AI를 부르지 않는다. React를 쓰지 않는 순수 함수다.
+ * 피드백 카드는 제목이 "그래서 무슨 뜻인지", 설명이 근거 숫자(앱이 계산한 해석용 숫자 포함)다.
  */
 
 export const TREND_COLORS = {
@@ -29,6 +31,9 @@ export const TREND_COLORS = {
 } as const
 
 export const TITLE_MAX_LENGTH = 30
+export const DESCRIPTION_MAX_LENGTH = 40
+/** 하체가 상체의 이 % 미만이면 "많이" 모자란다고 말한다(패턴 판정 기준은 INTERVAL_RULES) */
+const LOWER_FAR_BELOW_PERCENT = 50
 /** 단백질 "끼니당 권장" = 하루 목표 ÷ 이 끼니 수(아침·점심·저녁) */
 export const PROTEIN_MEALS_PER_DAY = 3
 /** 주별 그래프에 그리는 최대 주 수(구간이 길면 최근 것만) */
@@ -287,44 +292,100 @@ function weeklySessionsChart(i: IntervalAnalysis): BarChartModel {
   }
 }
 
-/** 앞에서부터 길이 제한에 맞는 첫 제목 */
-const fitTitle = (candidates: string[]) => candidates.find((t) => t.length <= TITLE_MAX_LENGTH) ?? candidates.at(-1)!
+/** 앞에서부터 길이 제한에 맞는 첫 문장. 마지막 후보는 항상 짧은 문장을 넣는다 */
+const fit = (max: number, candidates: string[]) => candidates.find((t) => t.length <= max) ?? candidates.at(-1)!
 
-function textOf(i: IntervalAnalysis, f: Feedback): { title: string; description: string } {
+/** 마지막 글자의 받침에 따라 조사를 붙인다("스쿼트가", "풀업이") */
+function withParticle(word: string, afterBatchim: string, otherwise: string): string {
+  const code = word.charCodeAt(word.length - 1)
+  const hasBatchim = code >= 0xac00 && code <= 0xd7a3 && (code - 0xac00) % 28 !== 0
+  return `${word}${hasBatchim ? afterBatchim : otherwise}`
+}
+
+type Text = { title: string; description: string }
+
+/** 주말 과식: 목표를 넘긴 양과 평일에 아낀 양을 비교해, 말할 수 있는 만큼만 말한다 */
+function weekendText(d: IntervalAnalysis['diet'], targetKcal: number | null): Text {
+  const weekend = d.weekendAvg ?? 0
+  const weekday = d.weekdayAvg ?? 0
+  const overDay = targetKcal === null ? 0 : weekend - targetKcal
+  const averages = `하루 평균 주말 ${kcal(weekend)} · 평일 ${kcal(weekday)}kcal`
+  // 목표가 없거나 주말도 목표 안
+  if (targetKcal === null || overDay <= 0) return { title: '주말에 식사량이 부쩍 늘어요', description: averages }
+  const overWeek = overDay * 2
+  const savedWeek = (targetKcal - weekday) * 5
+  // 평일에도 아끼지 않았으면 "되돌린다"고 말할 수 없다
+  if (savedWeek <= 0) return { title: '주말에 목표를 넘기는 폭이 커요', description: `주말 하루 평균이 목표보다 ${kcal(overDay)}kcal 많아요` }
+  return {
+    title: overWeek >= savedWeek ? '주말 이틀이 평일 노력을 되돌려요' : '주말이 평일에 아낀 양을 일부 되돌려요',
+    description: fit(DESCRIPTION_MAX_LENGTH, [`목표보다 주말 하루 ${kcal(overDay)}kcal, 일주일 ${kcal(overWeek)}kcal 초과`, averages]),
+  }
+}
+
+function textOf(i: IntervalAnalysis, f: Feedback, target: NutritionTarget | null): Text {
   const { diet: d, workout: w } = i
   const p = f.pattern
   const value = p.headline.value
+  const targetKcal = target && target.calories > 0 ? target.calories : null
   switch (p.id) {
     case 'weekend_overeating':
-      return { title: `주말에 평일보다 ${value}% 더 먹었어요`, description: `주말 평균 ${kcal(d.weekendAvg ?? 0)} · 평일 ${kcal(d.weekdayAvg ?? 0)}kcal` }
-    case 'evening_skew':
-      return { title: `칼로리의 ${value}%가 저녁·간식이에요`, description: `저녁·간식 비중 ${p.todo.target}%가 목표예요` }
-    case 'protein_low':
-      return { title: `단백질이 목표의 ${value}%예요`, description: `하루 평균 ${p.todo.current}g, 목표는 ${p.todo.target}g이에요` }
-    case 'under_eating':
+      return weekendText(d, targetKcal)
+    case 'evening_skew': {
+      // 목표 비중보다 많이 먹은 칼로리(비중이 반올림 값이라 10kcal 단위의 "약")
+      const excess = Math.round(((d.avgCalories ?? 0) * (value - p.todo.target)) / 1000) * 10
       return {
-        title: `${value}일은 목표의 ${INTERVAL_RULES.underEatPercent}%도 못 먹었어요`,
-        description: `기록한 ${d.loggedDays}일의 하루 평균 ${kcal(d.avgCalories ?? 0)}kcal`,
+        title: '하루 식사가 저녁·간식에 몰려 있어요',
+        description: fit(DESCRIPTION_MAX_LENGTH, [
+          ...(excess > 0 ? [`저녁·간식 ${value}%, 목표 비중보다 하루 약 ${kcal(excess)}kcal 많아요`] : []),
+          `하루 칼로리의 ${value}%가 저녁·간식이에요`,
+        ]),
       }
-    case 'workout_shortage':
-      return { title: `운동이 주 ${value}회였어요`, description: `${i.period.days}일 동안 ${w.sessions}회 운동했어요` }
+    }
+    case 'protein_low': {
+      const missing = Math.round(p.todo.target - p.todo.current)
+      return {
+        title: '끼니마다 단백질을 더하면 목표예요',
+        description: `하루 ${missing}g 모자라요. 끼니당 ${Math.round(missing / PROTEIN_MEALS_PER_DAY)}g씩이에요`,
+      }
+    }
+    case 'under_eating': {
+      const gap = targetKcal === null || d.avgCalories === null ? 0 : targetKcal - d.avgCalories
+      return {
+        title: '적게 먹은 날이 절반 이상이에요',
+        description: gap > 0 ? `하루 평균이 목표보다 ${kcal(gap)}kcal 적어요` : `${d.loggedDays}일 중 ${value}일은 목표의 ${INTERVAL_RULES.underEatPercent}%도 안 돼요`,
+      }
+    }
+    case 'workout_shortage': {
+      const goal = p.todo.target
+      const missing = Math.round((goal * i.period.days) / 7) - w.sessions
+      return {
+        title: '운동하는 날이 드문드문해요',
+        description: missing > 0 ? `주 ${goal}회 목표보다 이번 구간에 ${missing}회 적어요` : `주당 ${value}회로, 목표 주 ${goal}회에 못 미쳐요`,
+      }
+    }
     case 'long_gap':
-      return { title: `${value}일 연속으로 쉬었어요`, description: `연속 휴식은 ${p.todo.target}일 이하가 좋아요` }
+      return { title: '긴 휴식 기간이 있었어요', description: `${value}일 연속 쉬었어요. 권장은 ${p.todo.target}일 이하예요` }
     case 'lower_body_imbalance':
       return {
-        title: `하체 세트가 상체의 ${value}%예요`,
-        description: `상체 합계 주 ${setsPerWeek(w.upperSets, w.periodDays)}세트, 하체 주 ${setsPerWeek(w.lowerSets, w.periodDays)}세트`,
+        title: value < LOWER_FAR_BELOW_PERCENT ? '상체에 비해 하체가 많이 쉬고 있어요' : '상체에 비해 하체가 적은 편이에요',
+        description: `하체 주당 ${setsPerWeek(w.lowerSets, w.periodDays)}세트, 상체의 ${value}%예요`,
       }
     case 'exercise_stagnation': {
       const id = p.exerciseId ?? ''
       const name = w.topExercises.find((e) => e.exerciseId === id)?.name ?? '대표 종목'
       const kg = p.todo.current
-      const title = fitTitle([name, shortExerciseName(name), '대표 종목'].map((n) => `${n} ${value}주째 ${kg}kg 그대로`))
       const other = risingExercise(i, id)
       const range = other ? recordedKg(other) : []
+      const gain = other ? Math.round((range.at(-1)! - range[0]!) * 10) / 10 : 0
       return {
-        title,
-        description: other ? `${shortExerciseName(other.name)}는 ${range[0]}→${range.at(-1)}kg로 늘었어요` : '최고 무게와 횟수가 늘지 않았어요',
+        title: fit(
+          TITLE_MAX_LENGTH,
+          [name, shortExerciseName(name), '대표 종목'].map((n) => `${withParticle(n, '이', '가')} 같은 자리에 머물러 있어요`),
+        ),
+        description: fit(DESCRIPTION_MAX_LENGTH, [
+          ...(other ? [`${kg}kg ${value}주째 그대로, ${withParticle(shortExerciseName(other.name), '은', '는')} ${gain}kg 늘었어요`] : []),
+          `최고 무게 ${kg}kg이 ${value}주째 그대로예요`,
+        ]),
       }
     }
   }
@@ -344,10 +405,43 @@ export function buildFeedbackView(i: IntervalAnalysis, f: Feedback, target: Nutr
     id: f.pattern.id,
     badge: f.domain === 'diet' ? '식단' : '운동',
     toneLabel: f.tone === 'improve' ? '더 빨라질 수 있어요' : '보완할 점',
-    ...textOf(i, f),
+    ...textOf(i, f, target),
     chart: charts[kind](),
     foods: kind === 'stackedMeals' ? i.diet.topEveningFoodsOnOverDays.map((x) => `${x.name} ${x.count}회`) : [],
   }
+}
+
+function patternLine(i: IntervalAnalysis, p: Pattern): string {
+  const { diet: d, workout: w } = i
+  const value = p.headline.value
+  switch (p.id) {
+    case 'weekend_overeating':
+      return `주말 하루 ${kcal(d.weekendAvg ?? 0)}kcal · 평일보다 ${value}% 많음`
+    case 'evening_skew':
+      return `저녁·간식이 칼로리의 ${value}%`
+    case 'protein_low':
+      return `단백질 하루 ${p.todo.current}g · 목표의 ${value}%`
+    case 'under_eating':
+      return `목표의 ${INTERVAL_RULES.underEatPercent}% 미만인 날 ${value}일 · 기록 ${d.loggedDays}일`
+    case 'workout_shortage':
+      return `운동 주 ${value}회 · 목표 주 ${p.todo.target}회`
+    case 'long_gap':
+      return `가장 긴 휴식 ${value}일 연속`
+    case 'lower_body_imbalance':
+      return `하체 주 ${setsPerWeek(w.lowerSets, w.periodDays)}세트 · 상체의 ${value}%`
+    case 'exercise_stagnation': {
+      const name = w.topExercises.find((e) => e.exerciseId === p.exerciseId)?.name ?? '대표 종목'
+      return `${shortExerciseName(name)} ${p.todo.current}kg · ${value}주째 그대로`
+    }
+  }
+}
+
+/** 찾았지만 피드백 카드로 뽑히지 않은 패턴("그 밖에 보이는 점")을 한 줄씩 */
+export function otherPatternLines(i: IntervalAnalysis): { key: string; text: string }[] {
+  const picked = new Set(i.feedback.map((f) => f.pattern))
+  return i.patterns
+    .filter((p) => !picked.has(p))
+    .map((p) => ({ key: `${p.id}:${p.exerciseId ?? ''}`, text: patternLine(i, p) }))
 }
 
 /** 지난 구간에 피드백이 하나도 없는 이유 한 줄 */
