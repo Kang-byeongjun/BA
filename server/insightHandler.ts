@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { InsightRequest } from '../shared/coaching.js'
+import type { Gap, InsightRequest } from '../shared/coaching.js'
 import { AnalysisError } from '../shared/errors.js'
 import { createAiClient, describeCause, type AiClient } from './aiClient.js'
 import type { Env } from './config.js'
@@ -44,7 +44,7 @@ A gap means the user is below the goal, so never say it was achieved.
 Return {"lines": [...]} with exactly one string per gap, in the same order as the gaps.
 </output_rules>`
 
-const GAP_UNIT_NOTE: Record<string, string> = {
+const GAP_NOTE: Record<Gap['id'], string> = {
   muscle: '0보다 작으면 줄어든 것',
   result: '목표 방향이 아님',
   protein: '목표 100% 대비',
@@ -54,8 +54,14 @@ const GAP_UNIT_NOTE: Record<string, string> = {
   inbody: '측정 횟수',
 }
 
+/** 'inbody'는 두 가지다. 단위 '회' = 측정 횟수, 단위 '일' = 골격근 비교에 필요한 측정 간격 안내 */
+const gapNote = (g: Gap) =>
+  g.id === 'inbody' && g.unit === '일'
+    ? '간격 안내: 골격근 변화는 28일 이상 떨어진 두 측정으로 판단함. 현재 = 지금까지 잰 가장 긴 측정 간격. 측정 횟수나 식단·운동이 모자란다는 뜻이 아니며, 간격이 채워진 뒤 다시 재면 됨'
+    : GAP_NOTE[g.id]
+
 export function buildInsightPrompt(r: InsightRequest): string {
-  const gaps = r.gaps.map((g, i) => `${i + 1}. ${g.label}: 현재 ${g.current}${g.unit} / 목표 ${g.target}${g.unit} / 차이 ${Math.round(Math.abs(g.target - g.current) * 10) / 10}${g.unit} (${GAP_UNIT_NOTE[g.id]})`)
+  const gaps = r.gaps.map((g, i) => `${i + 1}. ${g.label}: 현재 ${g.current}${g.unit} / 목표 ${g.target}${g.unit} / 차이 ${Math.round(Math.abs(g.target - g.current) * 10) / 10}${g.unit} (${gapNote(g)})`)
   return [`운동 목표: ${r.goalLabel}`, `판정(앱이 정함): ${r.verdict}`, '보완할 점:', ...gaps].join('\n')
 }
 

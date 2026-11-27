@@ -7,6 +7,7 @@ import WeekGlanceCard from '../dashboard/WeekGlanceCard'
 import InBodyTrend from '../profile/InBodyTrend'
 import DashboardWorkoutSection from '../workout/DashboardWorkoutSection'
 import InBodyResult from '../profile/InBodyResult'
+import TrendReport from '../trend/TrendReport'
 import DashboardPreviewModal from './DashboardPreviewModal'
 import AiCoachingCard from './AiCoachingCard'
 import MealWeekTrend from './MealWeekTrend'
@@ -59,7 +60,16 @@ export default function DashboardScreen() {
         )}
         {tab === 'inbody' &&
           (hasInBody ? <InBodyResult history={inBodyHistory} /> : <NoInBodyRecord />)}
-        {tab === 'trend' && (hasInBody ? <InBodyTrend history={inBodyHistory} /> : <NoInBodyRecord />)}
+        {tab === 'trend' && (
+          <>
+            <TrendReport />
+            {hasInBody && (
+              <CollapsibleCard title="인바디 상세 추이·측정 기록" summary={`측정 ${inBodyHistory.length}회 · 기록 추가·삭제`}>
+                <InBodyTrend history={inBodyHistory} />
+              </CollapsibleCard>
+            )}
+          </>
+        )}
       </div>
 
       {previewOpen && <DashboardPreviewModal onClose={closePreview} />}

@@ -6,6 +6,7 @@ import type { MuscleGroup } from '../../server/engine/types'
 import type { InBodyHistoryEntry, Meal, MealSlot, NutritionTarget, UserProfile, Workout } from '../types'
 import { classifyBodyType, type InBodyStandardRange } from './inBodyBodyType'
 import { toCorrectedStandardRange } from './inBodyRangeCorrection'
+import { EXERCISE_CATALOG } from './exerciseCatalog'
 import { sortInBodyHistory } from './inBodyHistoryOrder'
 import { loadFromStorage } from './storage'
 import type { RecordedExercise, WorkoutSessionRecord } from './workoutHistory'
@@ -44,9 +45,9 @@ export const SEED_HEIGHT_CM = 176
 export const SEED_AGE = 27
 const SEED_INBODY = [
   { weeksAgo: 8, weight: 112.4, muscle: 41.2, fat: 38.1 },
-  { weeksAgo: 6, weight: 110.2, muscle: 41.6, fat: 36.4 },
-  { weeksAgo: 4, weight: 108.5, muscle: 42.0, fat: 35.0 },
-  { weeksAgo: 1, weight: 107.1, muscle: 42.3, fat: 33.3 },
+  { weeksAgo: 6, weight: 110.2, muscle: 41.8, fat: 36.2 },
+  { weeksAgo: 4, weight: 108.5, muscle: 42.2, fat: 35.1 },
+  { weeksAgo: 1, weight: 107.1, muscle: 42.3, fat: 33.8 },
 ] as const
 
 // 결과지 막대의 "표준 대비 %" 범위와 그에 해당하는 kg 범위(176cm 남성 기준). 서버가 내려주는
@@ -105,7 +106,9 @@ export function findProfileMismatch(profile: UserProfile | null, inBody: InBodyH
 }
 
 // ---------------------------------------------------------------------------
-// 운동 기록: 최근 3주, 주 3회 수준(9회), 오늘은 없음
+// 운동 기록: 최근 49일, 19회, 오늘은 없음
+// 마지막 인바디 구간(4주 전~1주 전)은 벤치프레스는 늘고, 스쿼트는 60kg×10회 그대로, 하체 세트가 적다.
+// 무게는 체중 107kg 초중급 남성 기준으로 종목마다 날짜별로 정한다(덤벨은 한 손 무게).
 // ---------------------------------------------------------------------------
 
 export interface SeedRoutineExercise {
@@ -128,21 +131,22 @@ const FALLBACK_ROUTINE: SeedRoutineDay[] = [
     label: '가슴·어깨·팔',
     exercises: [
       { id: 'C03', name: '바벨 벤치 프레스', group: 'CHEST' },
-      { id: 'C04', name: '인클라인 덤벨 프레스', group: 'CHEST' },
-      { id: 'S02', name: '덤벨 숄더 프레스', group: 'SHOULDER' },
-      { id: 'S04', name: '덤벨 사이드 레터럴 레이즈', group: 'SHOULDER' },
-      { id: 'A04', name: '케이블 트라이셉 푸시다운', group: 'ARM' },
+      { id: 'C04', name: '인클라인 덤벨 프레스', group: 'CHEST', sets: 4, reps: 12 },
+      { id: 'C06', name: '펙덱 플라이', group: 'CHEST', sets: 4, reps: 12 },
+      { id: 'S02', name: '덤벨 숄더 프레스', group: 'SHOULDER', sets: 4, reps: 12 },
+      { id: 'S04', name: '덤벨 사이드 레터럴 레이즈', group: 'SHOULDER', sets: 4, reps: 15 },
+      { id: 'A04', name: '케이블 트라이셉 푸시다운', group: 'ARM', sets: 4, reps: 12 },
     ],
   },
   {
     day: 2,
     label: '등·팔',
     exercises: [
-      { id: 'B01', name: '랫 풀다운', group: 'BACK' },
-      { id: 'B02', name: '시티드 케이블 로우', group: 'BACK' },
-      { id: 'B04', name: '원암 덤벨 로우', group: 'BACK' },
-      { id: 'S05', name: '케이블 페이스 풀', group: 'SHOULDER' },
-      { id: 'A01', name: '덤벨 바이셉 컬', group: 'ARM' },
+      { id: 'B01', name: '랫 풀다운', group: 'BACK', sets: 4, reps: 12 },
+      { id: 'B02', name: '시티드 케이블 로우', group: 'BACK', sets: 4, reps: 12 },
+      { id: 'B04', name: '원암 덤벨 로우', group: 'BACK', sets: 4, reps: 10 },
+      { id: 'S05', name: '케이블 페이스 풀', group: 'SHOULDER', sets: 4, reps: 15 },
+      { id: 'A01', name: '덤벨 바이셉 컬', group: 'ARM', sets: 3, reps: 12 },
     ],
   },
   {
@@ -187,35 +191,102 @@ export function readRoutineDays(): SeedRoutineDay[] {
   return FALLBACK_ROUTINE
 }
 
-const BASE_KG: Partial<Record<MuscleGroup, number>> = { CHEST: 55, SHOULDER: 22, BACK: 50, ARM: 14, LEGS: 90 }
-const SESSION_DAYS_AGO = [20, 18, 16, 13, 11, 9, 6, 4, 2] // 모두 어제 이전(오늘 없음)
-const SESSION_MINUTES = [52, 48, 57, 45, 60, 50, 55, 47, 58]
-const ROUND_KG = 2.5
+/** 시연 기록에 넣는 부위(복근·유산소는 볼륨이 없어 뺀다) */
+const SEED_GROUPS: MuscleGroup[] = ['CHEST', 'SHOULDER', 'BACK', 'ARM', 'LEGS']
+// 모두 어제 이전(오늘 없음). 앞의 7회는 지난 구간, 뒤의 9회(20일 전~)는 진단 카드의 "최근 3주"
+const SESSION_DAYS_AGO = [48, 45, 41, 38, 36, 34, 30, 27, 25, 23, 20, 18, 16, 13, 11, 9, 6, 4, 2]
+const SESSION_MINUTES = [50, 55, 47, 58, 49, 53, 46, 54, 51, 56, 52, 48, 57, 45, 60, 50, 55, 47, 58]
+/** 루틴 일차를 맞추는 기준: 이 순번(27일 전)의 운동이 루틴 1일차 */
+const FIRST_DAY_INDEX = SESSION_DAYS_AGO.indexOf(27)
+/** 마지막 인바디 구간이 시작되는 날(4주 전). 이때부터 하체를 줄인다 */
+const LAST_INTERVAL_FROM = 28
+
+const BENCH: SeedRoutineExercise = { id: 'C03', name: '바벨 벤치 프레스', group: 'CHEST' }
+const SQUAT: SeedRoutineExercise = { id: 'L02', name: '바벨 스쿼트', group: 'LEGS' }
+/** 루틴에 없어도 이날에는 벤치프레스·스쿼트를 넣는다(주 1회씩) */
+const BENCH_DAYS_AGO = [27, 20, 13, 6]
+const SQUAT_DAYS_AGO = [23, 16, 9, 2]
+/** 대표 종목(벤치·스쿼트)은 5세트: 운동 분석의 "대표 종목"으로 잡히게 */
+const MAIN_SETS = 5
+const MAIN_REPS = 10
+/** 7일 단위의 순번: 43일 전 이상 = 0 … 8~14일 전 = 5, 최근 7일 = 6 */
+const weekStep = (daysAgo: number) => Math.max(0, Math.min(6, 6 - Math.floor((daysAgo - 1) / 7)))
+/**
+ * 주차별 무게(kg, 순번 0~6). 벤치프레스는 마지막 구간에서 55→57.5→60으로 늘고, 스쿼트는 마지막 구간부터 60kg에서 멈춘다.
+ * 스쿼트 외의 종목은 3주 이상 같은 무게가 이어지지 않게 한다.
+ */
+const WEEKLY_KG: Record<string, number[]> = {
+  C03: [50, 50, 52.5, 55, 57.5, 60, 60],
+  C04: [18, 18, 18, 20, 20, 22, 22],
+  C06: [35, 35, 40, 40, 40, 45, 45],
+  S02: [14, 14, 14, 16, 16, 18, 18],
+  S04: [6, 6, 6, 7, 7, 8, 8],
+  A04: [22.5, 22.5, 22.5, 25, 25, 27.5, 27.5],
+  B01: [45, 45, 47.5, 50, 50, 52.5, 55],
+  B02: [40, 40, 42.5, 45, 45, 47.5, 50],
+  B04: [20, 20, 22, 22, 24, 24, 26],
+  S05: [17.5, 17.5, 17.5, 20, 20, 22.5, 22.5],
+  A01: [10, 10, 10, 11, 11, 12, 12],
+  L02: [50, 55, 55, 60, 60, 60, 60],
+  L01: [85, 90, 95, 100, 105, 110, 112.5],
+  L09: [40, 42.5, 45, 47.5, 50, 52.5, 55],
+  L08: [20, 22.5, 25, 27.5, 30, 32.5, 35],
+  L12: [35, 37.5, 40, 42.5, 45, 47.5, 50],
+}
+/** 표에 없는 종목(저장된 추천 루틴)은 기구별 시작 무게에서 2주마다 조금씩 올린다. 맨몸은 0kg */
+const EQUIPMENT_KG: Record<string, { start: number; step: number }> = {
+  덤벨: { start: 8, step: 2 },
+  케이블: { start: 17.5, step: 2.5 },
+  머신: { start: 30, step: 2.5 },
+  바벨: { start: 30, step: 2.5 },
+  맨몸: { start: 0, step: 0 },
+}
+const EQUIPMENT_OF = new Map(EXERCISE_CATALOG.map((e) => [e.id, e.equipment]))
+
+function seedKg(id: string, daysAgo: number): number {
+  const week = weekStep(daysAgo)
+  const table = WEEKLY_KG[id]
+  if (table) return table[week]!
+  const { start, step } = EQUIPMENT_KG[EQUIPMENT_OF.get(id) ?? ''] ?? { start: 20, step: 2.5 }
+  return start + step * Math.floor((week + 1) / 2)
+}
+
+/** 그날 할 종목. 마지막 구간부터는 스쿼트 하는 날에만 하체(스쿼트 + 1종목)를 한다 */
+function pickExercises(day: SeedRoutineDay, i: number, daysAgo: number): SeedRoutineExercise[] {
+  // 팔 운동은 하루에 하나만, 4번째 단위 운동(i % 4 === 3)에서는 빼서 다른 부위보다 약간 적게 한다.
+  // 맨몸·유산소는 볼륨이 없어 뺀다.
+  let armCount = 0
+  let picked = day.exercises.filter((e) => {
+    if (!SEED_GROUPS.includes(e.group)) return false
+    if (e.group === 'ARM') return i % 4 !== 3 && armCount++ === 0
+    return true
+  })
+  if (BENCH_DAYS_AGO.includes(daysAgo) && !picked.some((e) => e.id === BENCH.id)) picked = [...picked, BENCH]
+  if (daysAgo > LAST_INTERVAL_FROM) return picked
+
+  if (SQUAT_DAYS_AGO.includes(daysAgo)) {
+    const squat = picked.find((e) => e.id === SQUAT.id)
+    const other = picked.find((e) => e.group === 'LEGS' && e.id !== SQUAT.id)
+    const rest = picked.filter((e) => e.group !== 'LEGS' || e === other)
+    return squat ? picked.filter((e) => e.group !== 'LEGS' || e === squat || e === other) : [...rest, SQUAT]
+  }
+  const upper = picked.filter((e) => e.group !== 'LEGS')
+  return upper.length > 0 ? upper : picked
+}
 
 function buildWorkouts(now: number, routine: SeedRoutineDay[]): { workouts: Workout[]; history: WorkoutSessionRecord[] } {
   const workouts: Workout[] = []
   const history: WorkoutSessionRecord[] = []
   SESSION_DAYS_AGO.forEach((daysAgo, i) => {
-    const day = routine[i % routine.length]!
-    // 팔 운동은 하루에 하나만, 4번째 단위 운동(i % 4 === 3)에서는 빼서 다른 부위보다 약간 적게 한다.
-    // 맨몸·유산소는 볼륨이 없어 뺀다.
-    let armCount = 0
-    const picked = day.exercises.filter((e) => {
-      if (BASE_KG[e.group] === undefined) return false
-      if (e.group === 'ARM') return i % 4 !== 3 && armCount++ === 0
-      return true
-    })
-    const perGroup: Partial<Record<MuscleGroup, number>> = {}
-    const drafts = picked.map((e) => {
-      const n = (perGroup[e.group] = (perGroup[e.group] ?? 0) + 1)
-      const base = BASE_KG[e.group]! * (1 - 0.12 * (n - 1)) * (1 + 0.015 * i)
-      return { e, base, sets: Math.min(4, Math.max(3, e.sets ?? 3)), reps: Math.min(12, Math.max(8, e.reps ?? 10)) }
-    })
-    const baseVolume = drafts.reduce((s, d) => s + d.base * d.sets * d.reps, 0)
-    const target = 5600 + ((i * 937) % 2800) // 5,600~8,400kg
-    const factor = target / baseVolume
-    const exercises: RecordedExercise[] = drafts.map(({ e, base, sets, reps }) => {
-      const kg = Math.max(ROUND_KG, Math.round((base * factor) / ROUND_KG) * ROUND_KG)
+    const n = routine.length
+    const day = routine[(((i - FIRST_DAY_INDEX) % n) + n) % n]!
+    const exercises: RecordedExercise[] = pickExercises(day, i, daysAgo).map((e) => {
+      const main = e.id === BENCH.id || e.id === SQUAT.id
+      // 하체는 3세트. 마지막 구간부터 레그 프레스만 4세트(하체 날 볼륨이 너무 낮아지지 않게)
+      const legSets = e.id === 'L01' && daysAgo <= LAST_INTERVAL_FROM ? 4 : 3
+      const sets = main ? MAIN_SETS : e.group === 'LEGS' ? legSets : Math.min(4, Math.max(3, e.sets ?? 3))
+      const reps = main ? MAIN_REPS : Math.min(15, Math.max(8, e.reps ?? 10))
+      const kg = seedKg(e.id, daysAgo)
       return {
         exerciseId: e.id,
         name: e.name,
@@ -246,7 +317,10 @@ function buildWorkouts(now: number, routine: SeedRoutineDay[]): { workouts: Work
 }
 
 // ---------------------------------------------------------------------------
-// 식단 기록: 어제까지 7일, 하루 3~4끼, 오늘은 없음
+// 식단 기록: 어제까지 49일, 오늘은 없음
+// - 최근 7일: 하루 3~4끼(진단 카드용 달성률이 섞이게)
+// - 마지막 인바디 구간(4주 전~1주 전): 저녁이 크고, 주말에는 야식(치킨·맥주·라면·피자 등). 요일마다 칼로리가 다르다
+// - 그 전: 평범한 하루 3~4끼
 // ---------------------------------------------------------------------------
 
 interface FoodT {
@@ -333,6 +407,37 @@ const DAY_PERCENTS = [98, 72, 101, 118, 94, 52, 99]
 const SLOT_SHARE: Record<MealSlot, number> = { 아침: 0.25, 점심: 0.35, 저녁: 0.3, 간식: 0.1 }
 const SLOT_HOURS: Record<MealSlot, [number, number]> = { 아침: [8, 20], 점심: [12, 40], 저녁: [19, 0], 간식: [15, 30] }
 
+const CHICKEN: FoodT = { name: '후라이드 치킨', grams: 250, calories: 700, protein: 45, carbohydrates: 25, fat: 46, fiber: 1 }
+const BEER: FoodT = { name: '맥주', grams: 500, calories: 220, protein: 2, carbohydrates: 18, fat: 0, fiber: 0 }
+const PIZZA: FoodT = { name: '피자', grams: 300, calories: 800, protein: 32, carbohydrates: 90, fat: 34, fiber: 5 }
+const PORK_BELLY: FoodT = { name: '삼겹살', grams: 200, calories: 660, protein: 34, carbohydrates: 1, fat: 57, fiber: 0 }
+const JOKBAL: FoodT = { name: '족발', grams: 250, calories: 600, protein: 55, carbohydrates: 5, fat: 38, fiber: 0 }
+
+const dinner = (...foods: FoodT[]): MealT => ({ title: foods.map((f) => f.name).join(' + '), slot: '저녁', foods })
+const snack = (name: string, grams: number, calories: number, protein: number, carbohydrates: number, fat: number, fiber: number): MealT => ({
+  title: name,
+  slot: '간식',
+  foods: [{ name, grams, calories, protein, carbohydrates, fat, fiber }],
+})
+const SNACK_RAMEN = snack('라면', 120, 500, 10, 78, 17, 3)
+
+/**
+ * 마지막 구간의 주말 6일(오래된 것부터)의 저녁·간식. 자주 먹은 횟수가 서로 다르게:
+ * 맥주 4회 · 후라이드 치킨 3회 · 라면 2회 · 피자 1회(나머지는 1회씩)
+ */
+const WEEKEND_MENUS: [MealT, MealT][] = [
+  [dinner(CHICKEN, BEER), SNACK_RAMEN],
+  [dinner(PORK_BELLY, BEER), snack('아이스크림', 150, 300, 5, 34, 16, 0)],
+  [dinner(CHICKEN, BEER), snack('감자칩', 60, 320, 4, 32, 20, 2)],
+  [dinner(PIZZA), SNACK_RAMEN],
+  [dinner(CHICKEN), snack('치즈 케이크', 120, 390, 7, 32, 26, 1)],
+  [dinner(JOKBAL, BEER), snack('떡볶이', 250, 400, 8, 78, 6, 3)],
+]
+/** 마지막 구간의 요일별 하루 칼로리(일~토 순, Date.getDay()). 평일 1,600~1,900, 토·일 2,400~2,800 */
+const LAST_INTERVAL_KCAL = [2700, 1640, 1760, 1690, 1840, 1870, 2520]
+/** 같은 요일이라도 주마다 조금 다르게(구간의 1·2·3주차) */
+const WEEK_KCAL_OFFSET = [-30, 20, 10]
+
 function scaleMeal(t: MealT, kcal: number, id: string, timestamp: number): Meal {
   const baseKcal = t.foods.reduce((s, f) => s + f.calories, 0)
   const k = kcal / baseKcal
@@ -362,20 +467,58 @@ function scaleMeal(t: MealT, kcal: number, id: string, timestamp: number): Meal 
   }
 }
 
+export const SEED_MEAL_DAYS = 49
+/** 지난 구간(8일 전보다 오래되고 마지막 구간 전)의 하루 칼로리 % */
+const OLDER_PERCENTS = [96, 90, 102, 98, 88, 105, 94]
+
 function buildMeals(now: number, targetKcal: number): Meal[] {
   const meals: Meal[] = []
-  DAY_PERCENTS.forEach((percent, index) => {
-    const daysAgo = DAY_PERCENTS.length - index // 7 … 1(어제)
+  const add = (daysAgo: number, t: MealT, kcal: number, suffix: string, [h, m]: [number, number]) =>
+    meals.push(scaleMeal(t, kcal, `${SEED_ID_PREFIX}meal-${daysAgo}-${suffix}`, at(now, daysAgo, h, m)))
+  const pick = (slot: MealSlot, n: number) => MEAL_TEMPLATES[slot][n % MEAL_TEMPLATES[slot].length]!
+
+  /** 평범한 하루: 하루 3~4끼를 그날의 목표 %에 맞춘다 */
+  const normalDay = (daysAgo: number, index: number, percent: number) => {
     const slots: MealSlot[] = index % 2 === 0 ? ['아침', '점심', '저녁', '간식'] : ['아침', '점심', '저녁'] // 하루 3~4끼
     const shareSum = slots.reduce((s, sl) => s + SLOT_SHARE[sl], 0)
     for (const slot of slots) {
-      const pool = MEAL_TEMPLATES[slot]
-      const t = pool[(index + slots.indexOf(slot)) % pool.length]!
       const kcal = (targetKcal * (percent / 100) * SLOT_SHARE[slot]) / shareSum
-      const [h, m] = SLOT_HOURS[slot]
-      meals.push(scaleMeal(t, kcal, `${SEED_ID_PREFIX}meal-${daysAgo}-${slot}`, at(now, daysAgo, h, m)))
+      add(daysAgo, pick(slot, index + slots.indexOf(slot)), kcal, slot, SLOT_HOURS[slot])
     }
-  })
+  }
+
+  /**
+   * 마지막 구간의 하루. 요일은 실행일에 따라 달라지므로 날짜의 실제 요일로 정한다.
+   * 칼로리는 목표와 상관없이 요일별 값(LAST_INTERVAL_KCAL)을 쓴다.
+   */
+  let weekendCount = 0
+  const lastIntervalDay = (daysAgo: number) => {
+    const weekDay = new Date(at(now, daysAgo, 12)).getDay()
+    const kcal = LAST_INTERVAL_KCAL[weekDay]! + WEEK_KCAL_OFFSET[Math.floor((LAST_INTERVAL_FROM - daysAgo) / 7)]!
+    if (weekDay === 0 || weekDay === 6) {
+      // 주말: 대부분 저녁·간식
+      const [evening, late] = WEEKEND_MENUS[weekendCount++ % WEEKEND_MENUS.length]!
+      add(daysAgo, pick('점심', daysAgo), kcal * 0.28, '점심', SLOT_HOURS.점심)
+      add(daysAgo, evening, kcal * 0.5, '저녁', [19, 30])
+      add(daysAgo, late, kcal * 0.22, '간식', [22, 0])
+    } else {
+      // 평일: 저녁이 45%
+      add(daysAgo, pick('아침', daysAgo), kcal * 0.2, '아침', SLOT_HOURS.아침)
+      add(daysAgo, pick('점심', daysAgo + 1), kcal * 0.35, '점심', SLOT_HOURS.점심)
+      add(daysAgo, pick('저녁', daysAgo + 2), kcal * 0.45, '저녁', SLOT_HOURS.저녁)
+    }
+  }
+
+  for (let daysAgo = SEED_MEAL_DAYS; daysAgo >= 1; daysAgo--) {
+    if (daysAgo <= DAY_PERCENTS.length) {
+      const index = DAY_PERCENTS.length - daysAgo // 7일 전(0) … 어제(6)
+      normalDay(daysAgo, index, DAY_PERCENTS[index]!)
+    } else if (daysAgo <= LAST_INTERVAL_FROM) {
+      lastIntervalDay(daysAgo)
+    } else {
+      normalDay(daysAgo, daysAgo, OLDER_PERCENTS[daysAgo % OLDER_PERCENTS.length]!)
+    }
+  }
   return meals.sort((a, b) => b.timestamp - a.timestamp)
 }
 

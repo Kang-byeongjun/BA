@@ -2,7 +2,16 @@ import type { CoachingGoal, Gap, GapId, InsightRequest, ProcessFacts, ResultFact
 import { WORKOUT_GOAL_LABELS } from '../types'
 import type { InBodyHistoryEntry, Meal, NutritionTarget } from '../types'
 import { getDayStatus } from './calendar'
-import { sortInBodyHistory } from './inBodyHistoryOrder'
+import {
+  calendarDays,
+  changeOf,
+  COMPARE_RULES,
+  muscleResultOf,
+  selectIntervals,
+  stateOf,
+  usableMeasurements,
+  type MetricState,
+} from './inbodyCompare'
 import { sumMeals } from './nutrition'
 import { isSameDay } from './time'
 import { countOnTrackDays } from './trend'
@@ -16,19 +25,18 @@ import type { WorkoutSessionRecord } from './workoutHistory'
 const DAY_MS = 86_400_000
 export const DIET_WINDOW_DAYS = 7
 export const WORKOUT_WINDOW_DAYS = 21
-/** 인바디 비교 구간의 최소 간격(일) */
-export const MIN_COMPARE_GAP_DAYS = 14
 
 /** 판정 기준 */
 export const RULES = {
-  /** 이 정도(kg) 이상 움직여야 "변했다"고 본다 */
-  changeKg: 0.3,
   /** 체지방은 줄었는데 골격근도 이만큼(kg) 이상 줄면 근손실 주의 */
   muscleLossKg: 0.5,
-  /** 체중·골격근·체지방이 모두 이 안이면 "변화 없음" */
+  /**
+   * 체중·골격근·체지방이 모두 이 안이면 "변화 없음". 골격근·체지방은 이 값 이상 움직여야 "늘었다/줄었다"이며,
+   * 구간 분석과 함께 쓰는 값이라 inbodyCompare의 COMPARE_RULES에서만 바꾼다
+   */
   flatWeightKg: 0.5,
-  flatMuscleKg: 0.3,
-  flatFatKg: 0.5,
+  flatMuscleKg: COMPARE_RULES.muscleNoiseKg,
+  flatFatKg: COMPARE_RULES.fatNoiseKg,
   /** 실천 기준(셋 중 둘 이상 넘으면 "실천 높음", 하나 이하면 "낮음") */
   highSessions: 6, // 3주 6회 = 주 2회
   highOnTrackDays: 4, // 7일 중 4일
@@ -57,32 +65,43 @@ const round1 = (v: number) => Math.round(v * 10) / 10
 const avg = (xs: number[]) => xs.reduce((s, x) => s + x, 0) / xs.length
 const signed = (v: number) => (v > 0 ? `+${v}` : `${v}`)
 
-function delta(a: number | null, b: number | null): number | null {
-  return a === null || b === null ? null : round1(a - b)
-}
-
 // ---------------------------------------------------------------------------
 // 숫자 모으기
 // ---------------------------------------------------------------------------
 
+/** 카드가 쓰는 결과. 골격근은 비교한 측정이 체중·체지방과 다를 수 있어 따로 적는다 */
+export interface CardResultFacts extends ResultFacts {
+  /** 골격근 판단 상태. pending = 근육 목표인데 28일 이상 앞선 측정이 없음 */
+  muscleState?: MetricState
+  /** 골격근을 비교한 시작 측정 시각 */
+  muscleFromTimestamp?: number
+  /** 지금까지 골격근을 잰 가장 긴 간격(일) — 판단 보류 안내에 쓴다 */
+  muscleSpanDays?: number
+}
+
 /**
- * 인바디 변화: "최근 구간" = 가장 최근 측정과, 그보다 14일 이상 앞선 측정 중 가장 가까운 것.
- * 14일 미만 간격의 측정은 건너뛴다. 그런 이전 측정이 없으면 비교하지 않는다(measurements: 1). 측정이 없으면 null
+ * 인바디 변화. 비교할 측정은 구간 분석과 같은 규칙(inbodyCompare)으로 고른다:
+ * 가장 최근 측정과 14일 이상 앞선 가장 가까운 측정. 근육 목표의 골격근만 28일 이상 앞선 가장 가까운 측정.
+ * 비교할 이전 측정이 없으면 measurements: 1, 측정이 없으면 null
  */
-export function buildResultFacts(history: InBodyHistoryEntry[]): ResultFacts | null {
+export function buildResultFacts(history: InBodyHistoryEntry[], goal: CoachingGoal = 'body_shape'): CardResultFacts | null {
   if (history.length === 0) return null
-  const sorted = sortInBodyHistory(history) // 맨 앞 = 가장 최근
-  const latest = sorted[0]!
-  const base = sorted.slice(1).find((e) => latest.timestamp - e.timestamp >= MIN_COMPARE_GAP_DAYS * DAY_MS)
-  if (!base) return { measurements: 1, periodDays: 0, weightDelta: null, muscleDelta: null, fatDelta: null }
+  const pair = selectIntervals(history)[0]
+  if (!pair) return { measurements: 1, periodDays: 0, weightDelta: null, muscleDelta: null, fatDelta: null }
+  const measurements = usableMeasurements(history)
+  const muscle = muscleResultOf(goal, pair, measurements)
+  const oldest = measurements.filter((e) => e.skeletalMuscleMass !== null).at(-1)
   return {
     measurements: 2,
-    fromTimestamp: base.timestamp,
-    toTimestamp: latest.timestamp,
-    periodDays: Math.round((latest.timestamp - base.timestamp) / DAY_MS),
-    weightDelta: delta(latest.weight, base.weight),
-    muscleDelta: delta(latest.skeletalMuscleMass, base.skeletalMuscleMass),
-    fatDelta: delta(latest.bodyFatMass, base.bodyFatMass),
+    fromTimestamp: pair.base.timestamp,
+    toTimestamp: pair.end.timestamp,
+    periodDays: pair.days,
+    weightDelta: changeOf(pair.base.weight, pair.end.weight).change,
+    muscleDelta: muscle.change,
+    fatDelta: changeOf(pair.base.bodyFatMass, pair.end.bodyFatMass).change,
+    muscleState: muscle.state,
+    muscleFromTimestamp: muscle.from,
+    muscleSpanDays: oldest ? calendarDays(oldest.timestamp, pair.end.timestamp) : 0,
   }
 }
 
@@ -146,21 +165,27 @@ export function ringRates(p: ProcessFacts): RingRates {
 
 export type ResultState = 'good' | 'flat' | 'wrong'
 
+/** 골격근 상태. 따로 계산해 둔 것이 없으면 변화량으로 판단한다(기준은 inbodyCompare) */
+const muscleStateOf = (r: CardResultFacts): MetricState => r.muscleState ?? stateOf(r.muscleDelta, RULES.flatMuscleKg)
+
+/** 체지방이 "줄었다"고 볼 만큼 움직였는지(기준은 inbodyCompare). 측정값이 없으면 아니다 */
+const fatDecreased = (fatDelta: number | null) => stateOf(fatDelta, RULES.flatFatKg) === 'decrease'
+
 /** 목표별로 "결과가 목표 방향인가"를 본다. 측정값이 없는(null) 항목은 변화 없음(0)으로 본다. */
-const GOAL_RESULT: Record<CoachingGoal, (d: { weight: number; muscle: number; fat: number }, p: ProcessFacts) => boolean> = {
+const GOAL_RESULT: Record<CoachingGoal, (d: { fat: number; muscle: MetricState }, p: ProcessFacts) => boolean> = {
   // 체지방 감량: 체지방이 줄었다
-  fat_loss: (d) => d.fat <= -RULES.changeKg,
+  fat_loss: (d) => fatDecreased(d.fat),
   // 근육 증가: 골격근이 늘었다
-  muscle_gain: (d) => d.muscle >= RULES.changeKg,
-  // 체형 개선: 체지방은 줄고 골격근은 유지하거나 늘었다
-  body_shape: (d) => d.fat <= -RULES.changeKg && d.muscle >= 0,
-  // 근력 향상: 골격근이 유지·증가하고, 운동 볼륨이 줄지 않았다
-  strength: (d, p) => d.muscle >= 0 && (p.volumeChangePercent === null || p.volumeChangePercent >= 0),
+  muscle_gain: (d) => d.muscle === 'increase',
+  // 체형 개선: 체지방은 줄고 골격근은 줄지 않았다(오차 범위는 유지)
+  body_shape: (d) => fatDecreased(d.fat) && d.muscle !== 'decrease',
+  // 근력 향상: 골격근이 줄지 않고, 운동 볼륨도 줄지 않았다
+  strength: (d, p) => d.muscle !== 'decrease' && (p.volumeChangePercent === null || p.volumeChangePercent >= 0),
 }
 
-export function resultState(goal: CoachingGoal, r: ResultFacts, p: ProcessFacts): ResultState {
+export function resultState(goal: CoachingGoal, r: CardResultFacts, p: ProcessFacts): ResultState {
   const d = { weight: r.weightDelta ?? 0, muscle: r.muscleDelta ?? 0, fat: r.fatDelta ?? 0 }
-  if (GOAL_RESULT[goal](d, p)) return 'good'
+  if (GOAL_RESULT[goal]({ fat: d.fat, muscle: muscleStateOf(r) }, p)) return 'good'
   const flat = Math.abs(d.weight) < RULES.flatWeightKg && Math.abs(d.muscle) < RULES.flatMuscleKg && Math.abs(d.fat) < RULES.flatFatKg
   return flat ? 'flat' : 'wrong'
 }
@@ -174,15 +199,18 @@ export function practiceScore(p: ProcessFacts): number {
   )
 }
 
-export function decideVerdict(goal: CoachingGoal, r: ResultFacts | null, p: ProcessFacts): Verdict {
+export function decideVerdict(goal: CoachingGoal, r: CardResultFacts | null, p: ProcessFacts): Verdict {
   // 1) 기록 부족: 인바디가 1회뿐이거나 식단·운동 기록이 모자라면 판단하지 않는다
   if (!r || r.measurements < 2 || p.dietLoggedDays < RULES.minLoggedDays || p.workoutSessions < RULES.minSessions) return 'need_data'
   // 2) 근손실: 체지방은 줄었는데 골격근도 줄었다(목표와 무관하게 먼저 알린다)
-  if ((r.fatDelta ?? 0) <= -RULES.changeKg && (r.muscleDelta ?? 0) <= -RULES.muscleLossKg) return 'muscle_loss'
+  const pending = muscleStateOf(r) === 'pending'
+  if (!pending && fatDecreased(r.fatDelta) &&(r.muscleDelta ?? 0) <= -RULES.muscleLossKg) return 'muscle_loss'
   const high = practiceScore(p) >= 2
   // 3) 실천이 낮으면 꾸준함이 먼저
   if (!high) return 'need_consistency'
-  // 4) 실천은 높음: 결과가 목표 방향이면 순조, 아니면(변화 없음·반대 방향) 방법 점검
+  // 4) 근육 목표인데 골격근을 비교할 28일 이상 앞선 측정이 없으면 판단 보류
+  if (pending) return 'need_data'
+  // 5) 실천은 높음: 결과가 목표 방향이면 순조, 아니면(변화 없음·반대 방향) 방법 점검
   return resultState(goal, r, p) === 'good' ? 'on_track' : 'check_method'
 }
 
@@ -196,17 +224,20 @@ interface Candidate {
   shortfall: number
 }
 
-export function pickGaps(goal: CoachingGoal, verdict: Verdict, r: ResultFacts | null, p: ProcessFacts): Gap[] {
+export function pickGaps(goal: CoachingGoal, verdict: Verdict, r: CardResultFacts | null, p: ProcessFacts): Gap[] {
   const c: Candidate[] = []
   const add = (id: GapId, label: string, current: number, target: number, unit: string, shortfall: number) => {
     if (shortfall >= RULES.minShortfall) c.push({ gap: { id, label, current, target, unit }, shortfall: Math.min(100, Math.round(shortfall)) })
   }
 
   if (!r || r.measurements < 2) add('inbody', '인바디 측정', r?.measurements ?? 0, 2, '회', 100)
+  else if (verdict === 'need_data' && muscleStateOf(r) === 'pending') {
+    add('inbody', '골격근 비교 간격', r.muscleSpanDays ?? r.periodDays, COMPARE_RULES.muscleGoalMinDays, '일', 100)
+  }
   if (verdict === 'muscle_loss' && r?.muscleDelta != null) add('muscle', '골격근 변화', r.muscleDelta, 0, 'kg', 100)
   if (verdict === 'check_method' && r) {
     const bodyFat = goal === 'fat_loss' || goal === 'body_shape'
-    add('result', bodyFat ? '체지방 변화' : '골격근 변화', (bodyFat ? r.fatDelta : r.muscleDelta) ?? 0, bodyFat ? -RULES.changeKg : RULES.changeKg, 'kg', 80)
+    add('result', bodyFat ? '체지방 변화' : '골격근 변화', (bodyFat ? r.fatDelta : r.muscleDelta) ?? 0, bodyFat ? -RULES.flatFatKg : RULES.flatMuscleKg, 'kg', 80)
   }
   if (p.dietLoggedDays < RULES.minLoggedDays) add('record', '식단 기록일', p.dietLoggedDays, DIET_WINDOW_DAYS, '일', (1 - p.dietLoggedDays / RULES.minLoggedDays) * 100)
   else add('diet', '식단 목표 달성일', p.dietOnTrackDays, RULES.goalOnTrackDays, '일', (1 - p.dietOnTrackDays / RULES.goalOnTrackDays) * 100)
@@ -266,7 +297,7 @@ export function exampleLine(gap: Gap, p: ProcessFacts): string {
     case 'workout':
       return `최근 3주 운동이 ${n}회예요. ${Math.max(1, gap.target - n)}회만 더 해봐요`
     case 'inbody':
-      return `인바디 측정이 ${n}회예요. 2주 뒤 다시 재요`
+      return gap.unit === '일' ? `골격근은 ${gap.target}일 간격으로 비교해요. 지금 ${n}일` : `인바디 측정이 ${n}회예요. 2주 뒤 다시 재요`
   }
 }
 
@@ -286,7 +317,7 @@ export interface Diagnosis {
   goal: CoachingGoal
   goalLabel: string
   verdict: Verdict
-  result: ResultFacts | null
+  result: CardResultFacts | null
   process: ProcessFacts
   gaps: Gap[]
   /** AI에게 보내는 본문(숫자뿐). 캐시 키로도 쓴다 */
@@ -305,7 +336,7 @@ export interface DiagnosisInput {
 
 export function buildDiagnosis({ goal, history, meals, target, workouts, now = Date.now() }: DiagnosisInput): Diagnosis {
   const g: CoachingGoal = goal ?? 'body_shape'
-  const result = buildResultFacts(history)
+  const result = buildResultFacts(history, g)
   const process = buildProcessFacts(meals, target, workouts, now)
   const verdict = decideVerdict(g, result, process)
   const gaps = pickGaps(g, verdict, result, process)

@@ -64,8 +64,20 @@ describe('진단 카드 — 구성', () => {
     expect(screen.getByText('5/7일')).toBeTruthy()
     expect(screen.getByText('주 3회')).toBeTruthy()
     expect(screen.getByText(/^최근 구간 \d+\/\d+→\d+\/\d+$/)).toBeTruthy()
-    expect(screen.getByText('-1.7kg')).toBeTruthy() // 체지방
-    expect(screen.getByText('+0.3kg')).toBeTruthy() // 골격근
+    expect(screen.getByText('-1.3kg')).toBeTruthy() // 체지방
+    expect(screen.getByText('+0.1kg')).toBeTruthy() // 골격근
+  })
+
+  it('골격근 비교 시작일이 구간과 다를 때만 "골격근은 M/D부터"를 보여준다', () => {
+    seed({ isDemo: true, aiMode: 'mock' }) // 체지방 감량: 구간과 같은 측정과 비교
+    open()
+    expect(screen.queryByText(/골격근은 \d+\/\d+부터/)).toBeNull()
+    cleanup()
+    const { diagnosis } = seed({ isDemo: true, aiMode: 'mock' })
+    localStorage.setItem(key('workoutProfile'), JSON.stringify({ ...DEMO_WORKOUT_PROFILE, goal: 'muscle_gain' }))
+    open()
+    const since = new Date(diagnosis.result!.fromTimestamp! - 14 * 86_400_000) // 구간은 4주 전부터, 근육 목표는 35일 앞선 6주 전 측정
+    expect(screen.getByText(`골격근은 ${since.getMonth() + 1}/${since.getDate()}부터`)).toBeTruthy()
   })
 
   it('예전 "결과(인바디)/과정" 표와 "다음 측정까지" 줄은 없다', () => {

@@ -68,7 +68,7 @@ describe('리포트 세 칸 탭', () => {
     expect(screen.getByText('2026년 06월 10일 측정')).toBeTruthy()
 
     fireEvent.click(screen.getByRole('tab', { name: '변화 추이' }))
-    expect(screen.getByText('인바디 추이')).toBeTruthy() // 접히지 않고 바로 보인다
+    expect(screen.getByRole('button', { name: /인바디 상세 추이·측정 기록/ })).toBeTruthy() // 기존 추이는 아래 접힌 칸
     expect(screen.getByText('체중 (kg)')).toBeTruthy()
     cleanup()
     open()
@@ -77,9 +77,9 @@ describe('리포트 세 칸 탭', () => {
 
   it('인바디 기록이 0개면 "인바디 결과"·"변화 추이" 칸에 안내 문구를 보여준다', () => {
     open()
-    for (const name of ['인바디 결과', '변화 추이']) {
-      fireEvent.click(screen.getByRole('tab', { name }))
-      expect(screen.getByText(EMPTY)).toBeTruthy()
-    }
+    fireEvent.click(screen.getByRole('tab', { name: '인바디 결과' }))
+    expect(screen.getByText(EMPTY)).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: '변화 추이' }))
+    expect(screen.getByText('인바디를 2주 간격으로 두 번 재면 분석해 드려요')).toBeTruthy()
   })
 })

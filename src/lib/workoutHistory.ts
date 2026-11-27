@@ -6,12 +6,15 @@ import { volumeOf, type ExerciseLog, type LoggerDay } from './workoutLog'
 /**
  * workoutHistory — 끝낸 운동의 세트 상세(kg·회)를 우리 전용 localStorage 키에 쌓는다.
  * 팀원 앱의 운동 기록(Workout 타입: 종류·시간만)에는 세트 상세를 담기 어려워서 따로 둔다.
- * 최근 MAX_HISTORY회까지만 보관한다(오래된 것부터 지움).
+ * 최근 HISTORY_KEEP_DAYS일의 기록은 모두 보관하고, 더 오래돼도 최근 HISTORY_MIN_KEEP회는 남긴다.
  */
 
 // storage.ts의 STORAGE_KEYS와 같은 방식(접두사는 loadFromStorage/saveToStorage가 붙임).
 export const WORKOUT_HISTORY_STORAGE_KEY = 'workoutHistory'
-export const MAX_HISTORY = 20
+/** 새 기록의 날짜에서 이 일수 안의 기록은 횟수와 상관없이 모두 보관한다 */
+export const HISTORY_KEEP_DAYS = 120
+/** 기간이 지나도 최근 이 횟수까지는 남긴다(예전의 "최근 20회" 규칙보다 더 지우는 일이 없게) */
+export const HISTORY_MIN_KEEP = 20
 
 export interface RecordedSet {
   kg: number
@@ -92,11 +95,13 @@ export function loadWorkoutHistory(): WorkoutSessionRecord[] {
   )
 }
 
-/** 맨 앞에 추가하고 최근 MAX_HISTORY회만 남긴다. 같은 id가 이미 있으면 다시 넣지 않는다(중복 저장 방지) */
+/** 맨 앞에 추가하고 보관 규칙에 맞는 기록만 남긴다. 같은 id가 이미 있으면 다시 넣지 않는다(중복 저장 방지) */
 export function appendWorkoutHistory(record: WorkoutSessionRecord): WorkoutSessionRecord[] {
   const list = loadWorkoutHistory()
   if (list.some((r) => r.id === record.id)) return list
-  const next = [record, ...list].slice(0, MAX_HISTORY)
+  const d = new Date(record.date)
+  const cutoff = new Date(d.getFullYear(), d.getMonth(), d.getDate() - HISTORY_KEEP_DAYS).getTime()
+  const next = [record, ...list].filter((r, i) => i < HISTORY_MIN_KEEP || r.date >= cutoff)
   saveToStorage(WORKOUT_HISTORY_STORAGE_KEY, next)
   return next
 }

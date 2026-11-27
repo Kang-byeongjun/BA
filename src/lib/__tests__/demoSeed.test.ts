@@ -37,9 +37,9 @@ describe('인바디 4회', () => {
   it('체중·골격근량·체지방량이 서서히 좋아지고 체지방률은 일관되게 계산된다', () => {
     const asc = [...inBodyHistory].reverse()
     expect(asc.map((e) => e.weight)).toEqual([112.4, 110.2, 108.5, 107.1])
-    expect(asc.map((e) => e.skeletalMuscleMass)).toEqual([41.2, 41.6, 42.0, 42.3])
-    expect(asc.map((e) => e.bodyFatMass)).toEqual([38.1, 36.4, 35.0, 33.3])
-    expect(asc.map((e) => e.bodyFatPercentage)).toEqual([33.9, 33.0, 32.3, 31.1])
+    expect(asc.map((e) => e.skeletalMuscleMass)).toEqual([41.2, 41.8, 42.2, 42.3])
+    expect(asc.map((e) => e.bodyFatMass)).toEqual([38.1, 36.2, 35.1, 33.8])
+    expect(asc.map((e) => e.bodyFatPercentage)).toEqual([33.9, 32.8, 32.4, 31.6])
   })
 
   it('체형은 기존 판정 함수로 모두 C형이다', () => {
@@ -55,15 +55,15 @@ describe('인바디 4회', () => {
 describe('운동 기록', () => {
   const { workouts, workoutHistory } = buildSeedData(NOW)
 
-  it('최근 3주 8~9회, 오늘 기록 없음, id는 demo-seed-', () => {
-    expect(workoutHistory.length).toBeGreaterThanOrEqual(8)
-    expect(workoutHistory.length).toBeLessThanOrEqual(9)
+  it('최근 49일 18~19회, 오늘 기록 없음, id는 demo-seed-', () => {
+    expect(workoutHistory.length).toBeGreaterThanOrEqual(18)
+    expect(workoutHistory.length).toBeLessThanOrEqual(19)
     expect(workouts).toHaveLength(workoutHistory.length)
     for (const r of workoutHistory) {
       expect(r.id.startsWith(SEED_ID_PREFIX)).toBe(true)
       expect(isSameDay(r.date, NOW)).toBe(false)
       expect(r.date).toBeLessThan(NOW)
-      expect(NOW - r.date).toBeLessThanOrEqual(21 * DAY)
+      expect(NOW - r.date).toBeLessThanOrEqual(49 * DAY)
     }
     for (const w of workouts) expect(isSameDay(w.endTime, NOW)).toBe(false)
   })
@@ -134,6 +134,47 @@ describe('식단 기록', () => {
       expect(m.image).toBeNull()
       expect(m.foods.reduce((s, f) => s + f.calories, 0)).toBe(m.calories)
       expect(m.foods[0]).toEqual(expect.objectContaining({ name: expect.any(String), amount: expect.stringMatching(/g$/) }))
+    }
+  })
+})
+
+describe('마지막 인바디 구간의 식단', () => {
+  // 실행 요일·식단 목표가 달라도 같아야 한다
+  const NOWS = Array.from({ length: 7 }, (_, i) => NOW + i * DAY)
+  const daysOf = (now: number, targetKcal: number) => {
+    const { meals } = buildSeedData(now, { targetKcal })
+    return Array.from({ length: 21 }, (_, i) => meals.filter((m) => isSameDay(m.timestamp, now - (28 - i) * DAY))) // 오래된 날부터
+  }
+  const isWeekend = (ts: number) => [0, 6].includes(new Date(ts).getDay())
+
+  it('평일 1,600~1,900 / 토·일 2,400~2,800kcal이고 요일마다 평균이 다르다', () => {
+    for (const now of NOWS) {
+      for (const targetKcal of [1920, 2280]) {
+        const byWeekday = new Map<number, number[]>()
+        for (const meals of daysOf(now, targetKcal)) {
+          const total = meals.reduce((s, m) => s + m.calories, 0)
+          const [min, max] = isWeekend(meals[0]!.timestamp) ? [2400, 2800] : [1600, 1900]
+          expect(total).toBeGreaterThanOrEqual(min)
+          expect(total).toBeLessThanOrEqual(max)
+          const weekday = new Date(meals[0]!.timestamp).getDay()
+          byWeekday.set(weekday, [...(byWeekday.get(weekday) ?? []), total])
+        }
+        const averages = [...byWeekday.values()].map((list) => Math.round(list.reduce((s, x) => s + x, 0) / list.length))
+        expect(new Set(averages).size).toBe(7)
+        for (const list of byWeekday.values()) expect(new Set(list).size).toBeGreaterThan(1) // 같은 요일도 주마다 다르다
+      }
+    }
+  })
+
+  it('주말 저녁·간식은 맥주 4회, 후라이드 치킨 3회, 라면 2회, 피자 1회', () => {
+    for (const now of NOWS) {
+      const count = new Map<string, number>()
+      for (const meals of daysOf(now, 1920)) {
+        if (!isWeekend(meals[0]!.timestamp)) continue
+        for (const m of meals.filter((x) => x.slot === '저녁' || x.slot === '간식')) for (const f of m.foods) count.set(f.name, (count.get(f.name) ?? 0) + 1)
+      }
+      expect(['맥주', '후라이드 치킨', '라면', '피자'].map((n) => count.get(n))).toEqual([4, 3, 2, 1])
+      for (const [name, n] of count) if (!['맥주', '후라이드 치킨', '라면'].includes(name)) expect(n, name).toBe(1)
     }
   })
 })

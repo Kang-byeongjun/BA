@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { resolveAnalysisMode } from '../../lib/aiMode'
 import { buildDiagnosis, isEmptyDiagnosis, resolveLines, ringRates, VERDICT_LABELS } from '../../lib/coachingInsight'
+import { calendarDays } from '../../lib/inbodyCompare'
 import { loadWorkoutHistory } from '../../lib/workoutHistory'
 import { readCoachingCache, requestInsightLines, requestKeyOf } from '../../services/coachingService'
 
@@ -87,6 +88,11 @@ export default function AiCoachingCard({ onShowTrend }: { onShowTrend?: () => vo
 
   const rates = ringRates(process)
   const compared = !!result && result.measurements >= 2 && result.fromTimestamp !== undefined && result.toTimestamp !== undefined
+  // 근육 목표는 골격근을 더 앞선 측정과 비교한다. 구간 시작일과 다르면 언제부터인지 적는다
+  const muscleSince =
+    compared && result.muscleDelta !== null && result.muscleFromTimestamp !== undefined && calendarDays(result.muscleFromTimestamp, result.fromTimestamp!) !== 0
+      ? md(result.muscleFromTimestamp)
+      : null
 
   return (
     <div className="rounded-2xl bg-primary p-4 text-white shadow-lg shadow-primary/25">
@@ -143,6 +149,7 @@ export default function AiCoachingCard({ onShowTrend }: { onShowTrend?: () => vo
               ) : (
                 <p className="text-white/80">비교할 이전 측정이 없어요(14일 이상 간격 필요)</p>
               )}
+              {muscleSince && <p className="mt-0.5 text-right text-[10px] text-white/70">골격근은 {muscleSince}부터</p>}
             </div>
           </div>
 

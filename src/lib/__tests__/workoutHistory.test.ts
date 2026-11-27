@@ -6,7 +6,7 @@ import {
   countCompletedSets,
   lastRecordOf,
   loadWorkoutHistory,
-  MAX_HISTORY,
+  HISTORY_MIN_KEEP,
   WORKOUT_HISTORY_STORAGE_KEY,
   type WorkoutSessionRecord,
 } from '../workoutHistory'
@@ -82,12 +82,28 @@ describe('buildSessionRecord — 부위', () => {
 })
 
 describe('기록 보관', () => {
-  it('최근 기록이 앞에 오고, 최근 20회까지만 보관한다', () => {
-    for (let i = 1; i <= MAX_HISTORY + 5; i++) appendWorkoutHistory(record(`s${i}`, [], T0 + i))
-    const list = loadWorkoutHistory()
-    expect(list).toHaveLength(20)
+  it('최근 기록이 앞에 오고, 최근 120일은 모두 보관한다(더 오래돼도 최근 20회는 남긴다)', () => {
+    const DAY = 86_400_000
+    // 120일 안의 기록은 20회를 넘어도 모두 남는다
+    for (let i = 1; i <= HISTORY_MIN_KEEP + 5; i++) appendWorkoutHistory(record(`s${i}`, [], T0 + i))
+    let list = loadWorkoutHistory()
+    expect(list).toHaveLength(25)
     expect(list[0]!.id).toBe('s25')
-    expect(list[19]!.id).toBe('s6')
+    expect(list[24]!.id).toBe('s1')
+    // 200일 뒤에 기록하면 오래된 것은 최근 20회까지만 남는다
+    appendWorkoutHistory(record('late', [], T0 + 200 * DAY))
+    list = loadWorkoutHistory()
+    expect(list).toHaveLength(20)
+    expect(list[0]!.id).toBe('late')
+    expect(list[19]!.id).toBe('s7')
+    // 20회를 넘는 기록은 120일 전까지 남고 121일 전은 지워진다
+    localStorage.clear()
+    appendWorkoutHistory(record('day121', [], T0 - DAY))
+    appendWorkoutHistory(record('day120', [], T0))
+    for (let i = 1; i <= HISTORY_MIN_KEEP; i++) appendWorkoutHistory(record(`n${i}`, [], T0 + 120 * DAY + i))
+    list = loadWorkoutHistory()
+    expect(list).toHaveLength(21)
+    expect(list[20]!.id).toBe('day120')
   })
 
   it('같은 기록을 두 번 저장하지 않는다', () => {

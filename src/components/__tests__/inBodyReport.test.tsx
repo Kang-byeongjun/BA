@@ -163,9 +163,9 @@ describe('변화 추이: 최근 5회 / 전체', () => {
     expect(screen.getAllByLabelText('이 측정 기록 삭제')).toHaveLength(2)
   })
 
-  it('기록이 0개면 리포트에서 지금의 안내 문구를 보여준다', () => {
+  it('기록이 0개면 리포트에서 분석 안내 문구를 보여준다', () => {
     wrap(<DashboardScreen />)
     fireEvent.click(screen.getByRole('tab', { name: '변화 추이' }))
-    expect(within(screen.getByRole('tabpanel')).getByText('아직 측정 기록이 없어요. 마이 탭에서 결과지를 올려주세요.')).toBeTruthy()
+    expect(within(screen.getByRole('tabpanel')).getByText('인바디를 2주 간격으로 두 번 재면 분석해 드려요')).toBeTruthy()
   })
 })

@@ -32,6 +32,14 @@ describe('handleInsight', () => {
     for (const s of ['체지방 감량', 'check_method', '현재 62%', '현재 5회']) expect(arg.prompt).toContain(s)
   })
 
+  it('인바디 항목 설명은 단위에 따라 다르다(회 = 측정 횟수, 일 = 골격근 비교 간격 안내)', () => {
+    const of = (current: number, target: number, unit: string) =>
+      buildInsightPrompt({ ...request, gaps: [{ id: 'inbody', label: '인바디', current, target, unit }] })
+    expect(of(1, 2, '회')).toContain('(측정 횟수)')
+    expect(of(21, 28, '일')).toContain('간격 안내: 골격근 변화는 28일 이상 떨어진 두 측정으로 판단함')
+    expect(of(21, 28, '일')).not.toContain('(측정 횟수)')
+  })
+
   it('보완할 점이 없으면 AI를 부르지 않는다', async () => {
     const { client, parseStructured } = fakeClient()
     const res = await handleInsight({ ...request, gaps: [] }, { client })

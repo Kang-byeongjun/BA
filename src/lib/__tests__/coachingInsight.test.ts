@@ -163,6 +163,62 @@ describe('보완할 점 문장', () => {
   })
 })
 
+describe('골격근 판단 — 구간 분석과 같은 규칙', () => {
+  const DAY = 86_400_000
+  const seed = buildSeedData(NOW, { targetKcal: 1920 })
+  const entry = (daysAgo: number, muscle: number, fat = 30) => ({
+    ...seed.inBodyHistory[0]!,
+    id: `m${daysAgo}`,
+    timestamp: NOW - daysAgo * DAY,
+    skeletalMuscleMass: muscle,
+    bodyFatMass: fat,
+  })
+  const history = [entry(0, 36.1), entry(21, 36, 31), entry(35, 35), entry(60, 33)]
+
+  it('근육 목표는 28일 이상 앞선 가장 가까운 측정과, 다른 목표는 최근 구간과 비교(체지방은 모두 최근 구간)', () => {
+    for (const goal of ['muscle_gain', 'strength'] as const) {
+      expect(buildResultFacts(history, goal)).toMatchObject({ periodDays: 21, fatDelta: -1, muscleDelta: 1.1, muscleState: 'increase', muscleFromTimestamp: NOW - 35 * DAY })
+    }
+    for (const goal of ['fat_loss', 'body_shape'] as const) {
+      expect(buildResultFacts(history, goal)).toMatchObject({ muscleDelta: 0.1, muscleState: 'noise', muscleFromTimestamp: NOW - 21 * DAY })
+    }
+  })
+  it('28일 이상 앞선 측정이 없으면 근육 목표는 판단 보류(기록이 더 필요해요) + 필요한 간격 안내', () => {
+    for (const goal of ['muscle_gain', 'strength'] as const) {
+      const r = buildResultFacts([entry(0, 35, 28), entry(21, 36, 31)], goal)!
+      expect(r).toMatchObject({ muscleState: 'pending', muscleSpanDays: 21 })
+      expect(decideVerdict(goal, r, HIGH)).toBe('need_data') // 근손실 판정도 하지 않는다
+      expect(decideVerdict(goal, r, LOW)).toBe('need_consistency')
+      const gap = pickGaps(goal, 'need_data', r, HIGH)[0]!
+      expect(gap).toMatchObject({ id: 'inbody', current: 21, target: 28, unit: '일' })
+      expect(exampleLine(gap, HIGH)).toBe('골격근은 28일 간격으로 비교해요. 지금 21일')
+      expect(isValidLine(exampleLine(gap, HIGH), gap, HIGH)).toBe(true)
+    }
+    expect(decideVerdict('fat_loss', buildResultFacts([entry(0, 35, 28), entry(21, 36, 31)], 'fat_loss'), HIGH)).toBe('muscle_loss')
+  })
+  it('골격근 0.3kg 미만 감소는 "유지"(체형 개선·근력 향상), 0.3kg부터 감소', () => {
+    for (const goal of ['body_shape', 'strength'] as const) {
+      expect(decideVerdict(goal, result({ muscleDelta: -0.2, fatDelta: -1 }), HIGH)).toBe('on_track')
+      expect(decideVerdict(goal, result({ muscleDelta: -0.3, fatDelta: -1 }), HIGH)).toBe('check_method')
+    }
+  })
+  it('체지방도 구간 분석과 같이 0.5kg부터 "감소"', () => {
+    for (const goal of ['fat_loss', 'body_shape'] as const) {
+      expect(decideVerdict(goal, result({ fatDelta: -0.5 }), HIGH)).toBe('on_track')
+      expect(decideVerdict(goal, result({ fatDelta: -0.4 }), HIGH)).toBe('check_method')
+      expect(pickGaps(goal, 'check_method', result({ fatDelta: -0.4 }), HIGH)[0]).toMatchObject({ id: 'result', target: -0.5 })
+    }
+    // 근손실 주의도 체지방이 0.5kg 이상 줄었을 때만
+    expect(decideVerdict('fat_loss', result({ fatDelta: -0.4, muscleDelta: -0.6 }), HIGH)).toBe('check_method')
+    expect(decideVerdict('fat_loss', result({ fatDelta: -0.5, muscleDelta: -0.6 }), HIGH)).toBe('muscle_loss')
+  })
+  it('시연 데이터의 목표별 판정', () => {
+    const of = (goal: CoachingGoal) =>
+      buildDiagnosis({ goal, history: seed.inBodyHistory, meals: seed.meals, target: TARGET, workouts: seed.workoutHistory, now: NOW }).verdict
+    expect(GOALS.map(of)).toEqual(['on_track', 'on_track', 'on_track', 'on_track'])
+  })
+})
+
 describe('buildDiagnosis — 시연 데이터 기준', () => {
   const seed = buildSeedData(NOW, { targetKcal: 1920 })
   const d = buildDiagnosis({ goal: 'fat_loss', history: seed.inBodyHistory, meals: seed.meals, target: TARGET, workouts: seed.workoutHistory, now: NOW })
@@ -171,7 +227,7 @@ describe('buildDiagnosis — 시연 데이터 기준', () => {
     expect(d.process).toMatchObject({ dietLoggedDays: 7, dietOnTrackDays: 5, workoutSessions: 9 })
   })
   it('인바디는 최근 구간(가장 최근 측정 vs 14일 이상 앞선 가장 가까운 측정)으로 비교', () => {
-    expect(d.result).toMatchObject({ measurements: 2, periodDays: 21, weightDelta: -1.4, muscleDelta: 0.3, fatDelta: -1.7 })
+    expect(d.result).toMatchObject({ measurements: 2, periodDays: 21, weightDelta: -1.4, muscleDelta: 0.1, fatDelta: -1.3 })
   })
   describe('최근 구간 14일 규칙', () => {
     const DAY = 86_400_000
